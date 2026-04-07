@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "UserPreferences": {
+      "title": "UserPreferences",
+      "description": "Stores user-specific settings like budgets and currency.",
+      "type": "object",
+      "properties": {
+        "budgets": {
+          "type": "object",
+          "description": "Map of account IDs to allocated budget amounts."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The user's preferred currency code."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["currency", "createdAt", "updatedAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A financial transaction affecting multiple accounts.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "Date of the transaction."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the transaction."
+        },
+        "impacts": {
+          "type": "array",
+          "description": "List of account impacts for this transaction.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "accountId": { "type": "string" },
+              "amount": { "type": "number" }
+            },
+            "required": ["id", "accountId", "amount"]
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["date", "description", "impacts", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPreferences" },
+      "description": "User preferences and budgets."
+    },
+    "users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Transactions belonging to the user."
+    }
+  }
+}

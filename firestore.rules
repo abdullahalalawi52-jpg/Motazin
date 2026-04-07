@@ -1,0 +1,95 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users/{userId}
+    // Fields:
+    //   - budgets: map (optional) - Map of account IDs to allocated budget amounts
+    //   - currency: string (required, max 3 chars) - User's preferred currency code
+    //   - createdAt: timestamp (required, immutable)
+    //   - updatedAt: timestamp (required)
+    //
+    // Collection: users/{userId}/transactions/{transactionId}
+    // Fields:
+    //   - date: string (required, max 50 chars) - Date of the transaction
+    //   - description: string (required, max 500 chars) - Description of the transaction
+    //   - impacts: list (required, max 100 items) - List of account impacts
+    //   - createdAt: timestamp (required, immutable)
+    //   - updatedAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+    
+    function hasRequiredFields(requiredFields) {
+      return request.resource.data.keys().hasAll(requiredFields);
+    }
+    
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    
+    function isValidUserPreferences(data) {
+      return hasOnlyAllowedFields(['budgets', 'currency', 'createdAt', 'updatedAt']) &&
+             hasRequiredFields(['currency', 'createdAt', 'updatedAt']) &&
+             data.currency is string && data.currency.size() <= 3 &&
+             (!('budgets' in data) || data.budgets is map) &&
+             data.createdAt is string &&
+             data.updatedAt is string;
+    }
+    
+    function isValidTransaction(data) {
+      return hasOnlyAllowedFields(['date', 'description', 'impacts', 'createdAt', 'updatedAt', 'isRecurring', 'recurrenceInterval', 'nextRecurrenceDate']) &&
+             hasRequiredFields(['date', 'description', 'impacts', 'createdAt', 'updatedAt']) &&
+             data.date is string && data.date.size() <= 50 &&
+             data.description is string && data.description.size() <= 500 &&
+             data.impacts is list && data.impacts.size() <= 100 &&
+             data.createdAt is string &&
+             data.updatedAt is string &&
+             (!('isRecurring' in data) || data.isRecurring is bool) &&
+             (!('recurrenceInterval' in data) || data.recurrenceInterval == null || data.recurrenceInterval is string) &&
+             (!('nextRecurrenceDate' in data) || data.nextRecurrenceDate == null || data.nextRecurrenceDate is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserPreferences(request.resource.data);
+      allow update: if isOwner(userId) && 
+                    isValidUserPreferences(request.resource.data) && 
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false; // Users shouldn't delete their preference doc directly
+      
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidTransaction(request.resource.data);
+        allow update: if isOwner(userId) && 
+                      isValidTransaction(request.resource.data) && 
+                      request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}
