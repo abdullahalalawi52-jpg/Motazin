@@ -156,7 +156,7 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
 ];
 
 export default function App() {
-  const { t, language, toggleLanguage, dir } = useLanguage();
+  const { t, language, setLanguage, dir } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
@@ -929,10 +929,22 @@ export default function App() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={toggleLanguage} className="flex items-center gap-2 px-3 py-1.5 text-[15px] font-medium text-white bg-slate-800/40 border border-white/20 rounded-lg hover:bg-slate-800/20 transition-colors">
-            <Globe className="w-4 h-4" />
-            {t('language')}
-          </button>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/40 border border-white/20 rounded-lg focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
+            <Globe className="w-4 h-4 text-white" />
+            <select 
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as any)}
+              className="bg-transparent text-white text-[15px] font-medium border-none outline-none cursor-pointer focus:ring-0 appearance-none pr-4"
+              dir="ltr"
+            >
+              <option value="ar" className="bg-slate-900 border-none">العربية</option>
+              <option value="en" className="bg-slate-900 border-none">English</option>
+              <option value="fr" className="bg-slate-900 border-none">Français</option>
+              <option value="es" className="bg-slate-900 border-none">Español</option>
+              <option value="tr" className="bg-slate-900 border-none">Türkçe</option>
+              <option value="ur" className="bg-slate-900 border-none">اردو</option>
+            </select>
+          </div>
           <div className="flex items-center gap-2 mr-4 bg-slate-800/20 px-3 py-1.5 rounded-lg border border-white/10">
             <img src={user.photoURL || ''} alt="Profile" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
             <span className="text-[15px] font-medium text-white">{user.displayName}</span>
