@@ -186,6 +186,7 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDocPreviewOpen, setIsDocPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'equation' | 'income'>('equation');
 
   // Auth Effect
   useEffect(() => {
@@ -982,7 +983,37 @@ export default function App() {
         </div>
       </header>
 
-      {/* Charts Section */}
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-1 bg-slate-800/20 p-1.5 rounded-2xl border border-white/10 w-fit mx-auto md:mx-0">
+        <button
+          onClick={() => setCurrentView('equation')}
+          className={cn(
+            "px-6 py-2.5 rounded-xl text-sm font-black transition-all uppercase tracking-widest flex items-center gap-2",
+            currentView === 'equation' 
+              ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20" 
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          )}
+        >
+          <Calculator className="w-4 h-4" />
+          {t('balanceSheet')}
+        </button>
+        <button
+          onClick={() => setCurrentView('income')}
+          className={cn(
+            "px-6 py-2.5 rounded-xl text-sm font-black transition-all uppercase tracking-widest flex items-center gap-2",
+            currentView === 'income' 
+              ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20" 
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          )}
+        >
+          <FileText className="w-4 h-4" />
+          {t('incomeStatement')}
+        </button>
+      </div>
+
+      {currentView === 'equation' ? (
+        <>
+          {/* Charts Section */}
       {transactions.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Asset Distribution Pie Chart */}
@@ -1821,12 +1852,137 @@ export default function App() {
           </div>
         </div>
       </div>
+    </>
+  ) : (
+        <IncomeStatementView 
+          totals={totals}
+          currency={currency}
+          formatCurrency={formatCurrency}
+          t={t}
+          transactions={transactions}
+        />
+      )}
 
       <DocPreviewModal 
         isOpen={isDocPreviewOpen} 
         url={previewUrl} 
         onClose={() => setIsDocPreviewOpen(false)} 
       />
+    </div>
+  );
+}
+
+// --- Component: IncomeStatementView ---
+const IncomeStatementView: React.FC<{ 
+  totals: any, 
+  currency: string, 
+  formatCurrency: (amt: number) => string, 
+  t: any,
+  transactions: Transaction[] 
+}> = ({ totals, currency, formatCurrency, t, transactions }) => {
+  const revenueAccounts = ACCOUNTS.filter(a => a.id === 'revenue'); // For now, we only have one revenue account
+  const expenseAccounts = ACCOUNTS.filter(a => a.id === 'expenses'); // and one expenses account
+
+  const totalRevenue = Math.abs(totals.accounts['revenue'] || 0);
+  const totalExpenses = Math.abs(totals.accounts['expenses'] || 0);
+  const netIncome = totalRevenue - totalExpenses;
+
+  return (
+    <div id="income-statement-report" className="glass-card p-8 animate-fade-in space-y-8 bg-slate-900">
+      <div className="text-center space-y-2 border-b border-white/10 pb-6">
+        <h2 className="text-3xl font-black text-white">{t('incomeStatement')}</h2>
+        <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString('ar-SA')}</p>
+      </div>
+
+      <div className="space-y-6">
+        {/* Revenue Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-indigo-400 uppercase tracking-widest flex justify-between">
+            <span>{t('revenue')}</span>
+            <span dir="ltr">{formatCurrency(totalRevenue)}</span>
+          </h3>
+          <div className="bg-slate-900/40 rounded-2xl overflow-hidden border border-white/5">
+            <table className="w-full text-right">
+              <tbody className="divide-y divide-white/5">
+                <tr className="hover:bg-white/5 transition-colors">
+                  <td className="p-4 text-white font-medium">{t('totalRevenue')}</td>
+                  <td className="p-4 text-white font-mono" dir="ltr">{formatCurrency(totalRevenue)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Expenses Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-rose-400 uppercase tracking-widest flex justify-between">
+            <span>{t('operatingExpenses')}</span>
+            <span dir="ltr">{formatCurrency(totalExpenses)}</span>
+          </h3>
+          <div className="bg-slate-900/40 rounded-2xl overflow-hidden border border-white/5">
+            <table className="w-full text-right">
+              <tbody className="divide-y divide-white/5">
+                <tr className="hover:bg-white/5 transition-colors">
+                  <td className="p-4 text-white font-medium">{t('totalOperatingExpenses')}</td>
+                  <td className="p-4 text-white font-mono" dir="ltr">{formatCurrency(totalExpenses)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Net Income Section */}
+        <div className="pt-6 border-t border-white/20">
+          <div className={cn(
+            "p-6 rounded-3xl flex justify-between items-center",
+            netIncome >= 0 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-rose-500/10 border border-rose-500/20"
+          )}>
+            <span className={cn(
+              "text-2xl font-black uppercase tracking-tighter",
+              netIncome >= 0 ? "text-emerald-400" : "text-rose-400"
+            )}>
+              {t('netIncome')}
+            </span>
+            <span className={cn(
+              "text-3xl font-black font-mono",
+              netIncome >= 0 ? "text-emerald-400" : "text-rose-400"
+            )} dir="ltr">
+              {formatCurrency(netIncome)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-4 pt-4">
+        <button 
+          onClick={async () => {
+            const element = document.getElementById('income-statement-report');
+            if (!element) return;
+            try {
+              toast.info(t('exportingPDF') || "Generating PDF...");
+              const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#0f172a'
+              });
+              const imgData = canvas.toDataURL('image/png');
+              const pdf = new jsPDF('p', 'mm', 'a4');
+              const pdfWidth = pdf.internal.pageSize.getWidth();
+              const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+              pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+              pdf.save(`${t('incomeStatement')}.pdf`);
+              toast.success(t('exportSuccess') || "PDF generated successfully");
+            } catch (error) {
+              console.error('Error exporting PDF:', error);
+              toast.error(t('errorExportingPDF'));
+            }
+          }}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-2"
+        >
+          <FileText className="w-5 h-5" />
+          {t('exportPDF')}
+        </button>
+      </div>
     </div>
   );
 }

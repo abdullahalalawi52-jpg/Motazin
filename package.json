@@ -2,7 +2,7 @@
   "name": "accounting-equation-calculator",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://abdullahalalawi52-jpg.github.io/motazin",
+  "homepage": "https://abdullahalalawi52-jpg.github.io/Motazin/",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
