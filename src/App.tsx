@@ -1877,12 +1877,14 @@ export default function App() {
         </div>
       </div>
     </>
-  ) : (
+      ) : currentView === 'income' ? (
         <IncomeStatementView 
-          totals={totals}
-          currency={currency}
           formatCurrency={formatCurrency}
-          t={t}
+          transactions={transactions}
+        />
+      ) : (
+        <CashFlowView 
+          formatCurrency={formatCurrency}
           transactions={transactions}
         />
       )}
