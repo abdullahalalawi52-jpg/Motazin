@@ -490,6 +490,36 @@ export const translations: Translations = {
   exportSuccess: {
     ar: 'تم تصدير الملف بنجاح', en: 'Exported successfully', fr: 'Exporté avec succès', es: 'Exportado con éxito', tr: 'Başarıyla dışa aktarıldı', ur: 'کامیابی سے ایکسپورٹ ہو گیا'
   },
+  balanceSheet: {
+    ar: 'الميزانية العمومية', en: 'Balance Sheet', fr: 'Bilan', es: 'Balance General', tr: 'Bilanço', ur: 'بیلنس شیٹ'
+  },
+  cashFlowStatement: {
+    ar: 'قائمة التدفقات النقدية', en: 'Cash Flow Statement', fr: 'État des Flux de Trésorerie', es: 'Estado de Flujos de Efectivo', tr: 'Nakit Akış Tablosu', ur: 'کیش فلو اسٹیٹمنٹ'
+  },
+  operatingActivities: {
+    ar: 'الأنشطة التشغيلية', en: 'Operating Activities', fr: 'Activités Opérationnelles', es: 'Actividades Operativas', tr: 'İşletme Faaliyetleri', ur: 'آپریٹنگ سرگرمیاں'
+  },
+  investingActivities: {
+    ar: 'الأنشطة الاستثمارية', en: 'Investing Activities', fr: 'Activités d\'Investissement', es: 'Actividades de Inversión', tr: 'Yatırım Faaliyetleri', ur: 'سرمایہ کاری کی سرگرمیاں'
+  },
+  financingActivities: {
+    ar: 'الأنشطة التمويلية', en: 'Financing Activities', fr: 'Activités de Financement', es: 'Actividades de Financiación', tr: 'Finansman Faaliyetleri', ur: 'مالیاتی سرگرمیاں'
+  },
+  netCashFlow: {
+    ar: 'صافي التدفق النقدي', en: 'Net Cash Flow', fr: 'Flux de Trésorerie Net', es: 'Flujo de Efectivo Neto', tr: 'Net Nakit Akışı', ur: 'خالص کیش فلو'
+  },
+  cashAtBeginning: {
+    ar: 'النقدية في بداية الفترة', en: 'Cash at Beginning', fr: 'Trésorerie au Début', es: 'Efectivo al Inicio', tr: 'Dönem Başı Nakit', ur: 'شروع میں نقد'
+  },
+  cashAtEnd: {
+    ar: 'النقدية في نهاية الفترة', en: 'Cash at End', fr: 'Trésorerie à la Fin', es: 'Efectivo al Final', tr: 'Dönem Sonu Nakit', ur: 'آخر میں نقد'
+  },
+  increaseInCash: {
+    ar: 'زيادة في النقدية', en: 'Increase in Cash', fr: 'Augmentation de la Trésorerie', es: 'Aumento de Efectivo', tr: 'Nakit Artışı', ur: 'نقد رقم میں اضافہ'
+  },
+  decreaseInCash: {
+    ar: 'نقص في النقدية', en: 'Decrease in Cash', fr: 'Diminution de la Trésorerie', es: 'Disminución de Efectivo', tr: 'Nakit Azalışı', ur: 'نقد رقم میں کمی'
+  },
 };
 
 interface LanguageContextType {

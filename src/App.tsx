@@ -186,7 +186,7 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDocPreviewOpen, setIsDocPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'equation' | 'income'>('equation');
+  const [currentView, setCurrentView] = useState<'equation' | 'income' | 'cashflow'>('equation');
 
   // Auth Effect
   useEffect(() => {
@@ -1020,6 +1020,18 @@ export default function App() {
         >
           <FileText className="w-4 h-4" />
           {t('incomeStatement')}
+        </button>
+        <button
+          onClick={() => setCurrentView('cashflow')}
+          className={cn(
+            "px-6 py-2.5 rounded-xl text-sm font-black transition-all uppercase tracking-widest flex items-center gap-2",
+            currentView === 'cashflow' 
+              ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20" 
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          )}
+        >
+          <ArrowRightLeft className="w-4 h-4" />
+          {t('cashFlowStatement')}
         </button>
       </div>
 
@@ -1998,8 +2010,143 @@ const IncomeStatementView: React.FC<{
     </div>
   );
 }
+function CashFlowView({ transactions, formatCurrency }: { transactions: Transaction[], formatCurrency: (val: number) => string }) {
+  const { t } = useLanguage();
 
-// --- Helper Component: DocPreviewModal ---
+  const cashAccountIds = ['cash', 'bank'];
+  
+  // Categorization lists
+  const investingAccounts = ['fixed_assets', 'land', 'buildings', 'equipment', 'cars', 'furniture', 'intangible_assets', 'investments'];
+  const financingAccounts = ['capital', 'drawings', 'short_term_loans', 'long_term_loans', 'mortgages_payable'];
+
+  let operatingTotal = 0;
+  let investingTotal = 0;
+  let financingTotal = 0;
+
+  transactions.forEach(tx => {
+    const cashImpact = tx.impacts
+      .filter(i => cashAccountIds.includes(i.accountId))
+      .reduce((sum, i) => sum + i.amount, 0);
+
+    if (cashImpact === 0) return;
+
+    const otherImpacts = tx.impacts.filter(i => !cashAccountIds.includes(i.accountId));
+    
+    let category: 'operating' | 'investing' | 'financing' = 'operating';
+
+    if (otherImpacts.some(i => investingAccounts.includes(i.accountId))) {
+      category = 'investing';
+    } else if (otherImpacts.some(i => financingAccounts.includes(i.accountId))) {
+      category = 'financing';
+    }
+
+    if (category === 'operating') operatingTotal += cashImpact;
+    else if (category === 'investing') investingTotal += cashImpact;
+    else if (category === 'financing') financingTotal += cashImpact;
+  });
+
+  const netCashFlow = operatingTotal + investingTotal + financingTotal;
+
+  return (
+    <div id="cash-flow-report" className="glass-card p-8 animate-fade-in space-y-8 bg-slate-900 border border-white/10">
+      <div className="text-center space-y-2 border-b border-white/10 pb-6">
+        <h2 className="text-3xl font-black text-white">{t('cashFlowStatement')}</h2>
+        <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString('ar-SA')}</p>
+      </div>
+
+      <div className="space-y-6">
+        {/* Operating Activities */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-indigo-400 uppercase tracking-widest flex justify-between">
+            <span>{t('operatingActivities')}</span>
+            <span dir="ltr" className={operatingTotal >= 0 ? "text-emerald-400" : "text-rose-400"}>
+              {formatCurrency(operatingTotal)}
+            </span>
+          </h3>
+        </div>
+
+        {/* Investing Activities */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-amber-400 uppercase tracking-widest flex justify-between">
+            <span>{t('investingActivities')}</span>
+            <span dir="ltr" className={investingTotal >= 0 ? "text-emerald-400" : "text-rose-400"}>
+              {formatCurrency(investingTotal)}
+            </span>
+          </h3>
+        </div>
+
+        {/* Financing Activities */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-cyan-400 uppercase tracking-widest flex justify-between">
+            <span>{t('financingActivities')}</span>
+            <span dir="ltr" className={financingTotal >= 0 ? "text-emerald-400" : "text-rose-400"}>
+              {formatCurrency(financingTotal)}
+            </span>
+          </h3>
+        </div>
+
+        {/* Total Net Cash Flow */}
+        <div className="pt-6 border-t border-white/20">
+          <div className={cn(
+            "p-6 rounded-3xl flex justify-between items-center",
+            netCashFlow >= 0 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-rose-500/10 border border-rose-500/20"
+          )}>
+            <span className={cn(
+              "text-2xl font-black uppercase tracking-tighter",
+              netCashFlow >= 0 ? "text-emerald-400" : "text-rose-400"
+            )}>
+              {t('netCashFlow')}
+            </span>
+            <div className="text-right">
+              <div className={cn(
+                "text-3xl font-black font-mono",
+                netCashFlow >= 0 ? "text-emerald-400" : "text-rose-400"
+              )} dir="ltr">
+                {formatCurrency(netCashFlow)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                {netCashFlow >= 0 ? t('increaseInCash') : t('decreaseInCash')}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-4 pt-4">
+        <button 
+          onClick={async () => {
+            const element = document.getElementById('cash-flow-report');
+            if (!element) return;
+            try {
+              toast.info(t('exportingPDF') || "Generating PDF...");
+              const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#0f172a'
+              });
+              const imgData = canvas.toDataURL('image/png');
+              const pdf = new jsPDF('p', 'mm', 'a4');
+              const pdfWidth = pdf.internal.pageSize.getWidth();
+              const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+              pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+              pdf.save(`${t('cashFlowStatement')}.pdf`);
+              toast.success(t('exportSuccess') || "PDF generated successfully");
+            } catch (error) {
+              console.error('Error exporting PDF:', error);
+              toast.error(t('errorExportingPDF'));
+            }
+          }}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-2"
+        >
+          <ArrowRightLeft className="w-5 h-5" />
+          {t('exportPDF')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const IncomeStatementView = ({ transactions, formatCurrency }: { transactions: Transaction[], formatCurrency: (val: number) => string }) => {
 const DocPreviewModal: React.FC<{ isOpen: boolean, url: string | null, onClose: () => void }> = ({ isOpen, url, onClose }) => {
   const { t, dir } = useLanguage();
   if (!isOpen || !url) return null;
