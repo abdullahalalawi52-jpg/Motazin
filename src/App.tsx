@@ -1,15 +1,14 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Trash2, Calculator, CheckCircle2, XCircle, AlertCircle, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, FileText, LogOut, Paperclip, Eye, FileImage, ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Calculator, CheckCircle2, XCircle, AlertCircle, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, FileText, LogOut, Paperclip, Eye, FileImage, ImageIcon, Sun, Moon, Menu, Info, Mail, Phone, MapPin, Send, Heart, Shield, Zap } from 'lucide-react';
+import { useTheme } from './ThemeContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { Toaster, toast } from 'sonner';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { auth, db, googleProvider, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { collection, doc, onSnapshot, setDoc, query, orderBy, writeBatch } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, query, orderBy, writeBatch, addDoc } from 'firebase/firestore';
 import { useLanguage } from './i18n';
 import { FileScanner as PdfScanner } from './PdfScanner';
 import { DepreciationModal } from './DepreciationModal';
@@ -54,6 +53,8 @@ const ACCOUNTS: Account[] = [
   { id: 'cash', name: 'cash', category: 'asset' },
   { id: 'current_assets', name: 'current_assets', category: 'asset' },
   { id: 'fixed_assets', name: 'fixed_assets', category: 'asset' },
+  { id: 'ppe', name: 'ppe', category: 'asset' },
+  { id: 'goodwill', name: 'goodwill', category: 'asset' },
   { id: 'inventory', name: 'inventory', category: 'asset' },
   { id: 'cars', name: 'cars', category: 'asset' },
   { id: 'furniture', name: 'furniture', category: 'asset' },
@@ -69,11 +70,13 @@ const ACCOUNTS: Account[] = [
   { id: 'ap', name: 'ap', category: 'liability' },
   { id: 'short_term_loans', name: 'short_term_loans', category: 'liability' },
   { id: 'long_term_loans', name: 'long_term_loans', category: 'liability' },
+  { id: 'borrowed_money', name: 'borrowed_money', category: 'liability' },
   { id: 'accrued_expenses', name: 'accrued_expenses', category: 'liability' },
   { id: 'unearned_revenues', name: 'unearned_revenues', category: 'liability' },
   { id: 'mortgages_payable', name: 'mortgages_payable', category: 'liability' },
   // Equity
   { id: 'capital', name: 'capital', category: 'equity' },
+  { id: 'share_capital', name: 'share_capital', category: 'equity' },
   { id: 'revenue', name: 'revenue', category: 'equity' },
   { id: 'expenses', name: 'expenses', category: 'equity' },
   { id: 'drawings', name: 'drawings', category: 'equity' },
@@ -157,23 +160,52 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
 
 export default function App() {
   const { t, language, setLanguage, dir } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    const saved = localStorage.getItem('motazin_transactions');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing local transactions", e);
+      }
+    }
+    return INITIAL_TRANSACTIONS;
+  });
   
   // History State for Undo/Redo
-  const [history, setHistory] = useState<Transaction[][]>([[]]);
+  const [history, setHistory] = useState<Transaction[][]>(() => {
+    const saved = localStorage.getItem('motazin_transactions');
+    if (saved) {
+      try {
+        return [JSON.parse(saved)];
+      } catch (e) {}
+    }
+    return [INITIAL_TRANSACTIONS];
+  });
   const [historyIndex, setHistoryIndex] = useState<number>(0);
 
   // Currency State
-  const [currency, setCurrency] = useState('SAR');
+  const [currency, setCurrency] = useState(() => {
+    return localStorage.getItem('motazin_currency') || 'SAR';
+  });
 
   // Budget State
-  const [budgets, setBudgets] = useState<Record<string, number>>({
-    cars: 20000,
-    furniture: 12000,
-    expenses: 5000
+  const [budgets, setBudgets] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('motazin_budgets');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {
+      cars: 20000,
+      furniture: 12000,
+      expenses: 5000
+    };
   });
   const [isEditingBudgets, setIsEditingBudgets] = useState(false);
   
@@ -186,7 +218,13 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDocPreviewOpen, setIsDocPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'equation' | 'income' | 'cashflow'>('equation');
+  const [currentView, setCurrentView] = useState<'equation' | 'income' | 'cashflow' | 'about' | 'contact'>('equation');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+  const currencyRef = useRef<HTMLDivElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Auth Effect
   useEffect(() => {
@@ -195,6 +233,29 @@ export default function App() {
       setIsAuthReady(true);
     });
     return unsubscribe;
+  }, []);
+
+  // Click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(event.target as Node)) {
+        setIsLangOpen(false);
+      }
+      if (currencyRef.current && !currencyRef.current.contains(event.target as Node)) {
+        setIsCurrencyOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Track scroll position for header/nav animations
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Sync User Preferences
@@ -261,8 +322,6 @@ export default function App() {
 
   // Helper to update transactions and history
   const updateTransactions = async (newTransactions: Transaction[], skipHistory = false) => {
-    if (!user) return;
-
     if (!skipHistory) {
       const newHistory = history.slice(0, historyIndex + 1);
       newHistory.push(newTransactions);
@@ -271,6 +330,11 @@ export default function App() {
     }
     
     setTransactions(newTransactions);
+    
+    // Always save to local storage
+    localStorage.setItem('motazin_transactions', JSON.stringify(newTransactions));
+
+    if (!user) return;
 
     try {
       const batch = writeBatch(db);
@@ -705,7 +769,12 @@ export default function App() {
 
   const handleSaveBudgets = async () => {
     setIsEditingBudgets(false);
-    if (!user) return;
+    localStorage.setItem('motazin_budgets', JSON.stringify(budgets));
+    
+    if (!user) {
+      toast.success(t('budgetSavedSuccess'));
+      return;
+    }
     try {
       await setDoc(doc(db, 'users', user.uid), {
         budgets,
@@ -720,6 +789,8 @@ export default function App() {
 
   const handleCurrencyChange = async (newCurrency: string) => {
     setCurrency(newCurrency);
+    localStorage.setItem('motazin_currency', newCurrency);
+    
     if (!user) return;
     try {
       await setDoc(doc(db, 'users', user.uid), {
@@ -784,7 +855,8 @@ export default function App() {
       const originalOverflow = tableElement.style.overflow;
       tableElement.style.maxHeight = 'none';
       tableElement.style.overflow = 'visible';
-
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).default;
       const canvas = await html2canvas(tableElement, {
         scale: 2,
         useCORS: true,
@@ -827,7 +899,7 @@ export default function App() {
   };
 
   if (!isAuthReady) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-800/20 text-white">{t('loading')}</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-slate-800/10 dark:bg-slate-800/20 dark:text-white text-slate-900 font-black tracking-widest">{t('loading')}</div>;
   }
 
   if (!user) {
@@ -835,8 +907,8 @@ export default function App() {
       <div className="min-h-screen flex items-center justify-center p-4 relative z-10" dir={dir}>
         <div className="glass-card p-10 max-w-md w-full text-center animate-fade-in">
           <Calculator className="w-16 h-16 text-indigo-400 mx-auto mb-6 filter drop-shadow-[0_0_15px_rgba(99,102,241,0.8)]" />
-          <h1 className="text-2xl font-bold text-white mb-2">{t('appTitle')}</h1>
-          <p className="text-white mb-8">{t('loginPrompt')}</p>
+          <h1 className="text-2xl font-black mb-2 text-theme-primary">{t('appTitle')}</h1>
+          <p className="mb-8 font-bold text-theme-primary opacity-90">{t('loginPrompt')}</p>
           <button 
             onClick={() => signInWithPopup(auth, googleProvider)}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
@@ -849,8 +921,8 @@ export default function App() {
   }
 
   return (
-    <div className="relative max-w-7xl mx-auto p-4 sm:p-6 lg:p-10 space-y-8 z-10 animate-fade-in">
-      <Toaster position="top-center" richColors theme="dark" dir="rtl" />
+    <div className="relative max-w-[1920px] mx-auto p-4 sm:p-6 lg:p-10 xl:px-12 space-y-8 z-10 animate-fade-in">
+      <Toaster position="top-center" richColors theme={theme === 'system' ? 'system' : theme} dir={dir} />
       
       {isPdfScannerOpen && (
         <PdfScanner 
@@ -918,296 +990,271 @@ export default function App() {
       )}
 
       {/* Header */}
-      <header className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-white/10 pb-6 gap-6">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-indigo-600/50 backdrop-blur-md rounded-xl border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.5)]">
-            <Calculator className="w-6 h-6 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+      <header className="sticky top-4 z-40 glass p-3 md:px-6 md:py-3 mb-8 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.5)] rounded-[2.5rem] mx-4 xl:mx-auto max-w-[1850px] dark:bg-slate-900/60 bg-white/80 dark:border-white/10 border-slate-200 transition-all duration-300">
+        <div className="flex items-center justify-between w-full md:w-auto">
+          <div className="flex items-center gap-4">
+            <div className="p-3.5 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl border border-white/20 shadow-[0_0_20px_rgba(99,102,241,0.4)] group transition-all hover:scale-105 active:scale-95">
+              <Calculator className="w-6 h-6 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] group-hover:rotate-12 transition-transform" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black dark:text-white text-slate-900 tracking-tight drop-shadow-sm">{t('appTitle')}</h1>
+              <p className="text-[11px] sm:text-[13px] mt-0.5 font-black leading-tight dark:text-white/50 text-slate-500 uppercase tracking-widest">{t('appSubtitle')}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">{t('appTitle')}</h1>
-            <p className="text-[15px] text-white mt-1">{t('appSubtitle')}</p>
-          </div>
+          <button 
+            className="md:hidden p-3 dark:text-white/70 text-slate-600 hover:text-indigo-600 hover:bg-white/10 rounded-2xl transition-all active:scale-90"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <XCircle className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/40 border border-white/20 rounded-lg focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
-            <Globe className="w-4 h-4 text-white" />
-            <select 
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as any)}
-              className="bg-transparent text-white text-[15px] font-medium border-none outline-none cursor-pointer focus:ring-0 appearance-none pr-4"
-              dir="ltr"
+
+        <div className={cn(
+          "flex flex-col md:flex-row flex-wrap items-center gap-4 w-full md:w-auto overflow-hidden transition-all duration-500 ease-in-out md:overflow-visible",
+          isMobileMenuOpen ? "max-h-[500px] opacity-100 mt-4 pt-4 border-t dark:border-white/5 border-slate-200" : "max-h-0 opacity-0 md:max-h-[500px] md:opacity-100 md:mt-0 md:border-none md:pt-0 pointer-events-none md:pointer-events-auto"
+        )}>
+          {/* Language Switcher */}
+          <div className="relative" ref={langRef}>
+            <button 
+              onClick={() => setIsLangOpen(!isLangOpen)}
+              className="flex items-center gap-2 pl-9 pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 hover:bg-white/10 dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-slate-800 transition-all shadow-sm group"
             >
-              <option value="ar" className="bg-slate-900 border-none">العربية</option>
-              <option value="en" className="bg-slate-900 border-none">English</option>
-              <option value="fr" className="bg-slate-900 border-none">Français</option>
-              <option value="es" className="bg-slate-900 border-none">Español</option>
-              <option value="tr" className="bg-slate-900 border-none">Türkçe</option>
-              <option value="ur" className="bg-slate-900 border-none">اردو</option>
-            </select>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <Globe className="w-4 h-4 text-indigo-400 group-hover:rotate-12 transition-transform" />
+              </div>
+              <span>{language === 'ar' ? 'العربية' : language === 'en' ? 'English' : language === 'fr' ? 'Français' : language === 'es' ? 'Español' : language === 'tr' ? 'Türkçe' : 'اردو'}</span>
+            </button>
+            
+            {isLangOpen && (
+              <div className="absolute top-full left-0 mt-2 w-40 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden animate-fade-in py-1">
+                {[
+                  { id: 'ar', label: 'العربية' },
+                  { id: 'en', label: 'English' },
+                  { id: 'fr', label: 'Français' },
+                  { id: 'es', label: 'Español' },
+                  { id: 'tr', label: 'Türkçe' },
+                  { id: 'ur', label: 'اردو' }
+                ].map((lang) => (
+                  <button
+                    key={lang.id}
+                    onClick={() => {
+                      setLanguage(lang.id as any);
+                      setIsLangOpen(false);
+                    }}
+                    className={cn(
+                      "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-indigo-500/10",
+                      language === lang.id ? "text-indigo-500 bg-indigo-500/5" : "dark:text-white/80 text-slate-700"
+                    )}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2 mr-4 bg-slate-800/20 px-3 py-1.5 rounded-lg border border-white/10">
-            <img src={user.photoURL || ''} alt="Profile" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
-            <span className="text-[15px] font-medium text-white">{user.displayName}</span>
+
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="p-2.5 dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 rounded-2xl dark:hover:bg-white/10 hover:bg-slate-200 hover:border-indigo-500/50 transition-all group shadow-inner"
+            title={t('theme')}
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-5 h-5 text-amber-400 group-hover:rotate-45 transition-transform" />
+            ) : (
+              <Moon className="w-5 h-5 text-indigo-400 group-hover:-rotate-12 transition-transform" />
+            )}
+          </button>
+
+          <div className="h-8 w-px dark:bg-white/5 bg-slate-200 hidden md:block mx-1"></div>
+
+          {/* User Profile Area */}
+          <div className="flex items-center gap-3 dark:bg-white/5 bg-slate-100 px-2 py-1.5 rounded-[1.25rem] border dark:border-white/5 border-slate-200 dark:hover:bg-white/10 hover:bg-slate-200 transition-colors shadow-inner group/user">
+            <div className="relative">
+              <img src={user.photoURL || ''} alt="Profile" className="w-8 h-8 rounded-full ring-2 dark:ring-white/10 ring-slate-200 group-hover/user:ring-indigo-500/50 transition-all" referrerPolicy="no-referrer" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 dark:border-slate-900 border-white rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+            </div>
+            <div className="hidden lg:block leading-none">
+              <span className="text-[13px] font-black dark:text-white text-slate-900 block">{user.displayName}</span>
+              <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">{t('pro_account') || 'PRO account'}</span>
+            </div>
             <button 
               onClick={() => signOut(auth)}
-              className="text-white hover:text-rose-600 transition-colors mr-2"
+              className="dark:text-white/40 text-slate-400 hover:text-rose-400 dark:hover:bg-rose-500/10 hover:bg-rose-50 p-2 rounded-xl transition-all"
               title={t('logout')}
             >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex items-center gap-1 bg-slate-800/30 px-2 py-1.5 rounded-md border border-white/10 ml-2">
-            <Globe className="w-4 h-4 text-white" />
-            <select 
-              value={currency}
-              onChange={(e) => handleCurrencyChange(e.target.value)}
-              className="bg-transparent text-[15px] font-medium text-white outline-none cursor-pointer"
-              dir="rtl"
+
+          {/* Currency Switcher */}
+          <div className="relative" ref={currencyRef}>
+            <button 
+              onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
+              className="flex items-center gap-2 pl-9 pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 hover:bg-white/10 dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-slate-800 transition-all shadow-sm group"
             >
-              {CURRENCIES.map(c => (
-                <option key={c.code} value={c.code} className="bg-slate-800 text-white">{t(c.name)} ({c.symbol})</option>
-              ))}
-            </select>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <Globe className="w-4 h-4 text-emerald-400 group-hover:rotate-12 transition-transform" />
+              </div>
+              <span dir="rtl">{CURRENCIES.find(c => c.code === currency)?.symbol} ({currency})</span>
+            </button>
+            
+            {isCurrencyOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden animate-fade-in py-1 max-h-60 overflow-y-auto custom-scrollbar">
+                {CURRENCIES.map((c) => (
+                  <button
+                    key={c.code}
+                    onClick={() => {
+                      handleCurrencyChange(c.code);
+                      setIsCurrencyOpen(false);
+                    }}
+                    className={cn(
+                      "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-emerald-500/10",
+                      currency === c.code ? "text-emerald-500 bg-emerald-500/5" : "dark:text-white/80 text-slate-700"
+                    )}
+                    dir="rtl"
+                  >
+                    {t(c.name)} ({c.symbol})
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <button 
-            onClick={handleUndo}
-            disabled={historyIndex === 0}
-            className="p-2 text-white hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-white"
-            title={t('undo')}
-          >
-            <Undo2 className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={handleRedo}
-            disabled={historyIndex === history.length - 1}
-            className="p-2 text-white hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-white"
-            title={t('redo')}
-          >
-            <Redo2 className="w-5 h-5" />
-          </button>
-          <div className="w-px h-6 bg-slate-200 mx-1"></div>
-          <button 
-            onClick={handleClearAll}
-            className="text-[15px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-md transition-colors"
-          >
-            {t('clearAll')}
-          </button>
+
+          <div className="hidden lg:flex items-center gap-2 ml-2">
+            <div className="w-px h-8 dark:bg-white/10 bg-slate-200 mx-2"></div>
+            <div className="flex items-center dark:bg-black/20 bg-slate-100 p-1 rounded-xl border dark:border-white/5 border-slate-200">
+              <button 
+                onClick={handleUndo}
+                disabled={historyIndex === 0}
+                className="p-2 dark:text-white/60 text-slate-500 dark:hover:text-white hover:text-indigo-600 dark:hover:bg-white/10 hover:bg-white rounded-lg transition-all disabled:opacity-20 disabled:cursor-not-allowed group/btn"
+                title={t('undo')}
+              >
+                <Undo2 className="w-4.5 h-4.5 group-hover/btn:-rotate-45 transition-transform" />
+              </button>
+              <button 
+                onClick={handleRedo}
+                disabled={historyIndex === history.length - 1}
+                className="p-2 dark:text-white/60 text-slate-500 dark:hover:text-white hover:text-indigo-600 dark:hover:bg-white/10 hover:bg-white rounded-lg transition-all disabled:opacity-20 disabled:cursor-not-allowed group/btn"
+                title={t('redo')}
+              >
+                <Redo2 className="w-4.5 h-4.5 group-hover/btn:rotate-45 transition-transform" />
+              </button>
+            </div>
+            <button 
+              onClick={handleClearAll}
+              className="text-[11px] font-bold text-rose-400 hover:text-white hover:bg-rose-500 px-4 py-2.5 rounded-xl border border-rose-500/20 transition-all uppercase tracking-widest flex items-center gap-2 active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              {t('clearAll')}
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-1 bg-slate-800/20 p-1.5 rounded-2xl border border-white/10 w-fit mx-auto md:mx-0">
-        <button
-          onClick={() => setCurrentView('equation')}
-          className={cn(
-            "px-6 py-2.5 rounded-xl text-sm font-black transition-all uppercase tracking-widest flex items-center gap-2",
-            currentView === 'equation' 
-              ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20" 
-              : "text-slate-400 hover:text-white hover:bg-white/5"
-          )}
-        >
-          <Calculator className="w-4 h-4" />
-          {t('balanceSheet')}
-        </button>
-        <button
-          onClick={() => setCurrentView('income')}
-          className={cn(
-            "px-6 py-2.5 rounded-xl text-sm font-black transition-all uppercase tracking-widest flex items-center gap-2",
-            currentView === 'income' 
-              ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20" 
-              : "text-slate-400 hover:text-white hover:bg-white/5"
-          )}
-        >
-          <FileText className="w-4 h-4" />
-          {t('incomeStatement')}
-        </button>
-        <button
-          onClick={() => setCurrentView('cashflow')}
-          className={cn(
-            "px-6 py-2.5 rounded-xl text-sm font-black transition-all uppercase tracking-widest flex items-center gap-2",
-            currentView === 'cashflow' 
-              ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20" 
-              : "text-slate-400 hover:text-white hover:bg-white/5"
-          )}
-        >
-          <ArrowRightLeft className="w-4 h-4" />
-          {t('cashFlowStatement')}
-        </button>
+      <div className={cn(
+        "sticky z-30 transition-all duration-500 ease-in-out px-4",
+        isScrolled ? "top-[1.5rem]" : "top-[100px]",
+        "flex justify-center w-full mb-8"
+      )}>
+        <div className={cn(
+          "glass p-1.5 rounded-[2rem] border transition-all duration-500 shadow-2xl flex items-center gap-1 overflow-x-auto custom-scrollbar no-scrollbar max-w-full md:max-w-fit",
+          isScrolled 
+            ? "dark:bg-slate-900/90 bg-white/90 dark:border-white/20 border-slate-300 scale-95 shadow-indigo-500/10" 
+            : "dark:bg-slate-800/60 bg-white/60 dark:border-white/10 border-slate-200"
+        )}>
+          <button
+            onClick={() => setCurrentView('equation')}
+            className={cn(
+              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              currentView === 'equation' 
+                ? "text-white" 
+                : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
+            )}
+          >
+            {currentView === 'equation' && (
+              <div className="absolute inset-0 bg-indigo-600 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
+            )}
+            <Calculator className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'equation' ? "text-white" : "text-indigo-400")} />
+            <span className="relative z-10">{t('balanceSheet')}</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentView('income')}
+            className={cn(
+              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              currentView === 'income' 
+                ? "text-white" 
+                : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
+            )}
+          >
+            {currentView === 'income' && (
+              <div className="absolute inset-0 bg-indigo-600 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
+            )}
+            <FileText className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'income' ? "text-white" : "text-indigo-400")} />
+            <span className="relative z-10">{t('incomeStatement')}</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentView('cashflow')}
+            className={cn(
+              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              currentView === 'cashflow' 
+                ? "text-white" 
+                : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
+            )}
+          >
+            {currentView === 'cashflow' && (
+              <div className="absolute inset-0 bg-indigo-600 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
+            )}
+            <ArrowRightLeft className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'cashflow' ? "text-white" : "text-indigo-400")} />
+            <span className="relative z-10">{t('cashFlowStatement')}</span>
+          </button>
+
+          <div className="w-px h-6 dark:bg-white/10 bg-slate-200 mx-1 hidden md:block" />
+
+          <button
+            onClick={() => setCurrentView('about')}
+            className={cn(
+              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              currentView === 'about' 
+                ? "text-white" 
+                : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
+            )}
+          >
+            {currentView === 'about' && (
+              <div className="absolute inset-0 bg-emerald-600 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
+            )}
+            <Info className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'about' ? "text-white" : "text-emerald-400")} />
+            <span className="relative z-10">{t('aboutUs')}</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentView('contact')}
+            className={cn(
+              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              currentView === 'contact' 
+                ? "text-white" 
+                : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
+            )}
+          >
+            {currentView === 'contact' && (
+              <div className="absolute inset-0 bg-emerald-600 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
+            )}
+            <Mail className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'contact' ? "text-white" : "text-emerald-400")} />
+            <span className="relative z-10">{t('contactUs')}</span>
+          </button>
+        </div>
       </div>
 
       {currentView === 'equation' ? (
         <>
-          {/* Charts Section */}
-      {transactions.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Asset Distribution Pie Chart */}
-          <div className="glass-card p-6">
-            <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-              <Target className="w-5 h-5 text-indigo-600" />
-              {t('assetDistribution')}
-            </h2>
-            <div className="h-[300px] w-full">
-              {assetChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={assetChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {assetChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => new Intl.NumberFormat('ar-SA', { style: 'currency', currency }).format(value)}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                    <Legend verticalAlign="bottom" height={36} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-white">
-                  {t('noAssets')}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Income vs Expenses Bar Chart */}
-          <div className="glass-card p-6">
-            <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-              <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
-              {t('incomeExpenses')}
-            </h2>
-            <div className="h-[300px] w-full">
-              {incomeExpenseData.some(d => d.amount > 0) ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={incomeExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#64748b' }}
-                      tickFormatter={(value) => new Intl.NumberFormat('ar-SA', { notation: "compact", compactDisplay: "short" }).format(value)}
-                    />
-                    <Tooltip 
-                      formatter={(value: number) => new Intl.NumberFormat('ar-SA', { style: 'currency', currency }).format(value)}
-                      cursor={{ fill: '#f1f5f9' }}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                    <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                      {incomeExpenseData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.name === t('revenue') ? '#10b981' : '#ef4444'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-white">
-                  {t('noIncomeExpenses')}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Financial Insights Section */}
-      {transactions.length > 0 && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-600/20 rounded-lg">
-              <ArrowRightLeft className="w-5 h-5 text-indigo-400" />
-            </div>
-            <h2 className="text-xl font-bold text-white">{t('financialInsights')}</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Current Ratio Card */}
-            <div className="glass-card p-6 border-l-4 border-indigo-400">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-slate-400 text-sm font-medium">{t('currentRatio')}</span>
-                <div className={cn(
-                  "px-2 py-1 rounded text-[10px] font-bold uppercase",
-                  insights.currentRatio >= 1.5 ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
-                )}>
-                  {insights.currentRatio >= 1.5 ? t('healthyLiquidity') : t('lowLiquidity')}
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-white mb-1">{insights.currentRatio.toFixed(2)}</div>
-              <p className="text-xs text-slate-500">{t('currentRatioDesc')}</p>
-            </div>
-
-            {/* Debt-to-Equity Card */}
-            <div className="glass-card p-6 border-l-4 border-amber-400">
-              <span className="text-slate-400 text-sm font-medium block mb-2">{t('debtToEquity')}</span>
-              <div className="text-3xl font-bold text-white mb-1">{insights.debtToEquity.toFixed(2)}</div>
-              <p className="text-xs text-slate-500">{t('debtToEquityDesc')}</p>
-            </div>
-
-            {/* Net Profit Card */}
-            <div className="glass-card p-6 border-l-4 border-emerald-400">
-              <span className="text-slate-400 text-sm font-medium block mb-2">{t('netProfit')}</span>
-              <div className={cn(
-                "text-3xl font-bold mb-1",
-                insights.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"
-              )}>
-                {formatCurrency(insights.netProfit)}
-              </div>
-              <p className="text-xs text-slate-500">Total revenue minus expenses</p>
-            </div>
-          </div>
-
-          {/* Profit Trend Chart */}
-          <div className="glass-card p-6">
-            <h3 className="text-lg font-semibold text-white mb-6">{t('monthlyProfitTrend')}</h3>
-            <div className="h-[300px] w-full">
-              {profitTrendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={profitTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#94a3b8', fontSize: 12 }}
-                      tickFormatter={(value) => new Intl.NumberFormat('en-US', { notation: "compact" }).format(value)}
-                    />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
-                      itemStyle={{ color: '#818cf8' }}
-                      formatter={(value: number) => formatCurrency(value)}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="profit" 
-                      stroke="#818cf8" 
-                      strokeWidth={3} 
-                      dot={{ fill: '#818cf8', strokeWidth: 2, r: 4 }} 
-                      activeDot={{ r: 6, strokeWidth: 0 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-slate-500">{t('noIncomeExpenses')}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Left Column: Form & Status Dashboard */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 space-y-6 animate-fade-in [animation-delay:400ms]">
           <div className="glass-card p-6 border-t-4 border-indigo-500 shadow-2xl">
-            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-3">
+            <h2 className="text-xl font-bold text-theme-primary mb-6 flex items-center gap-3">
               <div className="p-2 bg-indigo-500/20 rounded-xl">
                 {editingTransactionId ? (
                   <Edit2 className="w-5 h-5 text-indigo-400" />
@@ -1222,7 +1269,7 @@ export default function App() {
               {/* Date & Description Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="col-span-1">
-                  <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">{t('date')}</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('date')}</label>
                   <input 
                     type="text" 
                     value={date}
@@ -1232,7 +1279,7 @@ export default function App() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">{t('description')}</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('description')}</label>
                   <input 
                     type="text" 
                     required
@@ -1246,7 +1293,7 @@ export default function App() {
 
               {/* Document Attachment Section */}
               <div className="space-y-2">
-                <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('attachDocument')}</label>
+                <label className="block text-[11px] font-bold dark:text-slate-400 text-black uppercase tracking-widest ml-1">{t('attachDocument')}</label>
                 <div className="flex items-center gap-3">
                   <label className="flex-1 flex items-center justify-center gap-3 px-4 py-4 bg-slate-900/40 border-2 border-white/5 border-dashed rounded-2xl hover:bg-slate-800/60 hover:border-indigo-500/30 cursor-pointer transition-all group overflow-hidden relative">
                     <div className="absolute inset-0 bg-indigo-500/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
@@ -1273,16 +1320,16 @@ export default function App() {
                     onChange={(e) => setIsRecurring(e.target.checked)}
                     className="w-5 h-5 rounded-lg border-white/10 bg-slate-900 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
                   />
-                  <span className="text-sm font-black text-white group-hover:text-indigo-300 transition-colors uppercase tracking-tight">{t('recurringTransaction')}</span>
+                  <span className="text-sm font-bold dark:text-white text-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors uppercase tracking-tight">{t('recurringTransaction')}</span>
                 </label>
                 
                 {isRecurring && (
                   <div className="flex items-center gap-3 animate-fade-in pl-2 border-l border-white/10">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('repeatsEveryLabel')}</span>
+                    <span className="text-[10px] font-bold dark:text-slate-400 text-black uppercase tracking-widest">{t('repeatsEveryLabel')}</span>
                     <select
                       value={recurrenceInterval}
                       onChange={(e) => setRecurrenceInterval(e.target.value as any)}
-                      className="px-4 py-2 border border-white/10 rounded-xl text-xs font-black focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-900 text-white cursor-pointer hover:bg-slate-800 transition-colors"
+                      className="px-4 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900 dark:text-white text-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       <option value="daily">{t('day')}</option>
                       <option value="weekly">{t('week')}</option>
@@ -1296,11 +1343,11 @@ export default function App() {
               {/* Account Impacts Section */}
               <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('impactOnAccounts')}</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest ml-1 text-theme-muted">{t('impactOnAccounts')}</label>
                   <button 
                     type="button" 
                     onClick={handleAddImpact}
-                    className="text-[10px] font-black text-indigo-400 hover:text-white flex items-center gap-2 transition-all bg-indigo-500/10 hover:bg-indigo-500 px-4 py-2.5 rounded-xl border border-indigo-500/20 uppercase tracking-tighter"
+                    className="text-[10px] font-bold text-indigo-400 hover:text-white flex items-center gap-2 transition-all bg-indigo-500/10 hover:bg-indigo-500 px-4 py-2.5 rounded-xl border border-indigo-500/20 uppercase tracking-tighter"
                   >
                     <Plus className="w-4 h-4" /> {t('addAccount')}
                   </button>
@@ -1314,7 +1361,7 @@ export default function App() {
                         type="button"
                         onClick={() => handleRemoveImpact(idx)}
                         disabled={impacts.length <= 2}
-                        className="absolute top-4 right-4 p-2 text-slate-500 hover:text-rose-400 disabled:opacity-0 transition-all opacity-100 sm:opacity-0 group-hover:opacity-100 z-10"
+                        className="absolute top-6 left-4 rtl:left-auto rtl:right-4 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all z-10"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -1322,11 +1369,11 @@ export default function App() {
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                         {/* Account Picker */}
                         <div className="md:col-span-12 lg:col-span-7 space-y-2">
-                          <label className="text-[9px] uppercase font-black text-indigo-400/60 tracking-widest block ml-1">{t('accountName')}</label>
+                          <label className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('accountName')}</label>
                           <select 
                             value={impact.accountId}
                             onChange={e => handleImpactChange(idx, 'accountId', e.target.value)}
-                            className="w-full px-4 py-3 border border-white/5 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-950/60 text-white font-bold cursor-pointer transition-colors"
+                            className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold cursor-pointer transition-colors"
                           >
                             <optgroup label={t('assets')} className="bg-slate-900 text-indigo-400 font-bold uppercase text-[10px]">
                               {ACCOUNTS.filter(a => a.category === 'asset').map(a => (
@@ -1348,20 +1395,20 @@ export default function App() {
                         
                         {/* Value Input Area */}
                         <div className="md:col-span-12 lg:col-span-5 space-y-2">
-                          <label className="text-[9px] uppercase font-black text-indigo-400/60 tracking-widest block ml-1">{t('impactValue')}</label>
+                          <label className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('impactValue')}</label>
                           {(() => {
-                            const amount = impact.amount || 0;
+                            const amount = typeof impact.amount === 'number' ? impact.amount : 0;
                             const isNeg = amount < 0 || Object.is(amount, -0);
                             return (
                               <div className="flex flex-col gap-3">
                                 {/* Segmented Debit/Credit Control */}
-                                <div className="flex bg-slate-950 p-1.5 rounded-2xl border border-white/5 w-full shadow-inner">
+                                <div className="flex dark:bg-slate-950 bg-slate-100 p-1.5 rounded-2xl border dark:border-white/5 border-slate-200 w-full shadow-inner">
                                   <button
                                     type="button"
                                     onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount))}
                                     className={cn(
-                                      "flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest",
-                                      !isNeg ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]" : "text-slate-500 hover:text-white"
+                                      "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
+                                      !isNeg ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
                                     )}
                                   >
                                     {t('debit')}
@@ -1370,8 +1417,8 @@ export default function App() {
                                     type="button"
                                     onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount) === 0 ? -0 : -Math.abs(amount))}
                                     className={cn(
-                                      "flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest",
-                                      isNeg ? "bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-[1.02]" : "text-slate-500 hover:text-white"
+                                      "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
+                                      isNeg ? "bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
                                     )}
                                   >
                                     {t('credit')}
@@ -1390,12 +1437,12 @@ export default function App() {
                                     }}
                                     placeholder="0.00"
                                     className={cn(
-                                      "w-full pl-4 pr-14 py-3.5 border border-white/5 rounded-2xl text-xl focus:ring-2 focus:ring-indigo-500 outline-none text-right font-mono transition-all bg-slate-950/80 shadow-2xl",
-                                      isNeg ? "text-rose-400 focus:border-rose-500/50" : "text-emerald-400 focus:border-emerald-500/50"
+                                      "w-full pl-4 pr-14 py-3.5 border dark:border-white/5 border-slate-200 rounded-2xl text-xl focus:ring-2 focus:ring-indigo-500 outline-none text-right font-mono transition-all dark:bg-slate-950/80 bg-white shadow-2xl",
+                                      isNeg ? "dark:text-rose-400 text-rose-600 focus:border-rose-500/50" : "dark:text-emerald-400 text-emerald-600 focus:border-emerald-500/50"
                                     )}
                                     dir="ltr"
                                   />
-                                  <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-500 pointer-events-none group-focus-within/input:text-white transition-colors uppercase">
+                                  <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-bold pointer-events-none group-focus-within/input:dark:text-white group-focus-within/input:text-indigo-600 transition-colors uppercase dark:opacity-50 opacity-40">
                                     {currency}
                                   </span>
                                 </div>
@@ -1414,7 +1461,7 @@ export default function App() {
                 <button 
                   type="submit"
                   disabled={isUploading}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-2xl shadow-indigo-600/30 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition-all shadow-2xl shadow-indigo-600/30 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group"
                 >
                   {isUploading ? (
                     <><div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> {t('uploading')}</>
@@ -1429,7 +1476,7 @@ export default function App() {
                   <button 
                     type="button"
                     onClick={handleCancelEdit}
-                    className="px-8 bg-slate-800/60 hover:bg-slate-700 text-white font-bold py-4 rounded-2xl transition-all border border-white/10 uppercase tracking-widest text-xs"
+                    className="px-8 bg-slate-200 dark:bg-slate-800/60 hover:bg-slate-300 dark:hover:bg-slate-700 dark:text-white text-slate-700 font-bold py-4 rounded-2xl transition-all border border-slate-300 dark:border-white/10 uppercase tracking-widest text-xs"
                   >
                     {t('cancel')}
                   </button>
@@ -1441,7 +1488,9 @@ export default function App() {
           {/* Balance Equation Status Visualization */}
           <div className={cn(
             "rounded-[2.5rem] shadow-2xl border-2 p-8 transition-all duration-700 backdrop-blur-3xl overflow-hidden relative",
-            totals.isBalanced ? "bg-emerald-950/20 border-emerald-500/10" : "bg-rose-950/20 border-rose-500/10"
+            totals.isBalanced 
+              ? "dark:bg-emerald-950/20 bg-emerald-50 border-emerald-500/20" 
+              : "dark:bg-rose-950/20 bg-rose-50 border-rose-500/20"
           )}>
             {/* Background Glow */}
             <div className={cn(
@@ -1459,27 +1508,27 @@ export default function App() {
               
               <div className="flex-1 text-center md:text-left">
                 <h3 className={cn(
-                  "text-2xl font-black mb-2 tracking-tight",
+                  "text-2xl font-bold mb-2 tracking-tight",
                   totals.isBalanced ? "text-emerald-400" : "text-rose-400"
                 )}>
                   {totals.isBalanced ? t('equationBalanced') : t('equationUnbalanced')}
                 </h3>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-                  <div className="bg-slate-950/40 p-5 rounded-3xl border border-white/5 group hover:border-indigo-500/30 transition-all">
-                    <span className="text-[10px] uppercase font-black text-slate-500 block mb-2 tracking-widest">{t('totalAssets')}</span>
-                    <span className="text-xl font-black text-white" dir="ltr">{formatCurrency(totals.totalAssets)}</span>
+                  <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm">
+                    <span className="text-[10px] uppercase font-bold block mb-2 tracking-widest text-theme-muted">{t('totalAssets')}</span>
+                    <span className="text-xl font-bold dark:text-white text-slate-900" dir="ltr">{formatCurrency(totals.totalAssets)}</span>
                   </div>
-                  <div className="bg-slate-950/40 p-5 rounded-3xl border border-white/5 group hover:border-indigo-500/30 transition-all">
-                    <span className="text-[10px] uppercase font-black text-slate-500 block mb-2 tracking-widest">{t('totalLiabilitiesEquity')}</span>
-                    <span className="text-xl font-black text-white" dir="ltr">{formatCurrency(totals.totalLiabilities + totals.totalEquity)}</span>
+                  <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm">
+                    <span className="text-[10px] uppercase font-bold block mb-2 tracking-widest text-theme-muted">{t('totalLiabilitiesEquity')}</span>
+                    <span className="text-xl font-bold dark:text-white text-slate-900" dir="ltr">{formatCurrency(totals.totalLiabilities + totals.totalEquity)}</span>
                   </div>
                 </div>
                 
                 {!totals.isBalanced && (
-                  <div className="mt-6 p-5 bg-rose-500/10 rounded-3xl border border-rose-500/20 flex flex-col sm:flex-row justify-between items-center gap-2 group hover:bg-rose-500/20 transition-all">
-                    <span className="text-xs font-black text-rose-300 uppercase tracking-widest">{t('difference')}</span>
-                    <span className="text-2xl font-black text-rose-400 drop-shadow-lg" dir="ltr">{formatCurrency(Math.abs(totals.totalAssets - (totals.totalLiabilities + totals.totalEquity)))}</span>
+                  <div className="mt-6 p-5 dark:bg-rose-500/10 bg-white rounded-3xl border dark:border-rose-500/20 border-rose-200 flex flex-col sm:flex-row justify-between items-center gap-2 group hover:dark:bg-rose-500/20 hover:bg-rose-50 transition-all shadow-sm">
+                    <span className="text-xs font-bold dark:text-rose-300 text-rose-500 uppercase tracking-widest">{t('difference')}</span>
+                    <span className="text-2xl font-bold text-rose-400 drop-shadow-lg" dir="ltr">{formatCurrency(Math.abs(totals.totalAssets - (totals.totalLiabilities + totals.totalEquity)))}</span>
                   </div>
                 )}
               </div>
@@ -1488,13 +1537,13 @@ export default function App() {
           {/* Budget Status Card */}
           <div className="glass-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-theme-primary flex items-center gap-2">
                 <Target className="w-5 h-5 text-indigo-600" />
                 {t('budgetAlerts')}
               </h2>
               <button
                 onClick={() => isEditingBudgets ? handleSaveBudgets() : setIsEditingBudgets(true)}
-                className="text-white hover:text-indigo-600 transition-colors p-1"
+                className="dark:text-white text-slate-500 hover:text-indigo-600 transition-colors p-1"
                 title={isEditingBudgets ? t('save') : t('editBudgets')}
               >
                 {isEditingBudgets ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
@@ -1521,7 +1570,7 @@ export default function App() {
                     <div className="flex justify-between items-center mb-2">
                       <h3 className={cn(
                         "text-[15px] font-bold flex items-center gap-1.5",
-                        catIsOverBudget ? "text-rose-800" : catIsApproachingBudget ? "text-amber-800" : "text-white"
+                        catIsOverBudget ? "text-rose-800" : catIsApproachingBudget ? "text-amber-800" : "dark:text-white text-slate-900"
                       )}>
                         {t(category)}
                         {catIsOverBudget && <AlertCircle className="w-4 h-4 text-rose-500" />}
@@ -1529,7 +1578,7 @@ export default function App() {
                       </h3>
                       <span className={cn(
                         "text-sm font-medium font-bold",
-                        catIsOverBudget ? "text-rose-700" : catIsApproachingBudget ? "text-amber-700" : "text-white"
+                        catIsOverBudget ? "text-rose-700" : catIsApproachingBudget ? "text-amber-700" : "dark:text-white text-slate-900"
                       )} dir="ltr">
                         {formatCurrency(absCatSpent)} {catAllocated > 0 && `/ ${formatCurrency(catAllocated)}`}
                       </span>
@@ -1565,7 +1614,7 @@ export default function App() {
                             <div className="flex justify-between items-center text-[15px]">
                               <span className={cn(
                                 "font-medium text-sm font-medium flex items-center gap-1",
-                                isOverBudget ? "text-rose-700" : isApproachingBudget ? "text-amber-700" : "text-white"
+                                isOverBudget ? "text-rose-700" : isApproachingBudget ? "text-amber-700" : "dark:text-white text-slate-900"
                               )}>
                                 {t(account.name)}
                                 {isOverBudget && <AlertCircle className="w-3 h-3 text-rose-500" />}
@@ -1581,8 +1630,8 @@ export default function App() {
                                   placeholder="0"
                                 />
                               ) : (
-                                <span className="text-white text-[11px]" dir="ltr">
-                                  <span className={cn("font-bold", isOverBudget ? 'text-rose-600' : isApproachingBudget ? 'text-amber-600' : 'text-white')}>
+                                <span className="dark:text-white text-slate-900 text-[11px]" dir="ltr">
+                                  <span className={cn("font-bold", isOverBudget ? 'text-rose-600' : isApproachingBudget ? 'text-amber-600' : 'dark:text-white text-slate-900')}>
                                     {formatCurrency(spent)}
                                   </span>
                                   {allocated > 0 && ` / ${formatCurrency(allocated)}`}
@@ -1616,13 +1665,13 @@ export default function App() {
           <div className="glass-card overflow-hidden flex flex-col h-full">
             <div className="p-4 border-b border-white/10 bg-slate-800/20 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-4">
-                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <ArrowRightLeft className="w-5 h-5 text-white" />
+                <h2 className="text-lg font-semibold text-theme-primary flex items-center gap-2">
+                  <ArrowRightLeft className="w-5 h-5 text-theme-primary" />
                   {t('transactionHistory')}
                 </h2>
                 <button 
                   onClick={() => setIsPdfScannerOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 rounded-lg transition-colors border border-indigo-500/30 shadow-sm"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium dark:bg-indigo-600/20 bg-indigo-100 dark:text-indigo-300 text-indigo-900 hover:bg-indigo-200 dark:hover:bg-indigo-600/30 rounded-lg transition-colors border dark:border-indigo-500/30 border-indigo-200 shadow-sm"
                   title={t('importFiles') || 'Import Files/Images'}
                 >
                   <FileText className="w-4 h-4" />
@@ -1630,7 +1679,7 @@ export default function App() {
                 </button>
                 <button 
                   onClick={() => setIsDepreciationModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-600/20 text-amber-300 hover:bg-amber-600/30 rounded-lg transition-colors border border-amber-500/30 shadow-sm"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium dark:bg-amber-600/20 bg-amber-100 dark:text-amber-300 text-amber-900 hover:bg-amber-200 dark:hover:bg-amber-600/30 rounded-lg transition-colors border dark:border-amber-500/30 border-amber-200 shadow-sm"
                   title={t('depreciationCalc')}
                 >
                   <Calculator className="w-4 h-4" />
@@ -1651,11 +1700,11 @@ export default function App() {
                   )}
                   <button
                     onClick={handleExportCSV}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-[15px] font-medium text-white bg-slate-800/40 border border-white/10 rounded-lg hover:bg-slate-800/20 hover:text-indigo-600 transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-indigo-600/50 hover:bg-indigo-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
                     title={t('exportCSV')}
                   >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    CSV
+                    <FileSpreadsheet className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-indigo-600" />
+                    <span className="sr-only sm:not-sr-only">{t('exportCSV')}</span>
                   </button>
                   <button
                     onClick={handleExportPDF}
@@ -1680,8 +1729,8 @@ export default function App() {
                 <table className="w-full text-[15px] text-right border-collapse">
                   <thead className="sticky top-0 z-20 text-white shadow-sm ring-1 ring-slate-200">
                     {/* Category Headers */}
-                    <tr>
-                      <th className="p-3 border-l border-white/10 w-10 bg-slate-800/30 text-center">
+                    <tr className="border-b border-white/10 ring-1 ring-white/5">
+                      <th className="p-4 border-l border-white/5 w-10 bg-slate-900/40 text-center">
                         <input 
                           type="checkbox" 
                           checked={transactions.length > 0 && selectedTransactions.size === transactions.length}
@@ -1689,51 +1738,51 @@ export default function App() {
                           className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
                       </th>
-                      <th className="p-3 border-l border-white/10 font-semibold w-20 bg-slate-800/30">{t('date')}</th>
-                      <th className="p-3 border-l border-white/10 font-semibold min-w-[200px] bg-slate-800/30">{t('description')}</th>
+                      <th className="p-4 border-l border-white/5 font-bold text-[11px] uppercase tracking-widest w-24 bg-slate-900/40">{t('date')}</th>
+                      <th className="p-4 border-l border-white/5 font-bold text-[11px] uppercase tracking-widest min-w-[200px] bg-slate-900/40">{t('description')}</th>
                       
                       {assets.length > 0 && (
-                        <th colSpan={assets.length} className="p-3 border-l border-white/10 font-bold text-center bg-indigo-100 text-indigo-900">
+                        <th colSpan={assets.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-indigo-500/10 text-indigo-300">
                           {t('assets')}
                         </th>
                       )}
                       
                       {liabilities.length > 0 && (
-                        <th colSpan={liabilities.length} className="p-3 border-l border-white/10 font-bold text-center bg-amber-100 text-amber-900">
+                        <th colSpan={liabilities.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-amber-500/10 text-amber-300">
                           {t('liabilities')}
                         </th>
                       )}
                       
                       {equities.length > 0 && (
-                        <th colSpan={equities.length} className="p-3 border-l border-white/10 font-bold text-center bg-emerald-100 text-emerald-900">
+                        <th colSpan={equities.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-emerald-500/10 text-emerald-300">
                           {t('equity')}
                         </th>
                       )}
-                      <th className="p-3 w-10 bg-slate-800/30"></th>
+                      <th className="p-3 w-10 bg-slate-900/40"></th>
                     </tr>
                     {/* Account Headers */}
-                    <tr className="border-b border-white/10">
-                      <th className="p-2 border-l border-white/10 bg-slate-800/20"></th>
-                      <th className="p-2 border-l border-white/10 bg-slate-800/20"></th>
-                      <th className="p-2 border-l border-white/10 bg-slate-800/20"></th>
+                    <tr className="border-b border-white/5">
+                      <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
+                      <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
+                      <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
                       
                       {assets.map(a => (
-                        <th key={a.id} className="p-2 border-l border-white/10 font-medium text-center text-indigo-800 bg-indigo-50">{t(a.name)}</th>
+                        <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center text-indigo-400 bg-indigo-500/5">{t(a.name)}</th>
                       ))}
                       
                       {liabilities.map(a => (
-                        <th key={a.id} className="p-2 border-l border-white/10 font-medium text-center text-amber-800 bg-amber-50">{t(a.name)}</th>
+                        <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center text-amber-400 bg-amber-500/5">{t(a.name)}</th>
                       ))}
                       
                       {equities.map(a => (
-                        <th key={a.id} className="p-2 border-l border-white/10 font-medium text-center text-emerald-800 bg-emerald-50">{t(a.name)}</th>
+                        <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center text-emerald-400 bg-emerald-500/5">{t(a.name)}</th>
                       ))}
-                      <th className="bg-slate-800/20"></th>
+                      <th className="bg-slate-900/20"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {transactions.map((tx) => (
-                      <tr key={tx.id} className="even:bg-slate-800/20/80 hover:bg-slate-800/30/80 transition-colors group">
+                      <tr key={tx.id} className="even:bg-white/5 hover:bg-slate-700/50 transition-colors group">
                         <td className="p-3 border-l border-white/5 text-center">
                           <input 
                             type="checkbox" 
@@ -1769,11 +1818,17 @@ export default function App() {
                         {assets.map(a => {
                           const amt = getImpactAmount(tx, a.id);
                           return (
-                            <td key={a.id} className={cn(
-                              "p-3 border-l border-white/5 text-center font-mono",
-                              amt > 0 ? "text-emerald-600" : amt < 0 ? "text-rose-600" : "text-white"
-                            )} dir="ltr">
-                              {formatCurrency(amt)}
+                            <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-indigo-500/5 transition-colors" dir="ltr">
+                              {amt !== 0 ? (
+                                <span className={cn(
+                                  "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                                  amt > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                )}>
+                                  {formatCurrency(amt)}
+                                </span>
+                              ) : (
+                                <span className="text-white opacity-[0.05]">-</span>
+                              )}
                             </td>
                           );
                         })}
@@ -1781,11 +1836,17 @@ export default function App() {
                         {liabilities.map(a => {
                           const amt = getImpactAmount(tx, a.id);
                           return (
-                            <td key={a.id} className={cn(
-                              "p-3 border-l border-white/5 text-center font-mono",
-                              amt > 0 ? "text-emerald-600" : amt < 0 ? "text-rose-600" : "text-white"
-                            )} dir="ltr">
-                              {formatCurrency(amt)}
+                            <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-amber-500/5 transition-colors" dir="ltr">
+                              {amt !== 0 ? (
+                                <span className={cn(
+                                  "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                                  amt > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                )}>
+                                  {formatCurrency(amt)}
+                                </span>
+                              ) : (
+                                <span className="text-white opacity-[0.05]">-</span>
+                              )}
                             </td>
                           );
                         })}
@@ -1793,11 +1854,17 @@ export default function App() {
                         {equities.map(a => {
                           const amt = getImpactAmount(tx, a.id);
                           return (
-                            <td key={a.id} className={cn(
-                              "p-3 text-center font-mono",
-                              amt > 0 ? "text-emerald-600" : amt < 0 ? "text-rose-600" : "text-white"
-                            )} dir="ltr">
-                              {formatCurrency(amt)}
+                            <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-emerald-500/5 transition-colors" dir="ltr">
+                              {amt !== 0 ? (
+                                <span className={cn(
+                                  "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                                  amt > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                )}>
+                                  {formatCurrency(amt)}
+                                </span>
+                              ) : (
+                                <span className="text-white opacity-[0.05]">-</span>
+                              )}
                             </td>
                           );
                         })}
@@ -1824,30 +1891,30 @@ export default function App() {
                     ))}
                   </tbody>
                   {/* Totals Row */}
-                  <tfoot className="sticky bottom-0 z-20 bg-slate-800/30 border-t-2 border-white/20 font-bold shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                  <tfoot className="sticky bottom-0 z-20 bg-slate-900 border-t-2 border-white/10 font-bold shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
                     <tr>
-                      <td colSpan={3} className="p-4 border-l border-white/10 text-left text-white bg-slate-800/30">
+                      <td colSpan={3} className="p-4 border-l border-white/5 text-left text-white/50 bg-slate-900/60 uppercase tracking-widest text-[11px]">
                         {t('grandTotal')}
                       </td>
                       
                       {assets.map(a => (
-                        <td key={a.id} className="p-4 border-l border-white/10 text-center text-indigo-900 font-mono bg-indigo-50/80" dir="ltr">
+                        <td key={a.id} className="p-4 border-l border-white/5 text-center text-indigo-400 font-mono bg-indigo-500/5" dir="ltr">
                           {formatCurrency(totals.accounts[a.id])}
                         </td>
                       ))}
                       
                       {liabilities.map(a => (
-                        <td key={a.id} className="p-4 border-l border-white/10 text-center text-amber-900 font-mono bg-amber-50/80" dir="ltr">
+                        <td key={a.id} className="p-4 border-l border-white/5 text-center text-amber-400 font-mono bg-amber-500/5" dir="ltr">
                           {formatCurrency(totals.accounts[a.id])}
                         </td>
                       ))}
                       
                       {equities.map(a => (
-                        <td key={a.id} className="p-4 border-l border-white/10 text-center text-emerald-900 font-mono bg-emerald-50/80" dir="ltr">
+                        <td key={a.id} className="p-4 border-l border-white/5 text-center text-emerald-400 font-mono bg-emerald-500/5" dir="ltr">
                           {formatCurrency(totals.accounts[a.id])}
                         </td>
                       ))}
-                      <td className="bg-slate-800/30"></td>
+                      <td className="bg-slate-900/60"></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -1856,7 +1923,7 @@ export default function App() {
             
             {/* Final Equation Summary */}
             {transactions.length > 0 && (
-              <div className="bg-slate-900/60 backdrop-blur-md border-t border-white/10 text-white p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 font-mono text-lg">
+              <div className="bg-slate-900/60 backdrop-blur-md border-t border-white/10 text-white p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 font-mono text-lg animate-fade-in">
                 <div className="flex flex-col items-center">
                   <span className="text-sm font-medium text-white font-sans mb-1">{t('assets')}</span>
                   <span className="text-indigo-300">{formatCurrency(totals.totalAssets)}</span>
@@ -1876,17 +1943,192 @@ export default function App() {
           </div>
         </div>
       </div>
+
+          {/* Charts Section */}
+      {transactions.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+          {/* Asset Distribution Pie Chart */}
+          <div className="glass-card p-6">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-theme-primary">
+              <Target className="w-5 h-5 text-indigo-600" />
+              {t('assetDistribution')}
+            </h2>
+            <div className="h-[300px] md:h-[350px] w-full">
+              {assetChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={assetChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {assetChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => new Intl.NumberFormat('ar-SA', { style: 'currency', currency }).format(value)}
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center dark:text-white text-black font-bold italic">
+                  {t('noAssets')}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Income vs Expenses Bar Chart */}
+          <div className="glass-card p-6">
+            <h2 className="text-lg font-semibold dark:text-white text-slate-800 mb-6 flex items-center gap-2">
+              <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
+              {t('incomeExpenses')}
+            </h2>
+            <div className="h-[300px] md:h-[350px] w-full">
+              {incomeExpenseData.some(d => d.amount > 0) ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={incomeExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }} />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }}
+                      tickFormatter={(value) => new Intl.NumberFormat('ar-SA', { notation: "compact", compactDisplay: "short" }).format(value)}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => new Intl.NumberFormat('ar-SA', { style: 'currency', currency }).format(value)}
+                      cursor={{ fill: '#f1f5f9' }}
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                      {incomeExpenseData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.name === t('revenue') ? '#10b981' : '#ef4444'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center dark:text-white text-black font-bold italic">
+                  {t('noIncomeExpenses')}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Financial Insights Section */}
+      {transactions.length > 0 && (
+        <div className="space-y-6 animate-fade-in [animation-delay:200ms]">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-indigo-600/20 rounded-lg">
+              <ArrowRightLeft className="w-5 h-5 text-indigo-400" />
+            </div>
+            <h2 className="text-xl font-bold dark:text-white text-slate-800">{t('financialInsights')}</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Current Ratio Card */}
+            <div className="glass-card p-6 border-l-4 border-indigo-400">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-slate-600 dark:text-slate-400 text-sm font-bold">{t('currentRatio')}</span>
+                <div className={cn(
+                  "px-2 py-1 rounded text-[10px] font-bold uppercase",
+                  insights.currentRatio >= 1.5 ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+                )}>
+                  {insights.currentRatio >= 1.5 ? t('healthyLiquidity') : t('lowLiquidity')}
+                </div>
+              </div>
+              <div className="text-3xl font-bold dark:text-white text-slate-900 mb-1">{insights.currentRatio.toFixed(2)}</div>
+              <p className="text-xs text-slate-500">{t('currentRatioDesc')}</p>
+            </div>
+
+            {/* Debt-to-Equity Card */}
+            <div className="glass-card p-6 border-l-4 border-amber-400">
+              <span className="text-slate-600 dark:text-slate-400 text-sm font-bold block mb-2">{t('debtToEquity')}</span>
+              <div className="text-3xl font-bold dark:text-white text-slate-900 mb-1">{insights.debtToEquity.toFixed(2)}</div>
+              <p className="text-xs text-slate-500">{t('debtToEquityDesc')}</p>
+            </div>
+
+            {/* Net Profit Card */}
+            <div className="glass-card p-6 border-l-4 border-emerald-400">
+              <span className="text-slate-600 dark:text-slate-400 text-sm font-bold block mb-2">{t('netProfit')}</span>
+              <div className={cn(
+                "text-3xl font-bold mb-1",
+                insights.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"
+              )}>
+                {formatCurrency(insights.netProfit)}
+              </div>
+              <p className="text-xs text-slate-500">Total revenue minus expenses</p>
+            </div>
+          </div>
+
+          {/* Profit Trend Chart */}
+          <div className="glass-card p-6">
+            <h3 className="text-lg font-semibold dark:text-white text-slate-800 mb-6">{t('monthlyProfitTrend')}</h3>
+            <div className="h-[300px] w-full">
+              {profitTrendData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={profitTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }} />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }}
+                      tickFormatter={(value) => new Intl.NumberFormat('en-US', { notation: "compact" }).format(value)}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff', 
+                        borderRadius: '12px', 
+                        border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)', 
+                        color: theme === 'dark' ? '#fff' : '#1e293b' 
+                      }}
+                      itemStyle={{ color: '#818cf8' }}
+                      formatter={(value: number) => formatCurrency(value)}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="profit" 
+                      stroke="#818cf8" 
+                      strokeWidth={3} 
+                      dot={{ fill: '#818cf8', strokeWidth: 2, r: 4 }} 
+                      activeDot={{ r: 6, strokeWidth: 0 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-slate-500">{t('noIncomeExpenses')}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
       ) : currentView === 'income' ? (
         <IncomeStatementView 
           formatCurrency={formatCurrency}
           transactions={transactions}
         />
-      ) : (
+      ) : currentView === 'cashflow' ? (
         <CashFlowView 
           formatCurrency={formatCurrency}
           transactions={transactions}
         />
+      ) : currentView === 'about' ? (
+        <AboutUsView />
+      ) : (
+        <ContactUsView />
       )}
 
       <DocPreviewModal 
@@ -1894,6 +2136,274 @@ export default function App() {
         url={previewUrl} 
         onClose={() => setIsDocPreviewOpen(false)} 
       />
+    </div>
+  );
+}
+
+// --- Component: AboutUsView ---
+
+function AboutUsView() {
+  const { t, dir } = useLanguage();
+  return (
+    <div className="animate-fade-in space-y-10" dir={dir}>
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden glass-card p-10 md:p-16 text-center border-t-4 border-emerald-500">
+        <div className="absolute inset-0 pointer-events-none opacity-10 dark:opacity-20"
+          style={{ background: 'radial-gradient(circle at 50% 0%, #10b981 0%, transparent 70%)' }} />
+        <div className="relative z-10">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-500/20 rounded-3xl border border-emerald-500/30 mb-6 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+            <Heart className="w-10 h-10 text-emerald-500 dark:text-emerald-400" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold dark:text-white text-slate-900 mb-4">
+            {t('aboutTitle')}
+          </h1>
+          <p className="text-lg dark:text-slate-300 text-slate-600 max-w-2xl mx-auto">
+            {t('aboutSubtitle')}
+          </p>
+        </div>
+      </div>
+
+      {/* Our Story */}
+      <div className="glass-card p-8 md:p-12">
+        <h2 className="text-2xl font-bold dark:text-white text-slate-900 mb-5 flex items-center gap-3">
+          <div className="p-2.5 bg-indigo-500/20 rounded-xl border border-indigo-500/30">
+            <Info className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+          </div>
+          {t('ourStory')}
+        </h2>
+        <p className="dark:text-slate-300 text-slate-700 leading-relaxed text-base md:text-lg">
+          {t('storyText')}
+        </p>
+      </div>
+
+      {/* Core Values */}
+      <div>
+        <h2 className="text-2xl font-bold dark:text-white text-slate-900 mb-6 text-center">
+          {t('coreValues')}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Value 1 */}
+          <div className="glass-card p-8 text-center border-t-4 border-emerald-500 hover:scale-[1.02] transition-transform">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-500/20 rounded-2xl border border-emerald-500/30 mb-5 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+              <Zap className="w-7 h-7 text-emerald-500 dark:text-emerald-400" />
+            </div>
+            <h3 className="text-xl font-bold dark:text-white text-slate-900 mb-3">
+              {t('value1Title')}
+            </h3>
+            <p className="dark:text-slate-300 text-slate-600">
+              {t('value1Desc')}
+            </p>
+          </div>
+          {/* Value 2 */}
+          <div className="glass-card p-8 text-center border-t-4 border-indigo-500 hover:scale-[1.02] transition-transform">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-500/20 rounded-2xl border border-indigo-500/30 mb-5 shadow-[0_0_20px_rgba(99,102,241,0.2)]">
+              <Shield className="w-7 h-7 text-indigo-500 dark:text-indigo-400" />
+            </div>
+            <h3 className="text-xl font-bold dark:text-white text-slate-900 mb-3">
+              {t('value2Title')}
+            </h3>
+            <p className="dark:text-slate-300 text-slate-600">
+              {t('value2Desc')}
+            </p>
+          </div>
+          {/* Value 3 */}
+          <div className="glass-card p-8 text-center border-t-4 border-amber-500 hover:scale-[1.02] transition-transform">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-500/20 rounded-2xl border border-amber-500/30 mb-5 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+              <Target className="w-7 h-7 text-amber-500 dark:text-amber-400" />
+            </div>
+            <h3 className="text-xl font-bold dark:text-white text-slate-900 mb-3">
+              {t('value3Title')}
+            </h3>
+            <p className="dark:text-slate-300 text-slate-600">
+              {t('value3Desc')}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Component: ContactUsView ---
+
+function ContactUsView() {
+  const { t, dir } = useLanguage();
+  const [formName, setFormName] = React.useState('');
+  const [formEmail, setFormEmail] = React.useState('');
+  const [formMessage, setFormMessage] = React.useState('');
+  const [isSent, setIsSent] = React.useState(false);
+
+  const [isSending, setIsSending] = React.useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSending(true);
+    
+    try {
+      // Save to Firebase
+      await addDoc(collection(db, 'messages'), {
+        name: formName,
+        email: formEmail,
+        message: formMessage,
+        createdAt: new Date().toISOString()
+      });
+
+      setIsSent(true);
+      setFormName('');
+      setFormEmail('');
+      setFormMessage('');
+      setTimeout(() => setIsSent(false), 4000);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error(t('errorSendingMessage') || 'حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة لاحقاً.');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="animate-fade-in space-y-8" dir={dir}>
+      {/* Hero */}
+      <div className="relative overflow-hidden glass-card p-10 text-center border-t-4 border-indigo-500">
+        <div className="absolute inset-0 pointer-events-none opacity-10 dark:opacity-20"
+          style={{ background: 'radial-gradient(circle at 50% 0%, #6366f1 0%, transparent 70%)' }} />
+        <div className="relative z-10">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-500/20 rounded-3xl border border-indigo-500/30 mb-6 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
+            <Mail className="w-10 h-10 text-indigo-400" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold dark:text-white text-slate-900 mb-4">
+            {t('contactTitle')}
+          </h1>
+          <p className="text-lg dark:text-slate-300 text-slate-600 max-w-2xl mx-auto">
+            {t('contactSubtitle')}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        {/* Contact Form */}
+        <div className="lg:col-span-3 glass-card p-8">
+          <h2 className="text-xl font-bold dark:text-white text-slate-900 mb-6 flex items-center gap-3">
+            <div className="p-2 bg-indigo-500/20 rounded-xl border border-indigo-500/30">
+              <Send className="w-5 h-5 text-indigo-400" />
+            </div>
+            {t('sendMessage')}
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 dark:text-slate-400 text-slate-600">
+                {t('fullName')}
+              </label>
+              <input
+                type="text"
+                required
+                value={formName}
+                onChange={e => setFormName(e.target.value)}
+                placeholder={t('namePlaceholder')}
+                className="w-full px-4 py-3 rounded-2xl border dark:border-white/10 border-slate-200 dark:bg-slate-950/50 bg-slate-50 dark:text-white text-slate-900 dark:placeholder-slate-500 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 dark:text-slate-400 text-slate-600">
+                {t('emailAddress')}
+              </label>
+              <input
+                type="email"
+                required
+                value={formEmail}
+                onChange={e => setFormEmail(e.target.value)}
+                placeholder={t('emailPlaceholder')}
+                className="w-full px-4 py-3 rounded-2xl border dark:border-white/10 border-slate-200 dark:bg-slate-950/50 bg-slate-50 dark:text-white text-slate-900 dark:placeholder-slate-500 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 dark:text-slate-400 text-slate-600">
+                {t('yourMessage')}
+              </label>
+              <textarea
+                required
+                rows={5}
+                value={formMessage}
+                onChange={e => setFormMessage(e.target.value)}
+                placeholder={t('messagePlaceholder')}
+                className="w-full px-4 py-3 rounded-2xl border dark:border-white/10 border-slate-200 dark:bg-slate-950/50 bg-slate-50 dark:text-white text-slate-900 dark:placeholder-slate-500 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isSending}
+              className="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSending ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : isSent ? (
+                <CheckCircle2 className="w-5 h-5" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+              {isSending ? t('sending') : isSent ? `✓ ${t('successSent')}` : t('sendButton')}
+            </button>
+          </form>
+        </div>
+
+        {/* Contact Info + Map */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Info Card */}
+          <div className="glass-card p-8">
+            <h2 className="text-xl font-bold dark:text-white text-slate-900 mb-6 flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
+                <Info className="w-5 h-5 text-emerald-400" />
+              </div>
+              {t('contactInfo')}
+            </h2>
+            <div className="space-y-5">
+              <a
+                href="mailto:abdullahalalawi52@gmail.com"
+                className="flex items-center gap-4 p-4 rounded-2xl dark:bg-white/5 bg-slate-100 hover:bg-indigo-100 dark:hover:bg-indigo-500/10 transition-colors group"
+              >
+                <div className="p-2.5 bg-indigo-500/20 rounded-xl border border-indigo-500/30 flex-shrink-0">
+                  <Mail className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold tracking-widest dark:text-slate-400 text-slate-500 mb-0.5">{t('emailLabel')}</p>
+                  <p className="dark:text-white text-slate-900 font-bold text-sm group-hover:text-indigo-600 transition-colors" dir="ltr">
+                    abdullahalalawi52@gmail.com
+                  </p>
+                </div>
+              </a>
+              <div className="flex items-center gap-4 p-4 rounded-2xl dark:bg-white/5 bg-slate-100">
+                <div className="p-2.5 bg-amber-500/20 rounded-xl border border-amber-500/30 flex-shrink-0">
+                  <MapPin className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold tracking-widest dark:text-slate-400 text-slate-500 mb-0.5">{t('addressLabel')}</p>
+                  <p className="dark:text-white text-slate-900 font-bold text-sm">{t('addressValue')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Map Embed */}
+          <div className="glass-card overflow-hidden rounded-3xl">
+            <div className="p-4 border-b border-white/10 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-rose-400" />
+              <span className="text-sm font-bold dark:text-white text-slate-900">{t('addressValue')}</span>
+            </div>
+            <iframe
+              title="location-map"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3624.6746540579165!2d46.71613!3d24.68773!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e2f03890d489399%3A0xba974d1c98e79fd5!2sRiyadh!5e0!3m2!1sen!2ssa!4v1710000000000!5m2!1sen!2ssa"
+              width="100%"
+              height="220"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="grayscale dark:opacity-80 hover:grayscale-0 transition-all duration-500"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1940,7 +2450,7 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
   return (
     <div id="cash-flow-report" className="glass-card p-8 animate-fade-in space-y-8 bg-slate-900 border border-white/10">
       <div className="text-center space-y-2 border-b border-white/10 pb-6">
-        <h2 className="text-3xl font-black text-white">{t('cashFlowStatement')}</h2>
+        <h2 className="text-3xl font-bold text-white">{t('cashFlowStatement')}</h2>
         <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString('ar-SA')}</p>
       </div>
 
@@ -1982,14 +2492,14 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
             netCashFlow >= 0 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-rose-500/10 border border-rose-500/20"
           )}>
             <span className={cn(
-              "text-2xl font-black uppercase tracking-tighter",
+              "text-2xl font-bold uppercase tracking-tighter",
               netCashFlow >= 0 ? "text-emerald-400" : "text-rose-400"
             )}>
               {t('netCashFlow')}
             </span>
             <div className="text-right">
               <div className={cn(
-                "text-3xl font-black font-mono",
+                "text-3xl font-bold font-mono",
                 netCashFlow >= 0 ? "text-emerald-400" : "text-rose-400"
               )} dir="ltr">
                 {formatCurrency(netCashFlow)}
@@ -2009,6 +2519,8 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
             if (!element) return;
             try {
               toast.info(t('exportingPDF') || "Generating PDF...");
+              const html2canvas = (await import('html2canvas')).default;
+              const jsPDF = (await import('jspdf')).default;
               const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
@@ -2056,7 +2568,7 @@ function IncomeStatementView({ transactions, formatCurrency }: { transactions: T
   return (
     <div id="income-statement-report" className="glass-card p-8 animate-fade-in space-y-8 bg-slate-900 border border-white/10">
       <div className="text-center space-y-2 border-b border-white/10 pb-6">
-        <h2 className="text-3xl font-black text-white">{t('incomeStatement')}</h2>
+        <h2 className="text-3xl font-bold text-white">{t('incomeStatement')}</h2>
         <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString('ar-SA')}</p>
       </div>
 
@@ -2104,13 +2616,13 @@ function IncomeStatementView({ transactions, formatCurrency }: { transactions: T
             netIncome >= 0 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-rose-500/10 border border-rose-500/20"
           )}>
             <span className={cn(
-              "text-2xl font-black uppercase tracking-tighter",
+              "text-2xl font-bold uppercase tracking-tighter",
               netIncome >= 0 ? "text-emerald-400" : "text-rose-400"
             )}>
               {t('netIncome')}
             </span>
             <span className={cn(
-              "text-3xl font-black font-mono",
+              "text-3xl font-bold font-mono",
               netIncome >= 0 ? "text-emerald-400" : "text-rose-400"
             )} dir="ltr">
               {formatCurrency(netIncome)}
@@ -2125,7 +2637,8 @@ function IncomeStatementView({ transactions, formatCurrency }: { transactions: T
             const element = document.getElementById('income-statement-report');
             if (!element) return;
             try {
-              toast.info(t('exportingPDF') || "Generating PDF...");
+              const html2canvas = (await import('html2canvas')).default;
+              const jsPDF = (await import('jspdf')).default;
               const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,

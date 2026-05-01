@@ -121,9 +121,9 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Could not get canvas context');
 
-    // 2. Increase DPI by 2x for better OCR
-    canvas.width = img.width * 2;
-    canvas.height = img.height * 2;
+    // 2. Increase DPI by 3x for maximum OCR precision on financial digits
+    canvas.width = img.width * 3;
+    canvas.height = img.height * 3;
     
     // Background white
     ctx.fillStyle = 'white';
@@ -131,18 +131,26 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
     
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     
-    // 3. Simple Grayscale & Contrast enhancement
+    // 3. Financial Document Optimization: Precise Grayscale & High Contrast
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
+    
     for (let i = 0; i < data.length; i += 4) {
-      const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      // High contrast threshold
-      const val = avg > 128 ? 255 : 0; 
+      // Use standard luminance weights for better grayscale
+      const avg = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      
+      // Improved thresholding: anything dark becomes blacker, anything light becomes pure white
+      // This is better than sharpening for digital screenshots.
+      const val = avg > 200 ? 255 : (avg < 150 ? 0 : avg);
+      
       data[i] = val;
       data[i + 1] = val;
       data[i + 2] = val;
     }
     ctx.putImageData(imageData, 0, 0);
+    
+    // 4. Skip slow sharpening for digital images - it adds noise.
+    // Instead, we rely on the 2x scaling and high-contrast thresholding.
 
     setStatus('Initializing OCR engine...');
     const worker = await createWorker(ocrLanguage, 1, {
@@ -264,12 +272,11 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
     const lines = normalizedText.split('\n');
     const results: ParsedRow[] = [];
     
-    // Global Date Detector (looks at first few lines for a single date)
+    // 1. Optimized Date Detection
     const dateRegex = /\b(\d{1,4}[\/\-.]\d{1,2}[\/\-.](?:\d{2,4})?|\d{1,2}[\/\-.]\d{1,2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}(?:,)? \d{2,4})\b/i;
-    let globalDate = new Date().toLocaleDateString('en-GB'); // Fallback to today
+    let globalDate = new Date().toLocaleDateString('en-GB');
     
-    // Search for a date in the first 10 lines as a "document date"
-    for (let i = 0; i < Math.min(lines.length, 10); i++) {
+    for (let i = 0; i < Math.min(lines.length, 15); i++) {
       const dm = lines[i].match(dateRegex);
       if (dm) {
         globalDate = dm[1];
@@ -277,62 +284,162 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
       }
     }
 
-    const amountRegex = /(?:^|\s|[^0-9])(-?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?)(?:\s|$|[^0-9])/g;
+    // 2. Financial Number Regex: Handles negatives in brackets (1,200), decimals, and commas
+    const amountRegex = /((?:\()?\d+(?:[.,\s]\d{3})*(?:[.,]\d+)?(?:\))?)/g;
+
+    let pendingDescription = '';
 
     lines.forEach(line => {
       const trimmed = line.trim();
-      if (trimmed.length < 3) return;
+      if (trimmed.length < 2) return;
 
-      // Multi-column split: If there's a big gap (4+ spaces)
-      const parts = trimmed.split(/\s{4,}/);
+      // Extract all potential amounts
+      const amountsFound: { value: number; raw: string; index: number }[] = [];
+      let match;
+      amountRegex.lastIndex = 0;
       
-      parts.forEach(part => {
-        const lineDateMatch = part.match(dateRegex);
-        const amounts: number[] = [];
-        let match;
+      while ((match = amountRegex.exec(trimmed)) !== null) {
+        let raw = match[1];
+        let isNegative = false;
+        if (raw.startsWith('(') && raw.endsWith(')')) {
+          isNegative = true;
+          raw = raw.slice(1, -1);
+        }
         
-        amountRegex.lastIndex = 0;
-        while ((match = amountRegex.exec(part)) !== null) {
-          const clean = match[1].replace(/,/g, '');
-          const val = parseFloat(clean);
-          if (!isNaN(val) && Math.abs(val) > 0.01) {
-            amounts.push(val);
+        // --- AGGRESSIVE FINANCIAL NUMBER CLEANING ---
+        // 1. Remove ALL spaces & common OCR noise (often sees "3 , 800" or "3800 . 00")
+        // Also swap common misreads: 'O' or 'o' instead of '0'
+        let clean = raw.replace(/\s/g, '').replace(/o/gi, '0').replace(/[—–-]$/, '');
+        
+        // 2. Handle Thousands vs Decimal Separators
+        if (clean.includes(',') && clean.includes('.')) {
+          clean = clean.replace(/,/g, '');
+        } else if (clean.includes(',')) {
+          const parts = clean.split(',');
+          if (parts[parts.length - 1].length === 3) {
+            clean = clean.replace(/,/g, ''); 
+          } else {
+            clean = clean.replace(/,/g, '.');
           }
         }
-          
-        if (amounts.length === 0) return;
-
-        const amountValue = amounts[0];
-        const itemDate = lineDateMatch ? lineDateMatch[1] : globalDate;
-
-        let desc = part;
-        if (lineDateMatch) desc = desc.replace(lineDateMatch[0], '');
-        amounts.forEach(a => {
-          desc = desc.replace(a.toString(), '');
-        });
         
-        desc = desc.replace(/[٠١٢٣٤٥٦٧٨٩]/g, '').replace(/[|\\/_#*~=+<>]/g, ' ').trim();
-        if (!desc || desc.length < 2) desc = 'Detected Transaction';
+        // Final sanity: remove trailing punctuation that might be noise
+        clean = clean.replace(/[.,]$/, '');
+        
+        const val = parseFloat(clean);
+        
+        // Smart Year Filtering: Ignore numbers that look like years (2020-2035)
+        const looksLikeYear = /^\d{4}$/.test(clean) && val >= 2020 && val <= 2035;
+        const hasDecimal = clean.includes('.');
+        
+        if (!isNaN(val) && (Math.abs(val) > 0.01) && (!looksLikeYear || hasDecimal)) {
+          // Force positive unless explicitly negative (brackets) to avoid lines/noise being read as minus
+          const finalVal = isNegative ? -Math.abs(val) : Math.abs(val);
+          amountsFound.push({ value: finalVal, raw: match[1], index: match.index });
+        }
+      }
 
-        // Initial Smart Mapping Guess
-        let guessedAccountId = 'bank';
+      // If no amounts, this could be a header or description for the next line
+      if (amountsFound.length === 0) {
+        if (trimmed.length < 60 && !trimmed.toLowerCase().includes('balance sheet') && !/page|صفحة/i.test(trimmed)) {
+          pendingDescription = trimmed;
+        }
+        return;
+      }
+
+      // Process amounts on the line
+      let lastEnd = 0;
+      amountsFound.forEach((amt, idx) => {
+        let rawDesc = trimmed.substring(lastEnd, amt.index).trim();
+        
+        // Handle multi-column scenarios: if no description before amount, maybe it's in the pending buffer
+        if ((!rawDesc || rawDesc.length < 2) && pendingDescription && idx === 0) {
+           rawDesc = pendingDescription;
+           pendingDescription = '';
+        }
+
+        // If description is still empty/short, use whatever follows the amount on the same line
+        if ((!rawDesc || rawDesc.length < 2) && idx === amountsFound.length - 1) {
+           rawDesc = trimmed.substring(amt.index + amt.raw.length).trim();
+        }
+        
+        // Final fallback: if still empty, check if description follows the amount but NOT at the end
+        if ((!rawDesc || rawDesc.length < 2) && idx < amountsFound.length - 1) {
+           rawDesc = trimmed.substring(amt.index + amt.raw.length, amountsFound[idx+1].index).trim();
+        }
+
+        lastEnd = amt.index + amt.raw.length;
+
+        // Cleanup noise from description (including underscores/lines)
+        let desc = rawDesc.replace(/[٠١٢٣٤٥٦٧٨٩]/g, '').replace(/[|\\/_#*~=+<>—–-]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (!desc || desc.length < 2) desc = `Detected Item (${amt.raw})`;
+
         const d = desc.toLowerCase();
-        if (d.includes('cash') || d.includes('نقد')) guessedAccountId = 'cash';
-        else if (d.includes('receivable') || d.includes('مدينون') || d.includes('ar')) guessedAccountId = 'ar';
-        else if (d.includes('payable') || d.includes('دائنون') || d.includes('ap')) guessedAccountId = 'ap';
-        else if (d.includes('inventory') || d.includes('مخزون')) guessedAccountId = 'inventory';
-        else if (d.includes('ppe') || d.includes('equipment') || d.includes('معدات')) guessedAccountId = 'equipment';
-        else if (d.includes('debt') || d.includes('loan')) guessedAccountId = 'short_term_loans';
-        else if (d.includes('capital') || d.includes('رأس مال')) guessedAccountId = 'capital';
+        // Smarter total line detection: handle various wordings and missing punctuation
+        const isTotalLine = /\btotal\b|إجمالي|مجموع|صافي|net\b|liabilities.*equity|shareholders.*funds|total.*assets|total.*liabilities/i.test(d);
+        
+        // --- ADANCED ACCOUNT MAPPING DICTIONARY ---
+        let guessedAccountId = 'bank';
+        
+        const keywords = {
+          cash: ['cash', 'نقد', 'صندوق', 'خزينة', 'petty', 'funds', 'نقداً', 'كاش', 'سيولة', 'مقبوضات'],
+          bank: ['bank', 'بنك', 'مصرف', 'stc', 'pay', 'rajhi', 'ahli', 'alinma', 'riyad', 'تحويل', 'سداد', 'مدى', 'فيزا', 'ماستركارد', 'إنماء', 'بلاد', 'فرنسي', 'حوالة', 'راجحي', 'أهلي'],
+          ar: ['receivable', 'مدينون', 'عملاء', 'ذمم مدينة', 'customers', 'debtor', 'ar', 'مطلوبات', 'على الحساب', 'مديوينة', 'حسابات العملاء'],
+          ap: ['payable', 'دائنون', 'موردون', 'ذمم دائنة', 'vendors', 'suppliers', 'ap', 'creditor', 'لصالح', 'مطالبة', 'التزامات تجارية', 'موردين', 'مستحقات'],
+          inventory: ['inventory', 'مخزون', 'بضاعة', 'stock', 'goods', 'مواد', 'قطع غيار', 'سعلة'],
+          fixed_assets: ['fixed', 'asset', 'ppe', 'property', 'plant', 'equipment', 'furniture', 'car', 'vehicle', 'land', 'building', 'أثاث', 'مكتب', 'عقارات', 'سيارات', 'معدات', 'آلات', 'تجهيزات', 'كمبيوتر', 'ممتلكات', 'رأسمالية'],
+          goodwill: ['goodwill', 'شهرة', 'محل'],
+          intangible: ['intangible', 'غير ملموسة', 'براءة', 'trademark', 'ملكية فكرية', 'حقوق'],
+          loan: ['loan', 'debt', 'borrow', 'financing', 'قرض', 'تمويل', 'تسهيلات', 'دين', 'مديونية', 'قروض'],
+          accrued: ['accrued', 'outstanding', 'payable', 'مستحق', 'مطالبة', 'مستحقات'],
+          prepaid: ['prepaid', 'advance', 'deposit', 'مقدم', 'تأمين', 'عربون', 'مدفوعات مقدماً'],
+          capital: ['capital', 'stockholder', 'shareholder', 'equity', 'share capital', 'رأس مال', 'مساهمة', 'حقوق الملكية', 'شركاء', 'حقوق مساهمين', 'استثمار'],
+          retained: ['retained', 'earning', 'surplus', 'retained earnings', 'أرباح', 'محتجزة', 'مبقاة', 'توزيعات', 'احتياطي'],
+          revenue: ['revenue', 'sales', 'service', 'income', 'إيراد', 'مبيعات', 'خدمات', 'بيع', 'أتعاب', 'دخل'],
+          expenses: ['expense', 'cost', 'مصروف', 'تكلفة', 'أجور', 'رواتب', 'فاتورة', 'إيجار', 'صيانة', 'كهرباء', 'مياه', 'اتصالات', 'بنزين', 'سفر', 'إعاشة']
+        };
 
-        if (!results.some(r => r.amount === Math.abs(amountValue) && r.description === desc)) {
+        // Score-based matching for better accuracy
+        let bestCategory = 'bank';
+        let maxScore = 0;
+
+        Object.entries(keywords).forEach(([id, terms]) => {
+          let score = 0;
+          terms.forEach(term => {
+            if (d.includes(term)) {
+              score += term.length; // Longer matches get higher scores
+            }
+          });
+          if (score > maxScore) {
+            maxScore = score;
+            bestCategory = id;
+          }
+        });
+
+        // Resolve aliases to final IDs
+        const categoryMap: Record<string, string> = {
+          ppe: 'ppe',
+          fixed_assets: 'fixed_assets',
+          goodwill: 'goodwill',
+          intangible: 'intangible_assets',
+          loan: 'borrowed_money',
+          accrued: 'accrued_expenses',
+          prepaid: 'prepaid_expenses',
+          retained: 'retained_earnings',
+          capital: 'share_capital'
+        };
+        
+        // If it's a total/summary line, we don't want it hitting a specific account like 'share_capital'
+        guessedAccountId = isTotalLine ? 'cash' : (categoryMap[bestCategory] || bestCategory);
+
+        if (!results.some(r => r.amount === Math.abs(amt.value) && r.description === desc)) {
           results.push({
             id: Math.random().toString(36).substr(2, 9),
-            date: itemDate,
+            date: globalDate,
             description: desc,
-            amount: Math.abs(amountValue),
+            amount: Math.abs(amt.value),
             accountId: guessedAccountId,
-            selected: true
+            selected: !isTotalLine,
           });
         }
       });
@@ -340,11 +447,13 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
 
     if (results.length === 0) {
       const snippet = text.slice(0, 150).replace(/\n/g, ' ');
-      setError(`No valid patterns found. Text recognized: "${snippet}..."`);
+      setError(`No patterns found. Recognized: "${snippet}..."`);
     } else {
       setParsedRows(results);
     }
   };
+
+
 
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -381,40 +490,40 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={dir}>
-      <div className="bg-slate-900 border border-white/10 p-6 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 rtl:left-4 rtl:right-auto text-slate-400 hover:text-white transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-6 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative transition-colors duration-300">
+        <button onClick={onClose} className="absolute top-4 right-4 rtl:left-4 rtl:right-auto text-theme-primary hover:text-indigo-600 dark:hover:text-white transition-all opacity-70 hover:opacity-100">
           <X className="w-6 h-6" />
         </button>
 
-        <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-          <UploadCloud className="text-indigo-400 w-6 h-6" />
+        <h2 className="text-xl font-black mb-2 flex items-center gap-2 text-theme-primary">
+          <UploadCloud className="text-indigo-600 dark:text-indigo-400 w-6 h-6" />
           {t('importFiles') || 'Import Document / Image'}
         </h2>
-        <p className="text-slate-400 text-[15px] mb-6">
+        <p className="text-[15px] mb-6 font-black text-theme-muted">
           {t('importFilesDesc') || 'Extract transactions from PDF, Word, Excel, PPTX or Photos (Arabic/English supported).'}
         </p>
 
         {parsedRows.length === 0 && !isProcessing && (
           <div className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex items-center gap-4 mb-4 bg-slate-800/40 p-3 rounded-lg border border-white/5">
-                <span className="text-sm font-medium text-slate-300">OCR Language:</span>
-                <div className="flex gap-1">
+            <div className="flex flex-wrap items-center gap-4 mb-4 dark:bg-slate-800/40 bg-slate-100 p-3 rounded-2xl border dark:border-white/5 border-slate-300">
+                <span className="text-sm font-black ml-1 text-theme-muted">{t('ocrLanguage') || 'OCR Language'}:</span>
+                <div className="flex gap-1.5">
                   {(['ara+eng', 'ara', 'eng'] as const).map(lang => (
                     <button 
                       key={lang}
                       onClick={() => setOcrLanguage(lang)}
                       className={cn(
-                        "px-3 py-1 rounded-md text-xs font-bold transition-all",
-                        ocrLanguage === lang ? "bg-indigo-600 text-white shadow-lg" : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                        "px-4 py-1.5 rounded-xl text-xs font-black transition-all uppercase tracking-tight",
+                        ocrLanguage === lang ? "bg-indigo-600 text-white shadow-lg" : "dark:bg-slate-700 bg-white dark:text-slate-300 text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-300 dark:border-none"
                       )}
                     >
                       {lang.toUpperCase()}
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-amber-400 font-medium">
+                <div className="flex items-center gap-2 text-[11px] text-amber-600 dark:text-amber-400 font-bold ml-auto">
                   <AlertCircle className="w-3.5 h-3.5" />
-                  <span>Tip: Use <b>ENG</b> only for better results with English documents.</span>
+                  <span>Tip: Use <b>ENG</b> for purely English docs.</span>
                 </div>
             </div>
 
@@ -422,7 +531,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleFileDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="flex-1 min-h-[300px] border-2 border-dashed border-slate-700 hover:border-indigo-500 hover:bg-indigo-500/10 transition-all rounded-xl flex flex-col items-center justify-center cursor-pointer p-8 text-center group"
+              className="flex-1 min-h-[300px] border-2 border-dashed dark:border-slate-700 border-slate-300 hover:border-indigo-500 dark:hover:bg-indigo-500/10 hover:bg-indigo-50 transition-all rounded-3xl flex flex-col items-center justify-center cursor-pointer p-8 text-center group"
             >
               <input 
                 type="file" 
@@ -431,14 +540,14 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
                 ref={fileInputRef}
                 onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
               />
-              <div className="flex gap-4 mb-4">
-                <FileText className="w-10 h-10 text-rose-400" />
-                <FileSpreadsheet className="w-10 h-10 text-emerald-400" />
-                <Presentation className="w-10 h-10 text-orange-400" />
-                <Image className="w-10 h-10 text-sky-400" />
+              <div className="flex gap-4 mb-6">
+                <FileText className="w-12 h-12 text-rose-500 dark:text-rose-400 group-hover:scale-110 transition-transform" />
+                <FileSpreadsheet className="w-12 h-12 text-emerald-500 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                <Presentation className="w-12 h-12 text-orange-500 dark:text-orange-400 group-hover:scale-110 transition-transform" />
+                <Image className="w-12 h-12 text-sky-500 dark:text-sky-400 group-hover:scale-110 transition-transform" />
               </div>
-              <h3 className="text-white text-lg font-medium mb-1 font-cairo">{t('clickToUpload')}</h3>
-              <p className="text-sm text-slate-400 max-w-md">PDF, Word, Excel, PPTX, PNG, JPG (Max 10MB)</p>
+              <h3 className="text-xl font-black mb-2 font-cairo uppercase tracking-tight text-theme-primary">{t('clickToUpload')}</h3>
+              <p className="text-sm max-w-md font-black italic text-theme-muted">PDF, Word, Excel, PPTX, PNG, JPG (Max 10MB)</p>
             </div>
           </div>
         )}
@@ -446,153 +555,185 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
         {isProcessing && (
           <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] space-y-6">
             <div className="relative w-24 h-24">
-               <div className="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
-               <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+               <div className="absolute inset-0 border-4 dark:border-indigo-500/20 border-indigo-100 rounded-full"></div>
+               <div className="absolute inset-0 border-4 border-indigo-600 dark:border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
             <div className="text-center">
-               <p className="text-white font-bold text-lg mb-2">{status}</p>
-               <div className="w-64 h-2 bg-slate-800 rounded-full overflow-hidden mx-auto">
-                  <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${progress}%` }}></div>
+               <p className="font-black text-2xl mb-4 uppercase tracking-widest text-theme-primary">{status}</p>
+               <div className="w-64 h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mx-auto shadow-inner">
+                  <div className="h-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-300" style={{ width: `${progress}%` }}></div>
                </div>
-               <p className="text-slate-400 text-sm mt-1">{progress}%</p>
+               <p className="dark:text-slate-400 text-slate-500 text-sm mt-3 font-black">{progress}%</p>
             </div>
           </div>
         )}
 
         {error && !isProcessing && (
-          <div className="mt-4 p-4 bg-rose-500/20 border border-rose-500/30 rounded-lg flex items-center gap-3 text-rose-300">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm">{error}</p>
+          <div className="mt-4 p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-600 dark:text-rose-400 shadow-sm animate-fade-in">
+            <AlertCircle className="w-6 h-6 flex-shrink-0" />
+            <p className="text-sm font-bold">{error}</p>
           </div>
         )}
 
         {parsedRows.length > 0 && !isProcessing && (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-auto rounded-xl border border-white/10 bg-slate-800/30 mb-4 custom-scrollbar">
-              <table className="w-full text-left rtl:text-right text-sm text-slate-300">
-                <thead className="text-xs uppercase bg-slate-900/80 text-slate-400 sticky top-0 backdrop-blur-md">
+          <div className="flex-1 flex flex-col overflow-hidden animate-fade-in">
+            <div className="flex-1 overflow-auto rounded-2xl border dark:border-white/10 border-slate-200 dark:bg-slate-800/30 bg-slate-50 mb-4 custom-scrollbar shadow-inner">
+              <table className="w-full text-left rtl:text-right text-sm">
+                <thead className="text-[11px] uppercase dark:bg-slate-900/90 bg-slate-200 dark:text-slate-400 text-slate-900 sticky top-0 backdrop-blur-md z-10 font-black tracking-widest border-b border-slate-300 dark:border-white/10">
                   <tr>
-                    <th className="px-5 py-4">
+                    <th className="px-6 py-4">
                       <input 
                         type="checkbox" 
                         checked={parsedRows.every(r => r.selected)}
                         onChange={(e) => setParsedRows(prev => prev.map(r => ({ ...r, selected: e.target.checked })))}
-                        className="rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500 w-4 h-4"
+                        className="rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500 w-5 h-5 cursor-pointer transition-all"
                       />
                     </th>
-                    <th className="px-5 py-4">{t('date')}</th>
-                    <th className="px-5 py-4">{t('description')}</th>
-                    <th className="px-5 py-4">{t('account') || 'Account'}</th>
-                    <th className="px-5 py-4">{t('amount')}</th>
+                    <th className="px-6 py-4">{t('date')}</th>
+                    <th className="px-6 py-4">{t('description')}</th>
+                    <th className="px-6 py-4">{t('account') || 'Account'}</th>
+                    <th className="px-6 py-4 text-right rtl:text-left">{t('amount')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
-                  {parsedRows.map(row => (
-                    <tr key={row.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-5 py-4">
+                <tbody className="divide-y dark:divide-white/5 divide-slate-200">
+                  {parsedRows.map(row => {
+                    const d = row.description.toLowerCase();
+                    const isTotal = /\btotal\b|إجمالي|مجموع|صافي|net\b|liabilities.*equity|shareholders.*funds/i.test(d);
+                    
+                    return (
+                    <tr key={row.id} className={cn(
+                      "dark:hover:bg-white/5 hover:bg-white transition-all group",
+                      isTotal && "bg-indigo-50/50 dark:bg-indigo-500/5"
+                    )}>
+                      <td className="px-6 py-4">
                         <input 
                           type="checkbox" 
                           checked={row.selected}
                           onChange={() => handleToggleRow(row.id)}
-                          className="rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500 w-4 h-4"
+                          className={cn(
+                            "rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500 w-5 h-5 cursor-pointer transition-all",
+                            isTotal && "opacity-40"
+                          )}
                         />
                       </td>
-                      <td className="px-5 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                         {isTotal && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-tighter mr-2">Total</span>}
                         <input 
                           type="text" 
                           value={row.date}
                           onChange={(e) => handleUpdateRow(row.id, 'date', e.target.value)}
-                          className="bg-transparent border-none focus:ring-1 focus:ring-indigo-500 rounded px-1 w-24 text-slate-300"
+                          className="bg-transparent border-none focus:ring-2 focus:ring-indigo-500/30 rounded-lg px-2 py-1.5 w-28 font-black transition-all dark:text-white text-slate-900"
                         />
                       </td>
-                      <td className="px-5 py-4 w-full">
+                      <td className="px-6 py-4 w-full">
                         <input 
                           type="text" 
                           value={row.description}
                           onChange={(e) => handleUpdateRow(row.id, 'description', e.target.value)}
-                          className="bg-transparent border-none focus:ring-1 focus:ring-indigo-500 rounded px-1 w-full text-slate-300"
+                          className="bg-transparent border-none focus:ring-2 focus:ring-indigo-500/30 rounded-lg px-2 py-1.5 w-full font-black transition-all dark:text-white text-slate-900"
                         />
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-4">
                         <select
                           value={row.accountId}
                           onChange={(e) => handleUpdateRow(row.id, 'accountId', e.target.value)}
-                          className="bg-slate-900/50 border border-white/10 rounded-md text-xs font-bold text-indigo-300 p-1 outline-none focus:ring-1 focus:ring-indigo-500"
+                          className="dark:bg-slate-900/50 bg-white border dark:border-white/10 border-slate-300 rounded-xl text-xs font-black dark:text-indigo-300 text-indigo-900 p-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm"
                         >
-                          <optgroup label="Assets">
-                             <option value="bank">Bank / بنك</option>
-                             <option value="cash">Cash / نقدية</option>
-                             <option value="ar">Receivables / مدينون</option>
-                             <option value="inventory">Inventory / مخزون</option>
-                             <option value="equipment">Equipment / معدات</option>
-                             <option value="furniture">Furniture / أثاث</option>
-                             <option value="cars">Cars / سيارات</option>
-                             <option value="fixed_assets">Fixed Assets / أصول ثابتة</option>
+                          <optgroup label="Assets" className="font-black text-[10px] uppercase dark:bg-slate-900 bg-slate-50">
+                             <option value="bank" className="font-bold">Bank / بنك</option>
+                             <option value="cash" className="font-bold">Cash / نقدية</option>
+                             <option value="ar" className="font-bold">Receivables / مدينون</option>
+                             <option value="inventory" className="font-bold">Inventory / مخزون</option>
+                             <option value="equipment" className="font-bold">Equipment / معدات</option>
+                             <option value="furniture" className="font-bold">Furniture / أثاث</option>
+                             <option value="cars" className="font-bold">Cars / سيارات</option>
+                             <option value="fixed_assets" className="font-bold">Fixed Assets / أصول ثابتة</option>
                           </optgroup>
-                          <optgroup label="Liabilities">
-                             <option value="ap">Payables / دائنون</option>
-                             <option value="short_term_loans">Short Loans / قروض قصيرة</option>
-                             <option value="long_term_loans">Long Loans / قروض طويلة</option>
+                          <optgroup label="Liabilities" className="font-black text-[10px] uppercase dark:bg-slate-900 bg-slate-50">
+                             <option value="ap" className="font-bold">Payables / دائنون</option>
+                             <option value="short_term_loans" className="font-bold">Short Loans / قروض قصيرة</option>
+                             <option value="long_term_loans" className="font-bold">Long Loans / قروض طويلة</option>
                           </optgroup>
-                          <optgroup label="Equity">
-                             <option value="capital">Capital / رأس مال</option>
-                             <option value="retained_earnings">Retained Earnings / أرباح مبقاة</option>
-                             <option value="revenue">Revenue / إيرادات</option>
-                             <option value="expenses">Expenses / مصروفات</option>
+                          <optgroup label="Equity" className="font-black text-[10px] uppercase dark:bg-slate-900 bg-slate-50">
+                             <option value="capital" className="font-bold">Capital / رأس مال</option>
+                             <option value="retained_earnings" className="font-bold">Retained Earnings / أرباح مبقاة</option>
+                             <option value="revenue" className="font-bold">Revenue / إيرادات</option>
+                             <option value="expenses" className="font-bold">Expenses / مصروفات</option>
                           </optgroup>
                         </select>
                       </td>
-                      <td className="px-5 py-4 whitespace-nowrap font-bold text-indigo-300" dir="ltr">
+                      <td className="px-6 py-4 whitespace-nowrap text-right rtl:text-left">
                         <input 
                           type="number" 
-                          value={row.amount}
+                          value={row.amount || ''}
                           onChange={(e) => handleUpdateRow(row.id, 'amount', parseFloat(e.target.value) || 0)}
-                          className="bg-transparent border-none focus:ring-1 focus:ring-indigo-500 rounded px-1 w-32 text-right text-indigo-300 font-bold"
+                          className="bg-transparent border-none focus:ring-2 focus:ring-indigo-500/30 rounded-lg px-2 py-1.5 w-32 text-right rtl:text-left dark:text-indigo-300 text-indigo-600 font-black text-base transition-all"
                         />
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 justify-end pt-4 border-t border-white/10">
-              <button 
-                onClick={handleAddManualRow}
-                className="mr-auto px-4 py-2 rounded-lg text-xs font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-all border border-indigo-500/30"
-              >
-                + Add Row Manually
-              </button>
+            <div className="flex flex-wrap items-center gap-3 justify-end pt-5 border-t dark:border-white/10 border-slate-200">
+              <div className="mr-auto flex items-center gap-4">
+                <button 
+                  onClick={handleAddManualRow}
+                  className="px-5 py-2.5 rounded-xl text-xs font-black dark:bg-indigo-500/10 bg-indigo-50 dark:text-indigo-400 text-indigo-600 hover:dark:bg-indigo-500/20 hover:bg-indigo-100 transition-all border border-indigo-500/30 uppercase tracking-widest shadow-sm"
+                >
+                  + Add Row Manually
+                </button>
+                
+                {/* Real-time Balance Check Indicator */}
+                <div className="flex gap-4 p-2 bg-slate-100 dark:bg-slate-800/50 rounded-2xl border dark:border-white/5 border-slate-200">
+                   <div className="px-3 py-1 flex flex-col">
+                      <span className="text-[9px] uppercase font-black text-theme-muted">Assets</span>
+                      <span className="text-xs font-black text-emerald-600">
+                        {parsedRows.filter(r => r.selected && r.accountId !== 'ap' && r.accountId !== 'capital' && r.accountId !== 'retained_earnings').reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
+                      </span>
+                   </div>
+                   <div className="w-[1px] bg-slate-300 dark:bg-white/10 self-stretch"></div>
+                   <div className="px-3 py-1 flex flex-col">
+                      <span className="text-[9px] uppercase font-black text-theme-muted">L + E</span>
+                      <span className="text-xs font-black text-rose-600">
+                        {parsedRows.filter(r => r.selected && (r.accountId === 'ap' || r.accountId === 'capital' || r.accountId === 'retained_earnings' || r.accountId === 'short_term_loans')).reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
+                      </span>
+                   </div>
+                </div>
+              </div>
+
               <button 
                 onClick={() => setShowRawText(!showRawText)}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 text-indigo-400 hover:bg-slate-700 transition-all border border-indigo-500/20"
+                className="px-5 py-2.5 rounded-xl text-xs font-black dark:bg-slate-800 bg-slate-100 dark:text-indigo-400 text-indigo-600 hover:dark:bg-slate-700 hover:bg-slate-200 transition-all border dark:border-indigo-500/20 border-slate-300 uppercase tracking-widest shadow-sm"
               >
                 {showRawText ? 'Hide Text' : 'View Detected Text'}
               </button>
               <button 
                 onClick={() => { setParsedRows([]); setError(null); setRawText(''); }} 
-                className="px-5 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-800 dark:hover:bg-slate-800 hover:bg-slate-100 transition-all uppercase tracking-widest"
                 disabled={isProcessing}
               >
                 {t('clear') || 'Reset'}
               </button>
-              <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-800 dark:hover:bg-slate-800 hover:bg-slate-100 transition-all uppercase tracking-widest">
                 {t('cancel')}
               </button>
               <button 
                 onClick={handleImport}
                 disabled={!parsedRows.some(r => r.selected)}
-                className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 flex items-center gap-2"
+                className="px-8 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black transition-all shadow-xl shadow-indigo-600/20 disabled:opacity-50 flex items-center gap-3 uppercase tracking-widest text-sm"
               >
-                <CheckCircle2 className="w-5 h-5" />
+                <CheckCircle2 className="w-6 h-6" />
                 {t('save')} ({parsedRows.filter(r => r.selected).length})
               </button>
             </div>
 
             {showRawText && (
-               <div className="mt-4 p-4 bg-slate-950/80 rounded-xl border border-white/5 max-h-[300px] overflow-auto">
-                  <h4 className="text-xs font-bold text-slate-500 mb-2 sticky top-0 bg-slate-950">RAW TEXT EXTRACTED:</h4>
-                  <pre className="text-[11px] text-slate-400 whitespace-pre-wrap font-mono leading-relaxed">
+               <div className="mt-5 p-5 dark:bg-slate-950/80 bg-slate-100 rounded-2xl border dark:border-white/5 border-slate-200 max-h-[300px] overflow-auto shadow-inner animate-fade-in relative">
+                  <h4 className="text-[10px] font-black dark:text-slate-500 text-slate-400 mb-3 sticky top-0 dark:bg-slate-950/90 bg-slate-100/90 backdrop-blur-sm uppercase tracking-widest">RAW TEXT EXTRACTED:</h4>
+                  <pre className="text-[11px] dark:text-slate-400 text-slate-600 whitespace-pre-wrap font-mono leading-relaxed px-1">
                      {rawText || "Processing text..."}
                   </pre>
                </div>

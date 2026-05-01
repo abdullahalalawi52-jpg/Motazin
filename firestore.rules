@@ -91,5 +91,10 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
     }
+
+    match /messages/{messageId} {
+      allow create: if true;
+      allow read: if false;
+    }
   }
 }

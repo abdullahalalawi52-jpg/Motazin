@@ -32,69 +32,69 @@ export const DepreciationModal: React.FC<DepreciationModalProps> = ({ isOpen, on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={dir}>
-      <div className="bg-slate-900 border border-white/10 p-6 rounded-2xl w-full max-w-md shadow-2xl relative animate-fade-in">
-        <button onClick={onClose} className="absolute top-4 right-4 rtl:left-4 rtl:right-auto text-slate-400 hover:text-white transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-6 rounded-3xl w-full max-w-md shadow-2xl relative animate-fade-in transition-colors duration-300">
+        <button onClick={onClose} className="absolute top-4 right-4 rtl:left-4 rtl:right-auto text-theme-primary hover:text-indigo-600 dark:hover:text-white transition-all opacity-70 hover:opacity-100">
           <X className="w-6 h-6" />
         </button>
 
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-          <Calculator className="text-indigo-400 w-6 h-6" />
+        <h2 className="text-xl font-black mb-6 flex items-center gap-2 text-theme-primary">
+          <Calculator className="text-indigo-600 dark:text-indigo-400 w-6 h-6" />
           {t('depreciationCalc')}
         </h2>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('selectAssetToDepreciate')}</label>
+            <label className="block text-sm font-bold dark:text-slate-300 text-slate-800 mb-1.5 ml-1">{t('selectAssetToDepreciate')}</label>
             <select
               value={selectedAsset}
               onChange={(e) => setSelectedAsset(e.target.value)}
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-cairo"
+              className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-white/10 rounded-2xl px-4 py-3 dark:text-white text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-cairo"
             >
               {assets.map(asset => (
-                <option key={asset.id} value={asset.id}>{t(asset.name)}</option>
+                <option key={asset.id} value={asset.id} className="dark:bg-slate-900 bg-white">{t(asset.name)}</option>
               ))}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('assetCost')}</label>
+              <label className="block text-sm font-bold dark:text-slate-300 text-slate-800 mb-1.5 ml-1">{t('assetCost')}</label>
               <input
                 type="number"
-                value={cost}
+                value={cost || ''}
                 onChange={(e) => setCost(parseFloat(e.target.value) || 0)}
-                className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-white/10 rounded-2xl px-4 py-3 dark:text-white text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('salvageValue')}</label>
+              <label className="block text-sm font-bold dark:text-slate-300 text-slate-800 mb-1.5 ml-1">{t('salvageValue')}</label>
               <input
                 type="number"
-                value={salvage}
+                value={salvage || ''}
                 onChange={(e) => setSalvage(parseFloat(e.target.value) || 0)}
-                className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-white/10 rounded-2xl px-4 py-3 dark:text-white text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('usefulLife')}</label>
+            <label className="block text-sm font-black mb-1.5 ml-1 text-theme-muted">{t('usefulLife')}</label>
             <input
               type="number"
-              value={life}
+              value={life || ''}
               onChange={(e) => setLife(parseFloat(e.target.value) || 1)}
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-white/10 rounded-2xl px-4 py-3 dark:text-white text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
             />
           </div>
 
-          <div className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-2">
+          <div className="mt-6 p-5 dark:bg-indigo-500/10 bg-indigo-50/50 border border-indigo-500/20 rounded-2xl space-y-3 shadow-inner">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-400">{t('annualDepreciation')}:</span>
-              <span className="text-white font-bold font-mono">{annualDepreciation.toLocaleString()}</span>
+              <span className="font-black text-theme-muted">{t('annualDepreciation')}:</span>
+              <span className="dark:text-white text-slate-900 font-black font-mono text-base">{annualDepreciation.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-400">{t('monthlyDepreciation')}:</span>
-              <span className="text-indigo-400 font-bold font-mono">{monthlyDepreciation.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+              <span className="font-black text-theme-muted">{t('monthlyDepreciation')}:</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-black font-mono text-base">{monthlyDepreciation.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
             </div>
           </div>
 

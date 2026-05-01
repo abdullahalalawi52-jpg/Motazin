@@ -17,6 +17,9 @@ export const translations: Translations = {
   appTitle: { 
     ar: 'مُتّزِن', en: 'Motazin', fr: 'Motazin', es: 'Motazin', tr: 'Motazin', ur: 'متوازن' 
   },
+  pro_account: {
+    ar: 'حساب احترافي', en: 'PRO Account', fr: 'Compte PRO', es: 'Cuenta PRO', tr: 'PRO Hesap', ur: 'پرو اکاؤنٹ'
+  },
   appSubtitle: { 
     ar: 'الأصول = الخصوم + حقوق الملكية', 
     en: 'Assets = Liabilities + Equity',
@@ -155,7 +158,10 @@ export const translations: Translations = {
     ar: 'قروض قصيرة الأجل', en: 'Short-term Loans', fr: 'Prêts à Court Terme', es: 'Préstamos a Corto Plazo', tr: 'Kısa Vadeli Krediler', ur: 'لیل مدتی قرضے' 
   },
   long_term_loans: { 
-    ar: 'قروض طويلة الأجل', en: 'Long-term Loans', fr: 'Prêts à Long Terme', es: 'Préstamos a Largo Plazo', tr: 'Uzun Vadeli Krediler', ur: 'طویل مدتی قرضے' 
+    ar: 'قروض طويلة الأجل', en: 'Long-term Loans', fr: 'Prêts à Long Terme', es: 'Préstamos a Largo Plazo', tr: 'Uzun Vadeli Krediler', ur: 'طويل مدتي قرضے' 
+  },
+  borrowed_money: { 
+    ar: 'أموال مقترضة', en: 'Borrowed Money', fr: 'Argent Emprunté', es: 'Dinero Prestado', tr: 'Ödünç Alınan Para', ur: 'ادھار لی گئی رقم' 
   },
   land: { 
     ar: 'الأراضي', en: 'Land', fr: 'Terrain', es: 'Terrenos', tr: 'Arazi', ur: 'زمین' 
@@ -166,6 +172,9 @@ export const translations: Translations = {
   equipment: { 
     ar: 'المعدات والآلات', en: 'Equipment', fr: 'Équipement', es: 'Equipo', tr: 'Ekipman', ur: 'آلات' 
   },
+  ppe: { 
+    ar: 'الممتلكات والمعدات (PPE)', en: 'Property, Plant & Equip.', fr: 'Immobilisations Corporelles', es: 'Propiedad, Planta y Equipo', tr: 'Mülk, Tesis ve Ekipman', ur: 'جائیداد، پلانٹ اور آلات' 
+  },
   supplies: { 
     ar: 'المهمات / الأدوات', en: 'Supplies', fr: 'Fournitures', es: 'Suministros', tr: 'Malzemeler', ur: 'سامان' 
   },
@@ -174,6 +183,9 @@ export const translations: Translations = {
   },
   intangible_assets: { 
     ar: 'أصول غير ملموسة', en: 'Intangible Assets', fr: 'Actifs Incorporels', es: 'Activos Intangibles', tr: 'Maddi Olmayan Varlıklar', ur: 'غیر مادی اثاثے' 
+  },
+  goodwill: { 
+    ar: 'شهرة المحل', en: 'Goodwill', fr: 'Écart d\'Acquisition', es: 'Fondo de Comercio', tr: 'Şerefiye', ur: 'گڈ ول' 
   },
   investments: { 
     ar: 'استثمارات', en: 'Investments', fr: 'Investissements', es: 'Inversiones', tr: 'Yatırımlar', ur: 'سرمایہ کاری' 
@@ -195,6 +207,9 @@ export const translations: Translations = {
   },
   capital: { 
     ar: 'رأس المال', en: 'Capital', fr: 'Capital', es: 'Capital', tr: 'Sermaye', ur: 'سرمایہ' 
+  },
+  share_capital: { 
+    ar: 'رأس مال الأسهم', en: 'Share Capital', fr: 'Capital Social', es: 'Capital Social', tr: 'Sermaye Hissesi', ur: 'شيئر كيپيٹل' 
   },
   revenue: { 
     ar: 'الإيرادات', en: 'Revenue', fr: 'Revenus', es: 'Ingresos', tr: 'Gelir', ur: 'آمدنی' 
@@ -519,6 +534,93 @@ export const translations: Translations = {
   },
   decreaseInCash: {
     ar: 'نقص في النقدية', en: 'Decrease in Cash', fr: 'Diminution de la Trésorerie', es: 'Disminución de Efectivo', tr: 'Nakit Azalışı', ur: 'نقد رقم میں کمی'
+  },
+  aboutUs: {
+    ar: 'من نحن', en: 'About Us', fr: 'À Propos', es: 'Sobre Nosotros', tr: 'Hakkımızda', ur: 'ہمارے بارے میں'
+  },
+  contactUs: {
+    ar: 'اتصل بنا', en: 'Contact Us', fr: 'Contactez-Nous', es: 'Contáctenos', tr: 'İletişim', ur: 'ہم سے رابطہ کریں'
+  },
+  aboutTitle: {
+    ar: 'عن متزن', en: 'About Motazin', fr: 'À Propos de Motazin', es: 'Sobre Motazin', tr: 'Motazin Hakkında', ur: 'متوازن کے بارے میں'
+  },
+  aboutSubtitle: {
+    ar: 'تمكين الأفراد والشركات بأدوات مالية ذكية ومبسطة.', en: 'Empowering individuals and businesses with smart financial tools.', fr: 'Outiller les individus et les entreprises avec des outils financiers intelligents.', es: 'Empoderando a personas y empresas con herramientas financieras inteligentes.', tr: 'Bireyleri ve işletmeleri akıllı finansal araçlarla güçlendiriyoruz.', ur: 'افراد اور کاروبار کو سمارٹ مالیاتی ٹولز سے بااختیار بنانا۔'
+  },
+  ourStory: {
+    ar: 'قصتنا', en: 'Our Story', fr: 'Notre Histoire', es: 'Nuestra Historia', tr: 'Hikayemiz', ur: 'ہماری کہانی'
+  },
+  storyText: {
+    ar: 'تأسست حاسبة "متزن" من الرغبة في تبسيط تعقيدات المحاسبة. نؤمن بأن الإدارة المالية لا ينبغي أن تكون مهمة شاقة تقتصر على الخبراء فقط. اجتمع فريقنا من المحللين الماليين، المطورين، والمتخصصين لإنشاء منصة تتحدث لغتك وتسهل حياتك.', en: 'Motazin was born out of a desire to simplify the complexities of accounting. We believe that managing finances shouldn\'t be reserved only for experts. Our team of financial analysts, developers, and educators came together to create a platform that speaks your language.', fr: 'Motazin est né du désir de simplifier les complexités de la comptabilité.', es: 'Motazin nació del deseo de simplificar las complejidades de la contabilidad.', tr: 'Motazin, muhasebenin karmaşıklıklarını basitleştirme arzusuyla doğdu.', ur: 'متوازن اکاؤنٹنگ کی پیچیدگیوں کو آسان بنانے کی خواہش سے پیدا ہوا۔'
+  },
+  coreValues: {
+    ar: 'قيمنا الأساسية', en: 'Core Values', fr: 'Nos Valeurs', es: 'Nuestros Valores', tr: 'Temel Değerlerimiz', ur: 'بنیادی اقدار'
+  },
+  value1Title: {
+    ar: 'البساطة', en: 'Simplicity', fr: 'Simplicité', es: 'Simplicidad', tr: 'Basitlik', ur: 'سادگی'
+  },
+  value1Desc: {
+    ar: 'نقوم بإزالة التعقيد والمصطلحات الصعبة من الإدارة المالية.', en: 'We strip away the jargon and confusion from financial management.', fr: 'Nous éliminons le jargon et la confusion de la gestion financière.', es: 'Eliminamos la jerga y la confusión de la gestión financiera.', tr: 'Finans yönetiminden karmaşıklığı kaldırıyoruz.', ur: 'ہم مالیاتی انتظام سے پیچیدگی دور کرتے ہیں۔'
+  },
+  value2Title: {
+    ar: 'الدقة', en: 'Accuracy', fr: 'Précision', es: 'Precisión', tr: 'Doğruluk', ur: 'درستگی'
+  },
+  value2Desc: {
+    ar: 'الدقة المتناهية هي جوهر حاسباتنا وأنظمتنا الذكية.', en: 'Precision is at the heart of our calculators and AI systems.', fr: 'La précision est au cœur de nos calculateurs et systèmes IA.', es: 'La precisión está en el centro de nuestras calculadoras y sistemas IA.', tr: 'Hesaplayıcılarımızın ve yapay zeka sistemlerimizin özünde doğruluk var.', ur: 'درستگی ہمارے کیلکولیٹرز اور AI سسٹمز کا جوہر ہے۔'
+  },
+  value3Title: {
+    ar: 'التمكين', en: 'Empowerment', fr: 'Autonomisation', es: 'Empoderamiento', tr: 'Güçlendirme', ur: 'بااختیار بنانا'
+  },
+  value3Desc: {
+    ar: 'نهدف إلى منحك السيطرة الكاملة والفهم العميق لمستقبلك المالي.', en: 'We aim to give you total control and understanding of your financial destiny.', fr: 'Nous visons à vous donner le contrôle total de votre avenir financier.', es: 'Te damos el control total de tu destino financiero.', tr: 'Finansal geleceğiniz üzerinde tam kontrol sağlamayı hedefliyoruz.', ur: 'ہم آپ کو مالیاتی مستقبل پر مکمل کنٹرول دینا چاہتے ہیں۔'
+  },
+  contactTitle: {
+    ar: 'اتصل بنا', en: 'Contact Us', fr: 'Contactez-Nous', es: 'Contáctenos', tr: 'İletişim', ur: 'ہم سے رابطہ کریں'
+  },
+  contactSubtitle: {
+    ar: 'نحن هنا للمساعدة والإجابة على أي سؤال قد يراودك.', en: 'We are here to help and answer any question you might have.', fr: 'Nous sommes là pour vous aider.', es: 'Estamos aquí para ayudarte.', tr: 'Size yardımcı olmak için buradayız.', ur: 'ہم آپ کی مدد کے لیے حاضر ہیں۔'
+  },
+  sendMessage: {
+    ar: 'أرسل لنا رسالة', en: 'Send us a Message', fr: 'Envoyez-nous un Message', es: 'Envíenos un Mensaje', tr: 'Bize Mesaj Gönderin', ur: 'ہمیں پیغام بھیجیں'
+  },
+  fullName: {
+    ar: 'الاسم الكامل', en: 'Full Name', fr: 'Nom Complet', es: 'Nombre Completo', tr: 'Tam Adı', ur: 'پورا نام'
+  },
+  emailAddress: {
+    ar: 'البريد الإلكتروني', en: 'Email Address', fr: 'Adresse E-mail', es: 'Correo Electrónico', tr: 'E-posta Adresi', ur: 'ای میل ایڈریس'
+  },
+  yourMessage: {
+    ar: 'الرسالة', en: 'Your Message', fr: 'Votre Message', es: 'Su Mensaje', tr: 'Mesajınız', ur: 'آپ کا پیغام'
+  },
+  sendButton: {
+    ar: 'إرسال الرسالة', en: 'Send Message', fr: 'Envoyer', es: 'Enviar', tr: 'Gönder', ur: 'پیغام بھیجیں'
+  },
+  contactInfo: {
+    ar: 'معلومات الاتصال', en: 'Contact Information', fr: 'Coordonnées', es: 'Información de Contacto', tr: 'İletişim Bilgileri', ur: 'رابطہ کی معلومات'
+  },
+  emailLabel: {
+    ar: 'البريد الإلكتروني', en: 'Email', fr: 'E-mail', es: 'Correo', tr: 'E-posta', ur: 'ای میل'
+  },
+  phoneLabel: {
+    ar: 'الهاتف', en: 'Phone', fr: 'Téléphone', es: 'Teléfono', tr: 'Telefon', ur: 'فون'
+  },
+  addressLabel: {
+    ar: 'العنوان', en: 'Address', fr: 'Adresse', es: 'Dirección', tr: 'Adres', ur: 'پتہ'
+  },
+  addressValue: {
+    ar: 'مسقط، سلطنة عمان', en: 'Muscat, Sultanate of Oman', fr: 'Mascate, Oman', es: 'Mascate, Omán', tr: 'Maskat, Umman', ur: 'مسقط، سلطنت عمان'
+  },
+  namePlaceholder: {
+    ar: 'أحمد محمد', en: 'John Doe', fr: 'Jean Dupont', es: 'Juan Pérez', tr: 'Ahmet Yılmaz', ur: 'احمد محمد'
+  },
+  emailPlaceholder: {
+    ar: 'you@example.com', en: 'you@example.com', fr: 'vous@exemple.com', es: 'tu@ejemplo.com', tr: 'siz@ornek.com', ur: 'you@example.com'
+  },
+  messagePlaceholder: {
+    ar: 'كيف يمكننا مساعدتك؟', en: 'How can we help you?', fr: 'Comment pouvons-nous vous aider ?', es: '¿Cómo podemos ayudarte?', tr: 'Size nasıl yardımcı olabiliriz?', ur: 'ہم آپ کی کیسے مدد کر سکتے ہیں؟'
+  },
+  successSent: {
+    ar: 'تم الإرسال بنجاح!', en: 'Sent successfully!', fr: 'Envoyé avec succès !', es: '¡Enviado con éxito!', tr: 'Başarıyla gönderildi!', ur: 'کامیابی کے ساتھ بھیج دیا گیا!'
   },
 };
 

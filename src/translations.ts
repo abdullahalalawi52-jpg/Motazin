@@ -13,7 +13,10 @@ export const translations: Record<string, any> = {
       signOut: 'Sign out',
       theme: 'Theme',
       currency: 'Currency',
-      language: 'Language'
+      language: 'Language',
+      aboutUs: 'About the Developer',
+      contactUs: 'Contact',
+      pro_account: 'PRO Account'
     },
     common: {
       save: 'Save',
@@ -48,7 +51,7 @@ export const translations: Record<string, any> = {
       debit: 'Debit',
       credit: 'Credit',
       mapColumns: 'Map CSV Columns',
-      mapDesc: 'We found {count} transactions. Please map the columns from your CSV file to the corresponding fields.',
+      mapDesc: 'Found {count} transactions. Please map the columns from your CSV file to the corresponding fields.',
       selectColumn: '-- Select Column --',
       optional: '(Optional)',
       importing: 'Importing...',
@@ -274,6 +277,42 @@ export const translations: Record<string, any> = {
       light: 'Light Mode',
       system: 'System Theme',
       dark: 'Dark Mode'
+    },
+    about: {
+      title: 'About Motazin',
+      subtitle: 'Empowering individuals and businesses with smart financial tools.',
+      ourStory: 'My Story',
+      storyText: 'Motazin is the result of the dedicated effort of a single individual. This entire platform was built from the ground up by one person with a passion for simplifying accounting and financial management. I believe that powerful financial tools should be accessible to everyone, and I have poured my effort into creating this site to help you take control of your financial future.',
+      coreValues: 'Core Values',
+      value1Title: 'Simplicity',
+      value1Desc: 'I strip away the jargon and confusion from financial management.',
+      value2Title: 'Accuracy',
+      value2Desc: 'Precision is at the heart of the calculators and AI systems.',
+      value3Title: 'Empowerment',
+      value3Desc: 'I aim to give you total control and understanding of your financial destiny.'
+    },
+    contact: {
+      title: 'Contact Me',
+      subtitle: 'I am here to help and answer any question you might have.',
+      getInTouch: 'Get in Touch',
+      sendMessage: 'Send me a Message',
+      nameLabel: 'Full Name',
+      namePlaceholder: 'John Doe',
+      emailLabel: 'Email Address',
+      emailPlaceholder: 'you@example.com',
+      messageLabel: 'Your Message',
+      messagePlaceholder: 'How can I help you?',
+      sendButton: 'Send Message',
+      sending: 'Sending...',
+      errorSendingMessage: 'Error sending message. Please try again later.',
+      successSent: 'Message sent successfully!',
+      contactInfo: 'Contact Information',
+      email: 'Email',
+      phone: 'Phone',
+      address: 'Address',
+      emailValue: 'abdullahalalawi52@gmail.com',
+      phoneValue: '+1 (555) 000-0000',
+      addressValue: 'Riyadh, Saudi Arabia'
     }
   },
   ar: {
@@ -290,7 +329,10 @@ export const translations: Record<string, any> = {
       signOut: 'تسجيل الخروج',
       theme: 'المظهر',
       currency: 'العملة',
-      language: 'اللغة'
+      language: 'اللغة',
+      aboutUs: 'عن المطور',
+      contactUs: 'اتصل بي',
+      pro_account: 'حساب احترافي'
     },
     common: {
       save: 'حفظ',
@@ -325,7 +367,7 @@ export const translations: Record<string, any> = {
       debit: 'مدين',
       credit: 'دائن',
       mapColumns: 'ربط أعمدة CSV',
-      mapDesc: 'وجدنا {count} معاملة. يرجى ربط الأعمدة من ملف CSV الخاص بك بالحقول المقابلة.',
+      mapDesc: 'تم العثور على {count} معاملة. يرجى ربط الأعمدة من ملف CSV الخاص بك بالحقول المقابلة.',
       selectColumn: '-- اختر عمود --',
       optional: '(اختياري)',
       importing: 'جاري الاستيراد...',
@@ -551,6 +593,42 @@ export const translations: Record<string, any> = {
       light: 'الوضع الفاتح',
       system: 'مظهر النظام',
       dark: 'الوضع الداكن'
+    },
+    about: {
+      title: 'عن متزن',
+      subtitle: 'تمكين الأفراد والشركات بأدوات مالية ذكية ومبسطة.',
+      ourStory: 'قصتي',
+      storyText: 'بدأ موقع "متزن" كفكرة لتبسيط العمليات المحاسبية، وهو نتاج مجهود شخص واحد فقط عمل بشغف لبناء هذه المنصة المتكاملة من الصفر. أؤمن بأن الإدارة المالية يجب أن تكون متاحة ومبسطة للجميع، لذا كرست جهدي لتطوير هذه الأدوات لتكون شريكك الموثوق في النجاح المالي.',
+      coreValues: 'قيمنا الأساسية',
+      value1Title: 'البساطة',
+      value1Desc: 'أقوم بإزالة التعقيد والمصطلحات الصعبة من الإدارة المالية.',
+      value2Title: 'الدقة',
+      value2Desc: 'الدقة المتناهية هي جوهر هذه الحاسبات والأنظمة الذكية.',
+      value3Title: 'التمكين',
+      value3Desc: 'أهدف إلى منحك السيطرة الكاملة والفهم العميق لمستقبلك المالي.'
+    },
+    contact: {
+      title: 'اتصل بي',
+      subtitle: 'أنا هنا للمساعدة والإجابة على أي سؤال قد يراودك.',
+      getInTouch: 'تواصل معي',
+      sendMessage: 'أرسل لي رسالة',
+      nameLabel: 'الاسم الكامل',
+      namePlaceholder: 'أحمد محمد',
+      emailLabel: 'البريد الإلكتروني',
+      emailPlaceholder: 'you@example.com',
+      messageLabel: 'الرسالة',
+      messagePlaceholder: 'كيف يمكنني مساعدتك؟',
+      sendButton: 'إرسال الرسالة',
+      sending: 'جاري الإرسال...',
+      errorSendingMessage: 'حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة لاحقاً.',
+      successSent: 'تم إرسال الرسالة بنجاح!',
+      contactInfo: 'معلومات الاتصال',
+      email: 'البريد الإلكتروني',
+      phone: 'الهاتف',
+      address: 'العنوان',
+      emailValue: 'info@motazin.com',
+      phoneValue: '+966 50 000 0000',
+      addressValue: 'الرياض، المملكة العربية السعودية'
     }
   }
 };
