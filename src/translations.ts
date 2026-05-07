@@ -271,7 +271,9 @@ export const translations: Record<string, any> = {
     login: {
       title: 'FinAI Dashboard',
       subtitle: 'Sign in to manage your financial statements and access AI tools.',
-      signInWithGoogle: 'Sign in with Google'
+      signInWithGoogle: 'Sign in with Google',
+      continueAsGuest: 'Continue as Guest',
+      login: 'Login'
     },
     theme: {
       light: 'Light Mode',
@@ -312,7 +314,11 @@ export const translations: Record<string, any> = {
       address: 'Address',
       emailValue: 'abdullahalalawi52@gmail.com',
       phoneValue: '+1 (555) 000-0000',
-      addressValue: 'Riyadh, Saudi Arabia'
+      addressValue: 'Riyadh, Saudi Arabia',
+      guestUser: 'Guest User',
+      local_mode: 'Local Mode',
+      or: 'OR',
+      version: 'Version 2.0.4'
     }
   },
   ar: {
@@ -587,7 +593,9 @@ export const translations: Record<string, any> = {
     login: {
       title: 'لوحة قيادة FinAI',
       subtitle: 'قم بتسجيل الدخول لإدارة بياناتك المالية والوصول إلى أدوات الذكاء الاصطناعي.',
-      signInWithGoogle: 'تسجيل الدخول باستخدام جوجل'
+      signInWithGoogle: 'تسجيل الدخول باستخدام جوجل',
+      continueAsGuest: 'الاستمرار كضيف',
+      login: 'تسجيل الدخول'
     },
     theme: {
       light: 'الوضع الفاتح',
@@ -628,7 +636,11 @@ export const translations: Record<string, any> = {
       address: 'العنوان',
       emailValue: 'info@motazin.com',
       phoneValue: '+966 50 000 0000',
-      addressValue: 'الرياض، المملكة العربية السعودية'
+      addressValue: 'الرياض، المملكة العربية السعودية',
+      guestUser: 'مستخدم ضيف',
+      local_mode: 'وضع العمل المحلي',
+      or: 'أو',
+      version: 'الإصدار 2.0.4'
     }
   }
 };

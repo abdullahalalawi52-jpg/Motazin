@@ -32,7 +32,7 @@ interface FileScannerProps {
 }
 
 export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) => {
-  const { t, dir } = useLanguage();
+  const { t, dir, language } = useLanguage();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('');
@@ -489,157 +489,225 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={dir}>
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-6 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative transition-colors duration-300">
-        <button onClick={onClose} className="absolute top-4 right-4 rtl:left-4 rtl:right-auto text-theme-primary hover:text-indigo-600 dark:hover:text-white transition-all opacity-70 hover:opacity-100">
-          <X className="w-6 h-6" />
-        </button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-12 lg:p-20 bg-slate-950/60 backdrop-blur-sm transition-all duration-700 animate-in fade-in" dir={dir}>
+      <div className="bg-[#0f172a]/95 border border-white/10 rounded-[3rem] w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)] relative transition-all duration-500 animate-in zoom-in-95 fade-in">
+        
+        {/* Decorative subtle top light */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent blur-sm"></div>
 
-        <h2 className="text-xl font-black mb-2 flex items-center gap-2 text-theme-primary">
-          <UploadCloud className="text-indigo-600 dark:text-indigo-400 w-6 h-6" />
-          {t('importFiles') || 'Import Document / Image'}
-        </h2>
-        <p className="text-[15px] mb-6 font-black text-theme-muted">
-          {t('importFilesDesc') || 'Extract transactions from PDF, Word, Excel, PPTX or Photos (Arabic/English supported).'}
-        </p>
+        {/* Header Section */}
+        <div className="p-10 pb-6 relative flex items-start justify-between">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-3xl font-black flex items-center gap-4 text-white">
+              <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+                <UploadCloud className="text-indigo-400 w-8 h-8" />
+              </div>
+              {language === 'ar' ? 'استيراد ملفات/صور' : 'Import Files / Images'}
+            </h2>
+            <p className="text-slate-400 text-base font-medium max-w-xl leading-relaxed mt-2 opacity-80">
+              {language === 'ar' 
+                ? 'استخرج المعاملات المالية بذكاء من PDF، Word، Excel، أو حتى الصور الملتقطة.' 
+                : 'Intelligently extract financial transactions from PDF, Word, Excel, or captured photos.'}
+            </p>
+          </div>
+
+          <button 
+            onClick={onClose} 
+            className="text-slate-400 hover:text-white transition-all bg-white/5 hover:bg-white/10 p-3 rounded-2xl border border-white/10 hover:scale-110 active:scale-95 shadow-xl"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
 
         {parsedRows.length === 0 && !isProcessing && (
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex flex-wrap items-center gap-4 mb-4 dark:bg-slate-800/40 bg-slate-100 p-3 rounded-2xl border dark:border-white/5 border-slate-300">
-                <span className="text-sm font-black ml-1 text-theme-muted">{t('ocrLanguage') || 'OCR Language'}:</span>
-                <div className="flex gap-1.5">
+          <div className="px-10 pb-10 flex flex-col flex-1 overflow-hidden">
+            {/* Language Selector Pill */}
+            <div className="flex items-center justify-center mb-10">
+              <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 p-2 rounded-[2.5rem] flex items-center gap-3 shadow-2xl">
+                <div className="flex items-center gap-3 px-5 py-2 border-r border-white/10 rtl:border-r-0 rtl:border-l">
+                   <AlertCircle className="w-4 h-4 text-amber-500" />
+                   <span className="text-[11px] font-black text-slate-300 uppercase tracking-widest">
+                     {language === 'ar' ? 'لغة التعرف' : 'OCR Language'}
+                   </span>
+                </div>
+                <div className="flex gap-2 pr-2 rtl:pr-0 rtl:pl-2">
                   {(['ara+eng', 'ara', 'eng'] as const).map(lang => (
                     <button 
                       key={lang}
                       onClick={() => setOcrLanguage(lang)}
                       className={cn(
-                        "px-4 py-1.5 rounded-xl text-xs font-black transition-all uppercase tracking-tight",
-                        ocrLanguage === lang ? "bg-indigo-600 text-white shadow-lg" : "dark:bg-slate-700 bg-white dark:text-slate-300 text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-300 dark:border-none"
+                        "px-6 py-2.5 rounded-[1.5rem] text-[11px] font-black transition-all uppercase tracking-widest",
+                        ocrLanguage === lang 
+                          ? "bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.4)] scale-105" 
+                          : "text-slate-500 hover:text-white hover:bg-white/5"
                       )}
                     >
                       {lang.toUpperCase()}
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-amber-600 dark:text-amber-400 font-bold ml-auto">
+                <div className="flex items-center gap-2 text-[10px] text-amber-400/80 font-bold px-4">
                   <AlertCircle className="w-3.5 h-3.5" />
-                  <span>Tip: Use <b>ENG</b> for purely English docs.</span>
+                  <span>Tip: Use <b>ENG</b> for purely English docs</span>
                 </div>
+              </div>
             </div>
 
-            <div 
+            {/* Upload Area */}
+            <label 
+              htmlFor="file-upload-input"
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleFileDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 min-h-[300px] border-2 border-dashed dark:border-slate-700 border-slate-300 hover:border-indigo-500 dark:hover:bg-indigo-500/10 hover:bg-indigo-50 transition-all rounded-3xl flex flex-col items-center justify-center cursor-pointer p-8 text-center group"
+              className="flex-1 min-h-[380px] border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] hover:bg-indigo-500/[0.05] transition-all duration-500 rounded-[3rem] flex flex-col items-center justify-center cursor-pointer p-12 group relative overflow-hidden shadow-inner"
             >
               <input 
+                id="file-upload-input"
+                name="document"
                 type="file" 
                 accept=".pdf, .docx, .xlsx, .xls, .pptx, .png, .jpg, .jpeg, .webp" 
                 className="hidden" 
                 ref={fileInputRef}
                 onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
               />
-              <div className="flex gap-4 mb-6">
-                <FileText className="w-12 h-12 text-rose-500 dark:text-rose-400 group-hover:scale-110 transition-transform" />
-                <FileSpreadsheet className="w-12 h-12 text-emerald-500 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-                <Presentation className="w-12 h-12 text-orange-500 dark:text-orange-400 group-hover:scale-110 transition-transform" />
-                <Image className="w-12 h-12 text-sky-500 dark:text-sky-400 group-hover:scale-110 transition-transform" />
+              
+              <div className="flex gap-8 mb-12 relative z-10">
+                {[
+                  { icon: FileText, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+                  { icon: FileSpreadsheet, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+                  { icon: Presentation, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+                  { icon: Image, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
+                ].map((item, i) => (
+                  <div key={i} className={cn(
+                    "p-5 rounded-2xl border transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:-translate-y-2",
+                    item.bg, item.border
+                  )}>
+                    <item.icon className={cn("w-10 h-10", item.color)} />
+                  </div>
+                ))}
               </div>
-              <h3 className="text-xl font-black mb-2 font-cairo uppercase tracking-tight text-theme-primary">{t('clickToUpload')}</h3>
-              <p className="text-sm max-w-md font-black italic text-theme-muted">PDF, Word, Excel, PPTX, PNG, JPG (Max 10MB)</p>
-            </div>
+
+              <div className="text-center space-y-4 relative z-10">
+                <h3 className="text-3xl font-black text-white tracking-tight leading-tight">
+                  {language === 'ar' ? 'انقر هنا للرفع أو اسحب الملف هنا' : 'Click to upload or drag files here'}
+                </h3>
+                <p className="text-slate-500 text-sm font-black uppercase tracking-[0.3em] opacity-60">
+                  PDF, Word, Excel, PPTX, PNG, JPG (Max 10MB)
+                </p>
+              </div>
+
+              {/* Decorative gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/[0.03] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+              
+              {/* Corner Accents */}
+              <div className="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-white/5 rounded-tl-xl group-hover:border-indigo-500/30 transition-colors"></div>
+              <div className="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-white/5 rounded-br-xl group-hover:border-indigo-500/30 transition-colors"></div>
+            </label>
           </div>
         )}
 
         {isProcessing && (
-          <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] space-y-6">
-            <div className="relative w-24 h-24">
-               <div className="absolute inset-0 border-4 dark:border-indigo-500/20 border-indigo-100 rounded-full"></div>
-               <div className="absolute inset-0 border-4 border-indigo-600 dark:border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] space-y-8 p-12">
+            <div className="relative w-32 h-32">
+               <div className="absolute inset-0 border-[6px] border-white/5 rounded-full"></div>
+               <div className="absolute inset-0 border-[6px] border-indigo-500 border-t-transparent rounded-full animate-spin shadow-[0_0_20px_rgba(99,102,241,0.3)]"></div>
             </div>
-            <div className="text-center">
-               <p className="font-black text-2xl mb-4 uppercase tracking-widest text-theme-primary">{status}</p>
-               <div className="w-64 h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mx-auto shadow-inner">
-                  <div className="h-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-300" style={{ width: `${progress}%` }}></div>
+            <div className="text-center space-y-4">
+               <p className="font-black text-2xl uppercase tracking-[0.3em] text-white animate-pulse">{status}</p>
+               <div className="w-80 h-3 bg-white/5 rounded-full overflow-hidden mx-auto border border-white/5 shadow-inner">
+                  <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 transition-all duration-300" style={{ width: `${progress}%` }}></div>
                </div>
-               <p className="dark:text-slate-400 text-slate-500 text-sm mt-3 font-black">{progress}%</p>
+               <p className="text-indigo-400 text-sm font-black tracking-widest">{progress}%</p>
             </div>
           </div>
         )}
 
         {error && !isProcessing && (
-          <div className="mt-4 p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-600 dark:text-rose-400 shadow-sm animate-fade-in">
-            <AlertCircle className="w-6 h-6 flex-shrink-0" />
-            <p className="text-sm font-bold">{error}</p>
+          <div className="mx-8 mb-8 p-6 bg-rose-500/10 border border-rose-500/20 rounded-3xl flex items-center gap-4 text-rose-400 shadow-2xl shadow-rose-500/5 animate-in slide-in-from-top-2">
+            <AlertCircle className="w-7 h-7 flex-shrink-0" />
+            <p className="text-sm font-black leading-relaxed">{error}</p>
           </div>
         )}
 
         {parsedRows.length > 0 && !isProcessing && (
-          <div className="flex-1 flex flex-col overflow-hidden animate-fade-in">
-            <div className="flex-1 overflow-auto rounded-2xl border dark:border-white/10 border-slate-200 dark:bg-slate-800/30 bg-slate-50 mb-4 custom-scrollbar shadow-inner">
+          <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 px-10 pb-10">
+            <div className="flex-1 overflow-auto rounded-[2rem] border border-white/10 bg-black/20 mb-6 custom-scrollbar shadow-inner relative">
               <table className="w-full text-left rtl:text-right text-sm">
-                <thead className="text-[11px] uppercase dark:bg-slate-900/90 bg-slate-200 dark:text-slate-400 text-slate-900 sticky top-0 backdrop-blur-md z-10 font-black tracking-widest border-b border-slate-300 dark:border-white/10">
+                <thead className="text-[10px] uppercase bg-slate-900/90 text-slate-500 sticky top-0 backdrop-blur-xl z-10 font-black tracking-[0.15em] border-b border-white/5">
                   <tr>
-                    <th className="px-6 py-4">
+                    <th className="px-6 py-5">
                       <input 
+                        id="select-all-parsed"
+                        name="selectAllParsed"
                         type="checkbox" 
                         checked={parsedRows.every(r => r.selected)}
                         onChange={(e) => setParsedRows(prev => prev.map(r => ({ ...r, selected: e.target.checked })))}
-                        className="rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500 w-5 h-5 cursor-pointer transition-all"
+                        className="rounded-lg border-white/10 bg-white/5 text-indigo-500 focus:ring-indigo-500/30 w-5 h-5 cursor-pointer transition-all appearance-none checked:bg-indigo-500 relative before:content-[''] before:absolute before:inset-0 before:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0yMCA2TDkgMTdsLTUtNSIvPjwvc3ZnPg==')] before:bg-no-repeat before:bg-center before:bg-[length:14px_14px] before:opacity-0 checked:before:opacity-100"
+                        aria-label="Select all parsed rows"
                       />
                     </th>
-                    <th className="px-6 py-4">{t('date')}</th>
-                    <th className="px-6 py-4">{t('description')}</th>
-                    <th className="px-6 py-4">{t('account') || 'Account'}</th>
-                    <th className="px-6 py-4 text-right rtl:text-left">{t('amount')}</th>
+                    <th className="px-6 py-5">{t('date')}</th>
+                    <th className="px-6 py-5">{t('description')}</th>
+                    <th className="px-6 py-5">{t('account') || 'Account'}</th>
+                    <th className="px-6 py-5 text-right rtl:text-left">{t('amount')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y dark:divide-white/5 divide-slate-200">
-                  {parsedRows.map(row => {
+                <tbody className="divide-y divide-white/5">
+                  {parsedRows.map((row, idx) => {
                     const d = row.description.toLowerCase();
                     const isTotal = /\btotal\b|إجمالي|مجموع|صافي|net\b|liabilities.*equity|shareholders.*funds/i.test(d);
                     
                     return (
                     <tr key={row.id} className={cn(
-                      "dark:hover:bg-white/5 hover:bg-white transition-all group",
-                      isTotal && "bg-indigo-50/50 dark:bg-indigo-500/5"
+                      "hover:bg-white/[0.03] transition-all group",
+                      isTotal && "bg-indigo-500/[0.03]"
                     )}>
                       <td className="px-6 py-4">
                         <input 
+                          id={`select-row-${idx}`}
+                          name={`selectRow-${idx}`}
                           type="checkbox" 
                           checked={row.selected}
                           onChange={() => handleToggleRow(row.id)}
                           className={cn(
-                            "rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500 w-5 h-5 cursor-pointer transition-all",
+                            "rounded-lg border-white/10 bg-white/5 text-indigo-500 focus:ring-indigo-500/30 w-5 h-5 cursor-pointer transition-all appearance-none checked:bg-indigo-500 relative before:content-[''] before:absolute before:inset-0 before:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0yMCA2TDkgMTdsLTUtNSIvPjwvc3ZnPg==')] before:bg-no-repeat before:bg-center before:bg-[length:14px_14px] before:opacity-0 checked:before:opacity-100",
                             isTotal && "opacity-40"
                           )}
+                          aria-label={`Select row ${idx + 1}`}
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                         {isTotal && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-tighter mr-2">Total</span>}
+                         {isTotal && <span className="text-[9px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-tighter mr-2">Total</span>}
                         <input 
+                          id={`date-row-${idx}`}
+                          name={`dateRow-${idx}`}
                           type="text" 
                           value={row.date}
                           onChange={(e) => handleUpdateRow(row.id, 'date', e.target.value)}
-                          className="bg-transparent border-none focus:ring-2 focus:ring-indigo-500/30 rounded-lg px-2 py-1.5 w-28 font-black transition-all dark:text-white text-slate-900"
+                          className="bg-transparent border-none focus:ring-1 focus:ring-white/10 rounded-lg px-2 py-1.5 w-28 font-black transition-all text-white"
+                          aria-label={`Date for row ${idx + 1}`}
                         />
                       </td>
                       <td className="px-6 py-4 w-full">
                         <input 
+                          id={`desc-row-${idx}`}
+                          name={`descRow-${idx}`}
                           type="text" 
                           value={row.description}
                           onChange={(e) => handleUpdateRow(row.id, 'description', e.target.value)}
-                          className="bg-transparent border-none focus:ring-2 focus:ring-indigo-500/30 rounded-lg px-2 py-1.5 w-full font-black transition-all dark:text-white text-slate-900"
+                          className="bg-transparent border-none focus:ring-1 focus:ring-white/10 rounded-lg px-2 py-1.5 w-full font-black transition-all text-white"
+                          aria-label={`Description for row ${idx + 1}`}
                         />
                       </td>
                       <td className="px-6 py-4">
                         <select
+                          id={`account-row-${idx}`}
+                          name={`accountRow-${idx}`}
                           value={row.accountId}
                           onChange={(e) => handleUpdateRow(row.id, 'accountId', e.target.value)}
-                          className="dark:bg-slate-900/50 bg-white border dark:border-white/10 border-slate-300 rounded-xl text-xs font-black dark:text-indigo-300 text-indigo-900 p-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm"
+                          className="bg-slate-900/50 border border-white/10 rounded-xl text-[11px] font-black text-indigo-300 p-2.5 outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all cursor-pointer shadow-lg"
+                          aria-label={`Account for row ${idx + 1}`}
                         >
-                          <optgroup label="Assets" className="font-black text-[10px] uppercase dark:bg-slate-900 bg-slate-50">
+                          <optgroup label="Assets" className="font-black text-[10px] uppercase bg-slate-900">
                              <option value="bank" className="font-bold">Bank / بنك</option>
                              <option value="cash" className="font-bold">Cash / نقدية</option>
                              <option value="ar" className="font-bold">Receivables / مدينون</option>
@@ -649,12 +717,12 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
                              <option value="cars" className="font-bold">Cars / سيارات</option>
                              <option value="fixed_assets" className="font-bold">Fixed Assets / أصول ثابتة</option>
                           </optgroup>
-                          <optgroup label="Liabilities" className="font-black text-[10px] uppercase dark:bg-slate-900 bg-slate-50">
+                          <optgroup label="Liabilities" className="font-black text-[10px] uppercase bg-slate-900">
                              <option value="ap" className="font-bold">Payables / دائنون</option>
                              <option value="short_term_loans" className="font-bold">Short Loans / قروض قصيرة</option>
                              <option value="long_term_loans" className="font-bold">Long Loans / قروض طويلة</option>
                           </optgroup>
-                          <optgroup label="Equity" className="font-black text-[10px] uppercase dark:bg-slate-900 bg-slate-50">
+                          <optgroup label="Equity" className="font-black text-[10px] uppercase bg-slate-900">
                              <option value="capital" className="font-bold">Capital / رأس مال</option>
                              <option value="retained_earnings" className="font-bold">Retained Earnings / أرباح مبقاة</option>
                              <option value="revenue" className="font-bold">Revenue / إيرادات</option>
@@ -664,10 +732,13 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right rtl:text-left">
                         <input 
+                          id={`amount-row-${idx}`}
+                          name={`amountRow-${idx}`}
                           type="number" 
                           value={row.amount || ''}
                           onChange={(e) => handleUpdateRow(row.id, 'amount', parseFloat(e.target.value) || 0)}
-                          className="bg-transparent border-none focus:ring-2 focus:ring-indigo-500/30 rounded-lg px-2 py-1.5 w-32 text-right rtl:text-left dark:text-indigo-300 text-indigo-600 font-black text-base transition-all"
+                          className="bg-transparent border-none focus:ring-1 focus:ring-white/10 rounded-lg px-2 py-1.5 w-32 text-right rtl:text-left text-indigo-400 font-black text-base transition-all"
+                          aria-label={`Amount for row ${idx + 1}`}
                         />
                       </td>
                     </tr>
@@ -677,27 +748,26 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
               </table>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 justify-end pt-5 border-t dark:border-white/10 border-slate-200">
+            <div className="flex flex-wrap items-center gap-4 justify-end pt-6 border-t border-white/10">
               <div className="mr-auto flex items-center gap-4">
                 <button 
                   onClick={handleAddManualRow}
-                  className="px-5 py-2.5 rounded-xl text-xs font-black dark:bg-indigo-500/10 bg-indigo-50 dark:text-indigo-400 text-indigo-600 hover:dark:bg-indigo-500/20 hover:bg-indigo-100 transition-all border border-indigo-500/30 uppercase tracking-widest shadow-sm"
+                  className="px-6 py-3 rounded-2xl text-[11px] font-black bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-all border border-indigo-500/20 uppercase tracking-[0.1em] shadow-lg shadow-indigo-500/5"
                 >
                   + Add Row Manually
                 </button>
                 
-                {/* Real-time Balance Check Indicator */}
-                <div className="flex gap-4 p-2 bg-slate-100 dark:bg-slate-800/50 rounded-2xl border dark:border-white/5 border-slate-200">
-                   <div className="px-3 py-1 flex flex-col">
-                      <span className="text-[9px] uppercase font-black text-theme-muted">Assets</span>
-                      <span className="text-xs font-black text-emerald-600">
+                <div className="flex gap-4 p-2 bg-black/20 rounded-[1.25rem] border border-white/5">
+                   <div className="px-4 py-1.5 flex flex-col items-center">
+                      <span className="text-[9px] uppercase font-black text-slate-500 mb-0.5">Assets</span>
+                      <span className="text-sm font-black text-emerald-400">
                         {parsedRows.filter(r => r.selected && r.accountId !== 'ap' && r.accountId !== 'capital' && r.accountId !== 'retained_earnings').reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
                       </span>
                    </div>
-                   <div className="w-[1px] bg-slate-300 dark:bg-white/10 self-stretch"></div>
-                   <div className="px-3 py-1 flex flex-col">
-                      <span className="text-[9px] uppercase font-black text-theme-muted">L + E</span>
-                      <span className="text-xs font-black text-rose-600">
+                   <div className="w-[1px] bg-white/5 self-stretch"></div>
+                   <div className="px-4 py-1.5 flex flex-col items-center">
+                      <span className="text-[9px] uppercase font-black text-slate-500 mb-0.5">L + E</span>
+                      <span className="text-sm font-black text-rose-400">
                         {parsedRows.filter(r => r.selected && (r.accountId === 'ap' || r.accountId === 'capital' || r.accountId === 'retained_earnings' || r.accountId === 'short_term_loans')).reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
                       </span>
                    </div>
@@ -706,34 +776,25 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
 
               <button 
                 onClick={() => setShowRawText(!showRawText)}
-                className="px-5 py-2.5 rounded-xl text-xs font-black dark:bg-slate-800 bg-slate-100 dark:text-indigo-400 text-indigo-600 hover:dark:bg-slate-700 hover:bg-slate-200 transition-all border dark:border-indigo-500/20 border-slate-300 uppercase tracking-widest shadow-sm"
+                className="px-6 py-3 rounded-2xl text-[11px] font-black bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/10 uppercase tracking-[0.1em]"
               >
-                {showRawText ? 'Hide Text' : 'View Detected Text'}
+                {showRawText ? 'Hide Text' : 'View Raw Text'}
               </button>
-              <button 
-                onClick={() => { setParsedRows([]); setError(null); setRawText(''); }} 
-                className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-800 dark:hover:bg-slate-800 hover:bg-slate-100 transition-all uppercase tracking-widest"
-                disabled={isProcessing}
-              >
-                {t('clear') || 'Reset'}
-              </button>
-              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-800 dark:hover:bg-slate-800 hover:bg-slate-100 transition-all uppercase tracking-widest">
-                {t('cancel')}
-              </button>
+              
               <button 
                 onClick={handleImport}
                 disabled={!parsedRows.some(r => r.selected)}
-                className="px-8 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black transition-all shadow-xl shadow-indigo-600/20 disabled:opacity-50 flex items-center gap-3 uppercase tracking-widest text-sm"
+                className="px-10 py-4 rounded-[1.5rem] bg-indigo-600 hover:bg-indigo-500 text-white font-black transition-all shadow-xl shadow-indigo-600/20 disabled:opacity-50 flex items-center gap-3 uppercase tracking-[0.2em] text-xs"
               >
-                <CheckCircle2 className="w-6 h-6" />
+                <CheckCircle2 className="w-5 h-5" />
                 {t('save')} ({parsedRows.filter(r => r.selected).length})
               </button>
             </div>
 
             {showRawText && (
-               <div className="mt-5 p-5 dark:bg-slate-950/80 bg-slate-100 rounded-2xl border dark:border-white/5 border-slate-200 max-h-[300px] overflow-auto shadow-inner animate-fade-in relative">
-                  <h4 className="text-[10px] font-black dark:text-slate-500 text-slate-400 mb-3 sticky top-0 dark:bg-slate-950/90 bg-slate-100/90 backdrop-blur-sm uppercase tracking-widest">RAW TEXT EXTRACTED:</h4>
-                  <pre className="text-[11px] dark:text-slate-400 text-slate-600 whitespace-pre-wrap font-mono leading-relaxed px-1">
+               <div className="mt-6 p-6 bg-black/40 rounded-[1.5rem] border border-white/5 max-h-[250px] overflow-auto shadow-inner animate-in slide-in-from-top-2">
+                  <h4 className="text-[9px] font-black text-slate-500 mb-4 sticky top-0 bg-black/40 backdrop-blur-md uppercase tracking-[0.2em]">RAW TEXT EXTRACTED:</h4>
+                  <pre className="text-[11px] text-slate-400 whitespace-pre-wrap font-mono leading-relaxed">
                      {rawText || "Processing text..."}
                   </pre>
                </div>

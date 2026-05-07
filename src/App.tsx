@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Trash2, Calculator, CheckCircle2, XCircle, AlertCircle, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, FileText, LogOut, Paperclip, Eye, FileImage, ImageIcon, Sun, Moon, Menu, Info, Mail, Phone, MapPin, Send, Heart, Shield, Zap } from 'lucide-react';
+import { Plus, Trash2, Calculator, CheckCircle2, XCircle, AlertCircle, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, FileText, LogOut, Paperclip, Eye, FileImage, ImageIcon, Sun, Moon, Menu, Info, Mail, Phone, MapPin, Send, Heart, Shield, Zap, Clock, User as UserIcon } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -7,11 +7,12 @@ import { Toaster, toast } from 'sonner';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { auth, db, googleProvider, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, doc, onSnapshot, setDoc, query, orderBy, writeBatch, addDoc } from 'firebase/firestore';
 import { useLanguage } from './i18n';
 import { FileScanner as PdfScanner } from './PdfScanner';
 import { DepreciationModal } from './DepreciationModal';
+import { SnapshotsModal } from './SnapshotsModal';
 
 // Utility for tailwind classes
 function cn(...inputs: ClassValue[]) {
@@ -212,6 +213,7 @@ export default function App() {
   // PDF Scanner State
   const [isPdfScannerOpen, setIsPdfScannerOpen] = useState(false);
   const [isDepreciationModalOpen, setIsDepreciationModalOpen] = useState(false);
+  const [isSnapshotsModalOpen, setIsSnapshotsModalOpen] = useState(false);
 
   // Document Archiving State
   const [isUploading, setIsUploading] = useState(false);
@@ -860,7 +862,13 @@ export default function App() {
       const canvas = await html2canvas(tableElement, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.offsetWidth,
+        windowHeight: document.documentElement.offsetHeight
       });
       
       // Restore original styles
@@ -902,92 +910,10 @@ export default function App() {
     return <div className="min-h-screen flex items-center justify-center bg-slate-800/10 dark:bg-slate-800/20 dark:text-white text-slate-900 font-black tracking-widest">{t('loading')}</div>;
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 relative z-10" dir={dir}>
-        <div className="glass-card p-10 max-w-md w-full text-center animate-fade-in">
-          <Calculator className="w-16 h-16 text-indigo-400 mx-auto mb-6 filter drop-shadow-[0_0_15px_rgba(99,102,241,0.8)]" />
-          <h1 className="text-2xl font-black mb-2 text-theme-primary">{t('appTitle')}</h1>
-          <p className="mb-8 font-bold text-theme-primary opacity-90">{t('loginPrompt')}</p>
-          <button 
-            onClick={() => signInWithPopup(auth, googleProvider)}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-          >
-            {t('loginGoogle')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative max-w-[1920px] mx-auto p-4 sm:p-6 lg:p-10 xl:px-12 space-y-8 z-10 animate-fade-in">
+    <>
+      <div className="relative max-w-[1920px] mx-auto p-4 sm:p-6 lg:p-10 xl:px-12 space-y-8 z-10 animate-fade-in">
       <Toaster position="top-center" richColors theme={theme === 'system' ? 'system' : theme} dir={dir} />
-      
-      {isPdfScannerOpen && (
-        <PdfScanner 
-          onClose={() => setIsPdfScannerOpen(false)}
-          onImport={(rows) => {
-            const newTransactions = rows.map(r => {
-              const accountId = r.accountId || 'bank'; // Use account selected by user in scanner
-              const account = ACCOUNTS.find(a => a.id === accountId);
-              const category = account?.category || 'asset';
-
-              let impacts: Omit<Impact, 'id'>[] = [];
-              if (category === 'asset') {
-                impacts = [
-                  { accountId: accountId, amount: r.amount },
-                  { accountId: 'capital', amount: r.amount } // Balancer
-                ];
-              } else if (category === 'liability') {
-                impacts = [
-                  { accountId: accountId, amount: r.amount },
-                  { accountId: 'capital', amount: -r.amount }
-                ];
-              } else {
-                impacts = [
-                  { accountId: accountId, amount: r.amount },
-                  { accountId: 'bank', amount: -r.amount }
-                ];
-              }
-
-              return {
-                id: r.id,
-                date: r.date,
-                description: r.description,
-                impacts: impacts.map(i => ({ ...i, id: Math.random().toString(36).substr(2, 9) })),
-                createdAt: new Date().toISOString()
-              };
-            });
-            const updated = [...transactions, ...newTransactions];
-            setTransactions(updated);
-            updateTransactions(updated);
-            toast.success(t('added') || 'Import completed successfully');
-          }}
-        />
-      )}
-
-      {isDepreciationModalOpen && (
-        <DepreciationModal
-          isOpen={isDepreciationModalOpen}
-          onClose={() => setIsDepreciationModalOpen(false)}
-          assets={assets.map(a => ({ id: a.id, name: a.name }))}
-          onApply={(accountId, amount, description) => {
-            const newTx: Transaction = {
-              id: Math.random().toString(36).substr(2, 9),
-              date: new Date().toLocaleDateString('ar-SA'),
-              description,
-              impacts: [
-                { id: Math.random().toString(36).substr(2, 9), accountId, amount },
-                { id: Math.random().toString(36).substr(2, 9), accountId: 'expenses', amount }
-              ],
-              createdAt: new Date().toISOString()
-            };
-            updateTransactions([...transactions, newTx]);
-            toast.success(t('added'));
-          }}
-        />
-      )}
 
       {/* Header */}
       <header className="sticky top-4 z-40 glass p-3 md:px-6 md:py-3 mb-8 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.5)] rounded-[2.5rem] mx-4 xl:mx-auto max-w-[1850px] dark:bg-slate-900/60 bg-white/80 dark:border-white/10 border-slate-200 transition-all duration-300">
@@ -1070,20 +996,49 @@ export default function App() {
           {/* User Profile Area */}
           <div className="flex items-center gap-3 dark:bg-white/5 bg-slate-100 px-2 py-1.5 rounded-[1.25rem] border dark:border-white/5 border-slate-200 dark:hover:bg-white/10 hover:bg-slate-200 transition-colors shadow-inner group/user">
             <div className="relative">
-              <img src={user.photoURL || ''} alt="Profile" className="w-8 h-8 rounded-full ring-2 dark:ring-white/10 ring-slate-200 group-hover/user:ring-indigo-500/50 transition-all" referrerPolicy="no-referrer" />
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 dark:border-slate-900 border-white rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+              {user ? (
+                <img src={user.photoURL || ''} alt="Profile" className="w-8 h-8 rounded-full ring-2 dark:ring-white/10 ring-slate-200 group-hover/user:ring-indigo-500/50 transition-all" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center ring-2 dark:ring-white/10 ring-slate-200 group-hover/user:ring-indigo-500/50 transition-all">
+                  <UserIcon className="w-4 h-4 text-indigo-400" />
+                </div>
+              )}
+              <div className={cn(
+                "absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 dark:border-slate-900 border-white rounded-full shadow-lg",
+                user ? "bg-emerald-500" : "bg-slate-400"
+              )}></div>
             </div>
             <div className="hidden lg:block leading-none">
-              <span className="text-[13px] font-black dark:text-white text-slate-900 block">{user.displayName}</span>
-              <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">{t('pro_account') || 'PRO account'}</span>
+              <span className="text-[13px] font-black dark:text-white text-slate-900 block">
+                {user ? user.displayName : t('guestUser') || 'Guest User'}
+              </span>
+              <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">
+                {user ? (t('pro_account') || 'PRO account') : (t('local_mode') || 'Offline Mode')}
+              </span>
             </div>
-            <button 
-              onClick={() => signOut(auth)}
-              className="dark:text-white/40 text-slate-400 hover:text-rose-400 dark:hover:bg-rose-500/10 hover:bg-rose-50 p-2 rounded-xl transition-all"
-              title={t('logout')}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            {user ? (
+              <button 
+                onClick={() => signOut(auth)}
+                className="dark:text-white/40 text-slate-400 hover:text-rose-400 dark:hover:bg-rose-500/10 hover:bg-rose-50 p-2 rounded-xl transition-all"
+                title={t('logout')}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            ) : (
+              <button 
+                onClick={() => signInWithPopup(auth, googleProvider)}
+                className="dark:text-white text-slate-900 dark:bg-white/10 bg-white hover:bg-slate-50 dark:hover:bg-white/20 px-4 py-2 rounded-xl transition-all flex items-center gap-2.5 group/login border dark:border-white/10 border-slate-200 shadow-sm"
+                title={t('login')}
+              >
+                <svg className="w-4 h-4 group-hover/login:scale-110 transition-transform" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                <span className="text-[11px] font-black uppercase tracking-widest">{t('login')}</span>
+              </button>
+            )}
           </div>
 
           {/* Currency Switcher */}
@@ -1269,8 +1224,10 @@ export default function App() {
               {/* Date & Description Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="col-span-1">
-                  <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('date')}</label>
+                  <label htmlFor="tx-date" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('date')}</label>
                   <input 
+                    id="tx-date"
+                    name="date"
                     type="text" 
                     value={date}
                     onChange={e => setDate(e.target.value)}
@@ -1279,8 +1236,10 @@ export default function App() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('description')}</label>
+                  <label htmlFor="tx-desc" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('description')}</label>
                   <input 
+                    id="tx-desc"
+                    name="description"
                     type="text" 
                     required
                     value={description}
@@ -1293,15 +1252,15 @@ export default function App() {
 
               {/* Document Attachment Section */}
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold dark:text-slate-400 text-black uppercase tracking-widest ml-1">{t('attachDocument')}</label>
+                <label htmlFor="tx-file" className="block text-[11px] font-bold dark:text-slate-400 text-black uppercase tracking-widest ml-1">{t('attachDocument')}</label>
                 <div className="flex items-center gap-3">
-                  <label className="flex-1 flex items-center justify-center gap-3 px-4 py-4 bg-slate-900/40 border-2 border-white/5 border-dashed rounded-2xl hover:bg-slate-800/60 hover:border-indigo-500/30 cursor-pointer transition-all group overflow-hidden relative">
+                  <label htmlFor="tx-file" className="flex-1 flex items-center justify-center gap-3 px-4 py-4 bg-slate-900/40 border-2 border-white/5 border-dashed rounded-2xl hover:bg-slate-800/60 hover:border-indigo-500/30 cursor-pointer transition-all group overflow-hidden relative">
                     <div className="absolute inset-0 bg-indigo-500/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
                     <Paperclip className="w-5 h-5 text-indigo-400 group-hover:rotate-12 transition-transform" />
                     <span className="text-xs text-slate-300 font-bold truncate max-w-[180px] relative z-10">
                       {selectedFile ? selectedFile.name : t('attachDocument')}
                     </span>
-                    <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                    <input id="tx-file" name="attachment" type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
                   </label>
                   {selectedFile && (
                     <button type="button" onClick={() => setSelectedFile(null)} className="p-4 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl transition-all border border-rose-500/20 group">
@@ -1313,8 +1272,10 @@ export default function App() {
 
               {/* Recurring Transaction Logic */}
               <div className="flex flex-wrap items-center gap-4 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
-                <label className="flex items-center gap-3 cursor-pointer group">
+                <label htmlFor="tx-recurring" className="flex items-center gap-3 cursor-pointer group">
                   <input
+                    id="tx-recurring"
+                    name="isRecurring"
                     type="checkbox"
                     checked={isRecurring}
                     onChange={(e) => setIsRecurring(e.target.checked)}
@@ -1325,8 +1286,10 @@ export default function App() {
                 
                 {isRecurring && (
                   <div className="flex items-center gap-3 animate-fade-in pl-2 border-l border-white/10">
-                    <span className="text-[10px] font-bold dark:text-slate-400 text-black uppercase tracking-widest">{t('repeatsEveryLabel')}</span>
+                    <label htmlFor="tx-recurrence-interval" className="text-[10px] font-bold dark:text-slate-400 text-black uppercase tracking-widest">{t('repeatsEveryLabel')}</label>
                     <select
+                      id="tx-recurrence-interval"
+                      name="recurrenceInterval"
                       value={recurrenceInterval}
                       onChange={(e) => setRecurrenceInterval(e.target.value as any)}
                       className="px-4 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900 dark:text-white text-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
@@ -1343,7 +1306,7 @@ export default function App() {
               {/* Account Impacts Section */}
               <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-bold uppercase tracking-widest ml-1 text-theme-muted">{t('impactOnAccounts')}</label>
+                  <span className="text-[11px] font-bold uppercase tracking-widest ml-1 text-theme-muted">{t('impactOnAccounts')}</span>
                   <button 
                     type="button" 
                     onClick={handleAddImpact}
@@ -1369,8 +1332,10 @@ export default function App() {
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                         {/* Account Picker */}
                         <div className="md:col-span-12 lg:col-span-7 space-y-2">
-                          <label className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('accountName')}</label>
+                          <label htmlFor={`account-id-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('accountName')}</label>
                           <select 
+                            id={`account-id-${idx}`}
+                            name={`accountId-${idx}`}
                             value={impact.accountId}
                             onChange={e => handleImpactChange(idx, 'accountId', e.target.value)}
                             className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold cursor-pointer transition-colors"
@@ -1395,7 +1360,7 @@ export default function App() {
                         
                         {/* Value Input Area */}
                         <div className="md:col-span-12 lg:col-span-5 space-y-2">
-                          <label className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('impactValue')}</label>
+                          <label htmlFor={`amount-input-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('impactValue')}</label>
                           {(() => {
                             const amount = typeof impact.amount === 'number' ? impact.amount : 0;
                             const isNeg = amount < 0 || Object.is(amount, -0);
@@ -1427,6 +1392,8 @@ export default function App() {
 
                                 <div className="relative group/input">
                                   <input 
+                                    id={`amount-input-${idx}`}
+                                    name={`amount-${idx}`}
                                     type="number"
                                     min="0"
                                     step="any"
@@ -1622,12 +1589,15 @@ export default function App() {
                               </span>
                               {isEditingBudgets ? (
                                 <input
+                                  id={`budget-${account.id}`}
+                                  name={`budget-${account.id}`}
                                   type="number"
                                   value={allocated || ''}
                                   onChange={(e) => setBudgets({ ...budgets, [account.id]: parseFloat(e.target.value) || 0 })}
                                   className="w-24 px-2 py-1 border border-white/20 rounded text-left text-sm font-medium focus:ring-1 focus:ring-indigo-500 outline-none"
                                   dir="ltr"
                                   placeholder="0"
+                                  aria-label={`${t('budgetAlerts')} - ${t(account.name)}`}
                                 />
                               ) : (
                                 <span className="dark:text-white text-slate-900 text-[11px]" dir="ltr">
@@ -1669,6 +1639,33 @@ export default function App() {
                   <ArrowRightLeft className="w-5 h-5 text-theme-primary" />
                   {t('transactionHistory')}
                 </h2>
+                <div className="flex items-center gap-1 mx-2 bg-slate-800/40 rounded-lg p-1 border dark:border-white/5 border-slate-200">
+                  <button 
+                    onClick={handleUndo} 
+                    disabled={historyIndex <= 0}
+                    className="p-1.5 dark:text-slate-400 text-slate-500 hover:text-indigo-600 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
+                    title={language === 'ar' ? "تراجع عن التعديل الأخير" : "Undo last change"}
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={handleRedo} 
+                    disabled={historyIndex >= history.length - 1}
+                    className="p-1.5 dark:text-slate-400 text-slate-500 hover:text-indigo-600 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
+                    title={language === 'ar' ? "إعادة التعديل المتراجع عنه" : "Redo"}
+                  >
+                    <Redo2 className="w-4 h-4" />
+                  </button>
+                  <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+                  <button 
+                    onClick={() => setIsSnapshotsModalOpen(true)}
+                    className="flex items-center gap-1.5 px-2 py-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded transition-colors"
+                    title={language === 'ar' ? "سجل النسخ الاحتياطية" : "Backups History"}
+                  >
+                    <Clock className="w-4 h-4" />
+                    <span className="hidden sm:inline">{language === 'ar' ? "النسخ السابقة" : "Backups"}</span>
+                  </button>
+                </div>
                 <button 
                   onClick={() => setIsPdfScannerOpen(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium dark:bg-indigo-600/20 bg-indigo-100 dark:text-indigo-300 text-indigo-900 hover:bg-indigo-200 dark:hover:bg-indigo-600/30 rounded-lg transition-colors border dark:border-indigo-500/30 border-indigo-200 shadow-sm"
@@ -1732,10 +1729,13 @@ export default function App() {
                     <tr className="border-b border-white/10 ring-1 ring-white/5">
                       <th className="p-4 border-l border-white/5 w-10 bg-slate-900/40 text-center">
                         <input 
+                          id="select-all-transactions"
+                          name="selectAll"
                           type="checkbox" 
                           checked={transactions.length > 0 && selectedTransactions.size === transactions.length}
                           onChange={handleSelectAll}
                           className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          aria-label={t('selectAll') || 'Select All'}
                         />
                       </th>
                       <th className="p-4 border-l border-white/5 font-bold text-[11px] uppercase tracking-widest w-24 bg-slate-900/40">{t('date')}</th>
@@ -1785,10 +1785,13 @@ export default function App() {
                       <tr key={tx.id} className="even:bg-white/5 hover:bg-slate-700/50 transition-colors group">
                         <td className="p-3 border-l border-white/5 text-center">
                           <input 
+                            id={`select-tx-${tx.id}`}
+                            name={`selectTx-${tx.id}`}
                             type="checkbox" 
                             checked={selectedTransactions.has(tx.id)}
                             onChange={() => handleSelectTransaction(tx.id)}
                             className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            aria-label={`${t('select')} ${tx.description}`}
                           />
                         </td>
                         <td className="p-3 border-l border-white/5 whitespace-nowrap text-white">{tx.date}</td>
@@ -2130,14 +2133,92 @@ export default function App() {
       ) : (
         <ContactUsView />
       )}
-
-      <DocPreviewModal 
-        isOpen={isDocPreviewOpen} 
-        url={previewUrl} 
-        onClose={() => setIsDocPreviewOpen(false)} 
-      />
     </div>
-  );
+    
+    <SnapshotsModal
+      isOpen={isSnapshotsModalOpen}
+      onClose={() => setIsSnapshotsModalOpen(false)}
+      currentTransactions={transactions}
+      currentBudgets={budgets}
+      onLoadSnapshot={(loadedTransactions, loadedBudgets) => {
+        updateTransactions(loadedTransactions);
+        setBudgets(loadedBudgets);
+        localStorage.setItem('motazin_budgets', JSON.stringify(loadedBudgets));
+        toast.success(language === 'ar' ? 'تم استعادة النسخة بنجاح!' : 'Backup loaded successfully!');
+      }}
+    />
+
+    {isPdfScannerOpen && (
+      <PdfScanner 
+        onClose={() => setIsPdfScannerOpen(false)}
+        onImport={(rows) => {
+          const newTransactions = rows.map(r => {
+            const accountId = r.accountId || 'bank'; 
+            const account = ACCOUNTS.find(a => a.id === accountId);
+            const category = account?.category || 'asset';
+
+            let impacts: Omit<Impact, 'id'>[] = [];
+            if (category === 'asset') {
+              impacts = [
+                { accountId: accountId, amount: r.amount },
+                { accountId: 'capital', amount: r.amount } 
+              ];
+            } else if (category === 'liability') {
+              impacts = [
+                { accountId: accountId, amount: r.amount },
+                { accountId: 'capital', amount: -r.amount }
+              ];
+            } else {
+              impacts = [
+                { accountId: accountId, amount: r.amount },
+                { accountId: 'bank', amount: -r.amount }
+              ];
+            }
+
+            return {
+              id: r.id,
+              date: r.date,
+              description: r.description,
+              impacts: impacts.map(i => ({ ...i, id: Math.random().toString(36).substr(2, 9) })),
+              createdAt: new Date().toISOString()
+            };
+          });
+          updateTransactions([...transactions, ...newTransactions]);
+          setIsPdfScannerOpen(false);
+          toast.success(language === 'ar' ? 'تم استيراد البيانات بنجاح!' : 'Data imported successfully!');
+        }}
+      />
+    )}
+
+    <DepreciationModal 
+      isOpen={isDepreciationModalOpen}
+      onClose={() => setIsDepreciationModalOpen(false)}
+      assets={ACCOUNTS.filter(a => a.category === 'asset' && !['cash', 'bank', 'ar', 'inventory', 'supplies', 'prepaid_expenses'].includes(a.id))}
+      onApply={(accountId, amount, description) => {
+        const txId = Math.random().toString(36).substr(2, 9);
+        const newTx: Transaction = {
+          id: txId,
+          date: new Date().toLocaleDateString('en-GB'),
+          description: description,
+          impacts: [
+            { id: Math.random().toString(36).substr(2, 9), accountId: 'expenses', amount: amount },
+            { id: Math.random().toString(36).substr(2, 9), accountId: accountId, amount: -amount }
+          ],
+          createdAt: new Date().toISOString()
+        };
+        updateTransactions([...transactions, newTx]);
+        setIsDepreciationModalOpen(false);
+        toast.success(language === 'ar' ? 'تم إضافة قيد الإهلاك بنجاح!' : 'Depreciation entry added successfully!');
+      }}
+    />
+
+    <DocPreviewModal 
+      isOpen={isDocPreviewOpen} 
+      url={previewUrl} 
+      onClose={() => setIsDocPreviewOpen(false)} 
+    />
+  </>
+);
 }
 
 // --- Component: AboutUsView ---
@@ -2291,10 +2372,12 @@ function ContactUsView() {
           </h2>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 dark:text-slate-400 text-slate-600">
+              <label htmlFor="contact-name" className="block text-[11px] font-bold uppercase tracking-widest mb-2 dark:text-slate-400 text-slate-600">
                 {t('fullName')}
               </label>
               <input
+                id="contact-name"
+                name="name"
                 type="text"
                 required
                 value={formName}
@@ -2304,10 +2387,12 @@ function ContactUsView() {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 dark:text-slate-400 text-slate-600">
+              <label htmlFor="contact-email" className="block text-[11px] font-bold uppercase tracking-widest mb-2 dark:text-slate-400 text-slate-600">
                 {t('emailAddress')}
               </label>
               <input
+                id="contact-email"
+                name="email"
                 type="email"
                 required
                 value={formEmail}
@@ -2318,10 +2403,12 @@ function ContactUsView() {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 dark:text-slate-400 text-slate-600">
+              <label htmlFor="contact-message" className="block text-[11px] font-bold uppercase tracking-widest mb-2 dark:text-slate-400 text-slate-600">
                 {t('yourMessage')}
               </label>
               <textarea
+                id="contact-message"
+                name="message"
                 required
                 rows={5}
                 value={formMessage}
@@ -2411,7 +2498,7 @@ function ContactUsView() {
 // --- Component: IncomeStatementView ---
 
 function CashFlowView({ transactions, formatCurrency }: { transactions: Transaction[], formatCurrency: (val: number) => string }) {
-  const { t } = useLanguage();
+  const { t, dir, language } = useLanguage();
 
   const cashAccountIds = ['cash', 'bank'];
   
@@ -2448,10 +2535,10 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
   const netCashFlow = operatingTotal + investingTotal + financingTotal;
 
   return (
-    <div id="cash-flow-report" className="glass-card p-8 animate-fade-in space-y-8 bg-slate-900 border border-white/10">
+    <div id="cash-flow-report" className="glass-card p-8 animate-fade-in space-y-8 bg-[#0f172a] border border-white/10" dir={dir}>
       <div className="text-center space-y-2 border-b border-white/10 pb-6">
         <h2 className="text-3xl font-bold text-white">{t('cashFlowStatement')}</h2>
-        <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString('ar-SA')}</p>
+        <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
       </div>
 
       <div className="space-y-6">
@@ -2522,9 +2609,14 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
               const html2canvas = (await import('html2canvas')).default;
               const jsPDF = (await import('jspdf')).default;
               const canvas = await html2canvas(element, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
-                backgroundColor: '#0f172a'
+                backgroundColor: '#0f172a',
+                logging: false,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight
               });
               const imgData = canvas.toDataURL('image/png');
               const pdf = new jsPDF('p', 'mm', 'a4');
@@ -2549,7 +2641,7 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
 }
 
 function IncomeStatementView({ transactions, formatCurrency }: { transactions: Transaction[], formatCurrency: (val: number) => string }) {
-  const { t } = useLanguage();
+  const { t, dir, language } = useLanguage();
 
   const totalRevenue = transactions.reduce((sum, tx) => {
     return sum + tx.impacts
@@ -2566,10 +2658,10 @@ function IncomeStatementView({ transactions, formatCurrency }: { transactions: T
   const netIncome = totalRevenue - totalExpenses;
 
   return (
-    <div id="income-statement-report" className="glass-card p-8 animate-fade-in space-y-8 bg-slate-900 border border-white/10">
+    <div id="income-statement-report" className="glass-card p-8 animate-fade-in space-y-8 bg-[#0f172a] border border-white/10" dir={dir}>
       <div className="text-center space-y-2 border-b border-white/10 pb-6">
         <h2 className="text-3xl font-bold text-white">{t('incomeStatement')}</h2>
-        <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString('ar-SA')}</p>
+        <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
       </div>
 
       <div className="space-y-6">
@@ -2637,12 +2729,18 @@ function IncomeStatementView({ transactions, formatCurrency }: { transactions: T
             const element = document.getElementById('income-statement-report');
             if (!element) return;
             try {
+              toast.info(t('exportingPDF') || "Generating PDF...");
               const html2canvas = (await import('html2canvas')).default;
               const jsPDF = (await import('jspdf')).default;
               const canvas = await html2canvas(element, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
-                backgroundColor: '#0f172a'
+                backgroundColor: '#0f172a',
+                logging: false,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight
               });
               const imgData = canvas.toDataURL('image/png');
               const pdf = new jsPDF('p', 'mm', 'a4');
