@@ -622,6 +622,24 @@ export const translations: Translations = {
   successSent: {
     ar: 'تم الإرسال بنجاح!', en: 'Sent successfully!', fr: 'Envoyé avec succès !', es: '¡Enviado con éxito!', tr: 'Başarıyla gönderildi!', ur: 'کامیابی کے ساتھ بھیج دیا گیا!'
   },
+  menu: {
+    ar: 'القائمة', en: 'Menu', fr: 'Menu', es: 'Menú', tr: 'Menü', ur: 'مینو'
+  },
+  theme: {
+    ar: 'المظهر', en: 'Theme', fr: 'Thème', es: 'Tema', tr: 'Tema', ur: 'تھیم'
+  },
+  guestUser: {
+    ar: 'مستخدم ضيف', en: 'Guest User', fr: 'Invité', es: 'Invitado', tr: 'Misafir Kullanıcı', ur: 'مہمان صارف'
+  },
+  login: {
+    ar: 'تسجيل الدخول', en: 'Login', fr: 'Connexion', es: 'Iniciar Sesión', tr: 'Giriş Yap', ur: 'لاگ ان'
+  },
+  dashboard: {
+    ar: 'لوحة القيادة', en: 'Dashboard', fr: 'Tableau de bord', es: 'Tablero', tr: 'Panel', ur: 'ڈیش بورڈ'
+  },
+  home: {
+    ar: 'الرئيسية', en: 'Home', fr: 'Accueil', es: 'Inicio', tr: 'Ana Sayfa', ur: 'ہوم'
+  }
 };
 
 interface LanguageContextType {

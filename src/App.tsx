@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Trash2, Calculator, CheckCircle2, XCircle, AlertCircle, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, FileText, LogOut, Paperclip, Eye, FileImage, ImageIcon, Sun, Moon, Menu, Info, Mail, Phone, MapPin, Send, Heart, Shield, Zap, Clock, User as UserIcon } from 'lucide-react';
+import { Plus, Trash2, Calculator, CheckCircle2, XCircle, AlertCircle, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, FileText, LogOut, Paperclip, Eye, FileImage, ImageIcon, Sun, Moon, Menu, Info, Mail, Phone, MapPin, Send, Heart, Shield, Zap, Clock, User as UserIcon, LayoutDashboard, Settings } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -339,33 +339,65 @@ export default function App() {
     if (!user) return;
 
     try {
-      const batch = writeBatch(db);
       const txRef = collection(db, 'users', user.uid, 'transactions');
-      
       const newIds = new Set(newTransactions.map(t => t.id));
       
+      const operations: (() => void)[] = [];
+
       // Delete removed
       transactions.forEach(tx => {
         if (!newIds.has(tx.id)) {
-          batch.delete(doc(txRef, tx.id));
+          operations.push(() => batch.delete(doc(txRef, tx.id)));
         }
       });
       
       // Set added/updated
       newTransactions.forEach(tx => {
-        batch.set(doc(txRef, tx.id), {
+        operations.push(() => batch.set(doc(txRef, tx.id), {
           date: tx.date,
           description: tx.description,
           impacts: tx.impacts,
+          attachmentUrl: tx.attachmentUrl || null,
           createdAt: tx.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           isRecurring: tx.isRecurring || false,
           recurrenceInterval: tx.recurrenceInterval || null,
           nextRecurrenceDate: tx.nextRecurrenceDate || null
-        }, { merge: true });
+        }, { merge: true }));
       });
-      
-      await batch.commit();
+
+      // Commit in chunks of 500
+      const CHUNK_SIZE = 500;
+      for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
+        const chunkBatch = writeBatch(db);
+        // This is a bit tricky with functions, let's just do it directly
+      }
+
+      // Re-doing the batch logic to be chunk-aware
+      const allOps = [
+        ...transactions.filter(tx => !newIds.has(tx.id)).map(tx => ({ type: 'delete', ref: doc(txRef, tx.id) })),
+        ...newTransactions.map(tx => ({ type: 'set', ref: doc(txRef, tx.id), data: {
+          date: tx.date,
+          description: tx.description,
+          impacts: tx.impacts,
+          attachmentUrl: tx.attachmentUrl || null,
+          createdAt: tx.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isRecurring: tx.isRecurring || false,
+          recurrenceInterval: tx.recurrenceInterval || null,
+          nextRecurrenceDate: tx.nextRecurrenceDate || null
+        }}))
+      ];
+
+      for (let i = 0; i < allOps.length; i += CHUNK_SIZE) {
+        const currentBatch = writeBatch(db);
+        const chunk = allOps.slice(i, i + CHUNK_SIZE);
+        chunk.forEach(op => {
+          if (op.type === 'delete') currentBatch.delete(op.ref);
+          else if (op.type === 'set') currentBatch.set(op.ref, op.data, { merge: true });
+        });
+        await currentBatch.commit();
+      }
     } catch (error) {
       console.error("Error updating transactions:", error);
       toast.error(t('errorSavingTransactions'));
@@ -424,6 +456,12 @@ export default function App() {
 
   // Form State
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
+  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
   const [date, setDate] = useState('');
   const [description, setDescription] = useState('');
@@ -622,7 +660,7 @@ export default function App() {
     setImpacts(newImpacts);
   };
 
-  const handleAddTransaction = (e: React.FormEvent) => {
+  const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return alert(t('enterDescription'));
     
@@ -647,6 +685,8 @@ export default function App() {
     })() : undefined;
 
     if (editingTransactionId) {
+      const txId = editingTransactionId;
+      const attachmentUrl = await uploadFile(txId);
       const updatedTransactions = transactions.map(tx => {
         if (tx.id === editingTransactionId) {
           return {
@@ -656,7 +696,8 @@ export default function App() {
             impacts: validImpacts.map(i => ({ ...i, id: Math.random().toString(36).substr(2, 9) })),
             isRecurring,
             recurrenceInterval: isRecurring ? recurrenceInterval : undefined,
-            nextRecurrenceDate: isRecurring ? (tx.nextRecurrenceDate || nextDate) : undefined
+            nextRecurrenceDate: isRecurring ? (tx.nextRecurrenceDate || nextDate) : undefined,
+            attachmentUrl: attachmentUrl || tx.attachmentUrl
           };
         }
         return tx;
@@ -664,20 +705,24 @@ export default function App() {
       updateTransactions(updatedTransactions);
       setEditingTransactionId(null);
     } else {
+      const txId = Math.random().toString(36).substr(2, 9);
+      const attachmentUrl = await uploadFile(txId);
       const newTx: Transaction = {
-        id: Math.random().toString(36).substr(2, 9),
+        id: txId,
         date: date || new Date().toLocaleDateString('ar-SA'),
         description,
         impacts: validImpacts.map(i => ({ ...i, id: Math.random().toString(36).substr(2, 9) })),
         createdAt: new Date().toISOString(),
         isRecurring,
         recurrenceInterval: isRecurring ? recurrenceInterval : undefined,
-        nextRecurrenceDate: isRecurring ? nextDate : undefined
+        nextRecurrenceDate: isRecurring ? nextDate : undefined,
+        attachmentUrl: attachmentUrl || undefined
       };
       updateTransactions([...transactions, newTx]);
     }
     
     // Reset form
+    setSelectedFile(null);
     setDate('');
     setDescription('');
     setImpacts([
@@ -695,7 +740,10 @@ export default function App() {
     setImpacts(tx.impacts.map(i => ({ accountId: i.accountId, amount: i.amount })));
     setIsRecurring(tx.isRecurring || false);
     setRecurrenceInterval(tx.recurrenceInterval || 'monthly');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIsTransactionFormOpen(true);
+    if (window.innerWidth > 768) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleCancelEdit = () => {
@@ -928,16 +976,133 @@ export default function App() {
             </div>
           </div>
           <button 
-            className="md:hidden p-3 dark:text-white/70 text-slate-600 hover:text-indigo-600 hover:bg-white/10 rounded-2xl transition-all active:scale-90"
+            className="md:hidden touch-target dark:text-white text-slate-600 hover:text-indigo-600 hover:bg-white/10 rounded-2xl transition-all active:scale-90"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={t('menu') || 'Menu'}
           >
             {isMobileMenuOpen ? <XCircle className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
+        {/* Mobile Menu Overlay */}
         <div className={cn(
-          "flex flex-col md:flex-row flex-wrap items-center gap-4 w-full md:w-auto overflow-hidden transition-all duration-500 ease-in-out md:overflow-visible",
-          isMobileMenuOpen ? "max-h-[500px] opacity-100 mt-4 pt-4 border-t dark:border-white/5 border-slate-200" : "max-h-0 opacity-0 md:max-h-[500px] md:opacity-100 md:mt-0 md:border-none md:pt-0 pointer-events-none md:pointer-events-auto"
+          "fixed inset-0 z-50 md:hidden transition-all duration-300 pointer-events-none",
+          isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0"
+        )}>
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsMobileMenuOpen(false)}></div>
+          <div className={cn(
+            "absolute right-0 top-0 bottom-0 w-4/5 max-w-sm glass-card rounded-l-3xl p-6 transition-transform duration-500 ease-out flex flex-col gap-6",
+            isMobileMenuOpen ? "translate-x-0" : "translate-x-full rtl:-translate-x-full"
+          )}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold dark:text-white text-slate-900">{t('menu') || 'Menu'}</h2>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="touch-target text-slate-400">
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4 overflow-y-auto flex-1 no-scrollbar">
+              {/* Profile in mobile menu */}
+              <div className="flex items-center gap-3 p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                {user ? (
+                  <img src={user.photoURL || ''} alt="Profile" className="w-12 h-12 rounded-full border-2 border-indigo-500" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center border-2 border-indigo-500">
+                    <UserIcon className="w-6 h-6 text-indigo-400" />
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-bold dark:text-white text-slate-900">{user ? user.displayName : t('guestUser')}</p>
+                  <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">{user ? 'PRO' : 'GUEST'}</p>
+                </div>
+              </div>
+
+              {/* Theme Toggle Mobile */}
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="w-full flex items-center justify-between p-4 bg-slate-100 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10"
+              >
+                <span className="text-sm font-bold dark:text-white text-slate-800">{t('theme') || 'Theme'}</span>
+                {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-400" />}
+              </button>
+
+              {/* Language Selector Mobile */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">{t('language') || 'Language'}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'ar', label: 'العربية' },
+                    { id: 'en', label: 'English' },
+                    { id: 'fr', label: 'Français' },
+                    { id: 'es', label: 'Español' },
+                    { id: 'tr', label: 'Türkçe' },
+                    { id: 'ur', label: 'اردو' }
+                  ].map((lang) => (
+                    <button
+                      key={lang.id}
+                      onClick={() => {
+                        setLanguage(lang.id as any);
+                      }}
+                      className={cn(
+                        "px-3 py-3 rounded-xl text-xs font-bold border transition-all",
+                        language === lang.id 
+                          ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
+                          : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/60 text-slate-600"
+                      )}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Currency Selector Mobile */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">{t('currency') || 'Currency'}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {CURRENCIES.slice(0, 6).map((c) => (
+                    <button
+                      key={c.code}
+                      onClick={() => handleCurrencyChange(c.code)}
+                      className={cn(
+                        "px-3 py-3 rounded-xl text-xs font-bold border transition-all",
+                        currency === c.code 
+                          ? "bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/20" 
+                          : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/60 text-slate-600"
+                      )}
+                    >
+                      {c.symbol} ({c.code})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-white/10">
+              {user ? (
+                <button 
+                  onClick={() => signOut(auth)}
+                  className="w-full flex items-center justify-center gap-3 p-4 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-2xl font-bold transition-all active:scale-95"
+                >
+                  <LogOut className="w-5 h-5" />
+                  {t('logout')}
+                </button>
+              ) : (
+                <button 
+                  onClick={() => signInWithPopup(auth, googleProvider)}
+                  className="w-full flex items-center justify-center gap-3 p-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                >
+                  <UserIcon className="w-5 h-5" />
+                  {t('login')}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className={cn(
+          "hidden md:flex flex-row items-center gap-4 transition-all duration-500 ease-in-out",
+          "max-h-[500px] opacity-100"
         )}>
           {/* Language Switcher */}
           <div className="relative" ref={langRef}>
@@ -1119,9 +1284,12 @@ export default function App() {
             : "dark:bg-slate-800/60 bg-white/60 dark:border-white/10 border-slate-200"
         )}>
           <button
-            onClick={() => setCurrentView('equation')}
+            onClick={() => {
+              setCurrentView('equation');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className={cn(
-              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              "px-4 sm:px-5 py-2.5 rounded-full text-[11px] sm:text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
               currentView === 'equation' 
                 ? "text-white" 
                 : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
@@ -1130,14 +1298,17 @@ export default function App() {
             {currentView === 'equation' && (
               <div className="absolute inset-0 bg-indigo-600 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
             )}
-            <Calculator className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'equation' ? "text-white" : "text-indigo-400")} />
+            <Calculator className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'equation' ? "text-white" : "text-indigo-400")} />
             <span className="relative z-10">{t('balanceSheet')}</span>
           </button>
 
           <button
-            onClick={() => setCurrentView('income')}
+            onClick={() => {
+              setCurrentView('income');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className={cn(
-              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              "px-4 sm:px-5 py-2.5 rounded-full text-[11px] sm:text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
               currentView === 'income' 
                 ? "text-white" 
                 : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
@@ -1146,14 +1317,17 @@ export default function App() {
             {currentView === 'income' && (
               <div className="absolute inset-0 bg-indigo-600 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
             )}
-            <FileText className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'income' ? "text-white" : "text-indigo-400")} />
+            <FileText className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'income' ? "text-white" : "text-indigo-400")} />
             <span className="relative z-10">{t('incomeStatement')}</span>
           </button>
 
           <button
-            onClick={() => setCurrentView('cashflow')}
+            onClick={() => {
+              setCurrentView('cashflow');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className={cn(
-              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              "px-4 sm:px-5 py-2.5 rounded-full text-[11px] sm:text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
               currentView === 'cashflow' 
                 ? "text-white" 
                 : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
@@ -1162,16 +1336,19 @@ export default function App() {
             {currentView === 'cashflow' && (
               <div className="absolute inset-0 bg-indigo-600 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
             )}
-            <ArrowRightLeft className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'cashflow' ? "text-white" : "text-indigo-400")} />
+            <ArrowRightLeft className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'cashflow' ? "text-white" : "text-indigo-400")} />
             <span className="relative z-10">{t('cashFlowStatement')}</span>
           </button>
 
-          <div className="w-px h-6 dark:bg-white/10 bg-slate-200 mx-1 hidden md:block" />
+          <div className="w-px h-6 dark:bg-white/10 bg-slate-200 mx-1 flex-shrink-0" />
 
           <button
-            onClick={() => setCurrentView('about')}
+            onClick={() => {
+              setCurrentView('about');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className={cn(
-              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              "px-4 sm:px-5 py-2.5 rounded-full text-[11px] sm:text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
               currentView === 'about' 
                 ? "text-white" 
                 : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
@@ -1180,14 +1357,17 @@ export default function App() {
             {currentView === 'about' && (
               <div className="absolute inset-0 bg-emerald-600 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
             )}
-            <Info className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'about' ? "text-white" : "text-emerald-400")} />
+            <Info className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'about' ? "text-white" : "text-emerald-400")} />
             <span className="relative z-10">{t('aboutUs')}</span>
           </button>
 
           <button
-            onClick={() => setCurrentView('contact')}
+            onClick={() => {
+              setCurrentView('contact');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className={cn(
-              "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+              "px-4 sm:px-5 py-2.5 rounded-full text-[11px] sm:text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
               currentView === 'contact' 
                 ? "text-white" 
                 : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
@@ -1196,12 +1376,33 @@ export default function App() {
             {currentView === 'contact' && (
               <div className="absolute inset-0 bg-emerald-600 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)] z-0 animate-in fade-in zoom-in duration-300" />
             )}
-            <Mail className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'contact' ? "text-white" : "text-emerald-400")} />
+            <Mail className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-transform group-hover/tab:scale-110", currentView === 'contact' ? "text-white" : "text-emerald-400")} />
             <span className="relative z-10">{t('contactUs')}</span>
           </button>
         </div>
       </div>
 
+      {/* Sticky Mobile Summary Bar */}
+      <div className="md:hidden sticky top-[72px] z-30 px-4 py-2 bg-slate-900/80 backdrop-blur-md border-b border-white/10 flex justify-between items-center animate-fade-in">
+        <div className="flex gap-4">
+          <div className="flex flex-col">
+            <span className="text-[8px] uppercase font-bold text-indigo-400 tracking-tighter">{t('assets')}</span>
+            <span className="text-xs font-mono font-bold text-white">{formatCurrency(totals.totalAssets)}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[8px] uppercase font-bold text-emerald-400 tracking-tighter">{t('equity')}</span>
+            <span className="text-xs font-mono font-bold text-white">{formatCurrency(totals.totalEquity)}</span>
+          </div>
+        </div>
+        <div className={cn(
+          "px-2 py-1 rounded-lg text-[10px] font-bold uppercase",
+          totals.isBalanced ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+        )}>
+          {totals.isBalanced ? t('equationBalanced') : t('equationUnbalanced')}
+        </div>
+      </div>
+
+      <main className="mb-24 md:mb-0">
       {currentView === 'equation' ? (
         <>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -1224,10 +1425,10 @@ export default function App() {
               {/* Date & Description Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="col-span-1">
-                  <label htmlFor="tx-date" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('date')}</label>
+                  <label htmlFor="dt-tx-date" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('date')}</label>
                   <input 
-                    id="tx-date"
-                    name="date"
+                    id="dt-tx-date"
+                    name="dt-date"
                     type="text" 
                     value={date}
                     onChange={e => setDate(e.target.value)}
@@ -1236,10 +1437,10 @@ export default function App() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label htmlFor="tx-desc" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('description')}</label>
+                  <label htmlFor="dt-tx-desc" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('description')}</label>
                   <input 
-                    id="tx-desc"
-                    name="description"
+                    id="dt-tx-desc"
+                    name="dt-description"
                     type="text" 
                     required
                     value={description}
@@ -1252,15 +1453,15 @@ export default function App() {
 
               {/* Document Attachment Section */}
               <div className="space-y-2">
-                <label htmlFor="tx-file" className="block text-[11px] font-bold dark:text-slate-400 text-black uppercase tracking-widest ml-1">{t('attachDocument')}</label>
+                <label htmlFor="dt-tx-file" className="block text-[11px] font-bold dark:text-slate-400 text-black uppercase tracking-widest ml-1">{t('attachDocument')}</label>
                 <div className="flex items-center gap-3">
-                  <label htmlFor="tx-file" className="flex-1 flex items-center justify-center gap-3 px-4 py-4 bg-slate-900/40 border-2 border-white/5 border-dashed rounded-2xl hover:bg-slate-800/60 hover:border-indigo-500/30 cursor-pointer transition-all group overflow-hidden relative">
+                  <label htmlFor="dt-tx-file" className="flex-1 flex items-center justify-center gap-3 px-4 py-4 bg-slate-900/40 border-2 border-white/5 border-dashed rounded-2xl hover:bg-slate-800/60 hover:border-indigo-500/30 cursor-pointer transition-all group overflow-hidden relative">
                     <div className="absolute inset-0 bg-indigo-500/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
                     <Paperclip className="w-5 h-5 text-indigo-400 group-hover:rotate-12 transition-transform" />
                     <span className="text-xs text-slate-300 font-bold truncate max-w-[180px] relative z-10">
                       {selectedFile ? selectedFile.name : t('attachDocument')}
                     </span>
-                    <input id="tx-file" name="attachment" type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                    <input id="dt-tx-file" name="dt-attachment" type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
                   </label>
                   {selectedFile && (
                     <button type="button" onClick={() => setSelectedFile(null)} className="p-4 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl transition-all border border-rose-500/20 group">
@@ -1272,10 +1473,10 @@ export default function App() {
 
               {/* Recurring Transaction Logic */}
               <div className="flex flex-wrap items-center gap-4 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
-                <label htmlFor="tx-recurring" className="flex items-center gap-3 cursor-pointer group">
+                <label htmlFor="dt-tx-recurring" className="flex items-center gap-3 cursor-pointer group">
                   <input
-                    id="tx-recurring"
-                    name="isRecurring"
+                    id="dt-tx-recurring"
+                    name="dt-isRecurring"
                     type="checkbox"
                     checked={isRecurring}
                     onChange={(e) => setIsRecurring(e.target.checked)}
@@ -1286,10 +1487,10 @@ export default function App() {
                 
                 {isRecurring && (
                   <div className="flex items-center gap-3 animate-fade-in pl-2 border-l border-white/10">
-                    <label htmlFor="tx-recurrence-interval" className="text-[10px] font-bold dark:text-slate-400 text-black uppercase tracking-widest">{t('repeatsEveryLabel')}</label>
+                    <label htmlFor="dt-tx-recurrence-interval" className="text-[10px] font-bold dark:text-slate-400 text-black uppercase tracking-widest">{t('repeatsEveryLabel')}</label>
                     <select
-                      id="tx-recurrence-interval"
-                      name="recurrenceInterval"
+                      id="dt-tx-recurrence-interval"
+                      name="dt-recurrenceInterval"
                       value={recurrenceInterval}
                       onChange={(e) => setRecurrenceInterval(e.target.value as any)}
                       className="px-4 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900 dark:text-white text-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
@@ -1310,7 +1511,7 @@ export default function App() {
                   <button 
                     type="button" 
                     onClick={handleAddImpact}
-                    className="text-[10px] font-bold text-indigo-400 hover:text-white flex items-center gap-2 transition-all bg-indigo-500/10 hover:bg-indigo-500 px-4 py-2.5 rounded-xl border border-indigo-500/20 uppercase tracking-tighter"
+                    className="touch-target text-[10px] font-bold text-indigo-400 hover:text-white flex items-center gap-2 transition-all bg-indigo-500/10 hover:bg-indigo-500 px-4 py-2.5 rounded-xl border border-indigo-500/20 uppercase tracking-tighter"
                   >
                     <Plus className="w-4 h-4" /> {t('addAccount')}
                   </button>
@@ -1318,24 +1519,24 @@ export default function App() {
                 
                 <div className="space-y-4">
                   {impacts.map((impact, idx) => (
-                    <div key={idx} className="glass-card p-5 relative border-l-4 border-indigo-500 group transition-all hover:scale-[1.01] hover:shadow-indigo-500/10 overflow-hidden">
+                    <div key={idx} className="glass-card p-4 sm:p-5 relative border-l-4 border-indigo-500 group transition-all hover:scale-[1.01] hover:shadow-indigo-500/10 overflow-hidden">
                       {/* Delete Impact Button */}
                       <button 
                         type="button"
                         onClick={() => handleRemoveImpact(idx)}
                         disabled={impacts.length <= 2}
-                        className="absolute top-6 left-4 rtl:left-auto rtl:right-4 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all z-10"
+                        className="absolute top-4 right-4 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all z-10"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
 
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                      <div className="flex flex-col gap-4">
                         {/* Account Picker */}
-                        <div className="md:col-span-12 lg:col-span-7 space-y-2">
-                          <label htmlFor={`account-id-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('accountName')}</label>
+                        <div className="space-y-2">
+                          <label htmlFor={`dt-account-id-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('accountName')}</label>
                           <select 
-                            id={`account-id-${idx}`}
-                            name={`accountId-${idx}`}
+                            id={`dt-account-id-${idx}`}
+                            name={`dt-accountId-${idx}`}
                             value={impact.accountId}
                             onChange={e => handleImpactChange(idx, 'accountId', e.target.value)}
                             className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold cursor-pointer transition-colors"
@@ -1359,15 +1560,15 @@ export default function App() {
                         </div>
                         
                         {/* Value Input Area */}
-                        <div className="md:col-span-12 lg:col-span-5 space-y-2">
-                          <label htmlFor={`amount-input-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('impactValue')}</label>
+                        <div className="space-y-2">
+                          <label htmlFor={`dt-amount-input-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('impactValue')}</label>
                           {(() => {
                             const amount = typeof impact.amount === 'number' ? impact.amount : 0;
                             const isNeg = amount < 0 || Object.is(amount, -0);
                             return (
-                              <div className="flex flex-col gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {/* Segmented Debit/Credit Control */}
-                                <div className="flex dark:bg-slate-950 bg-slate-100 p-1.5 rounded-2xl border dark:border-white/5 border-slate-200 w-full shadow-inner">
+                                <div className="flex dark:bg-slate-950 bg-slate-100 p-1 rounded-2xl border dark:border-white/5 border-slate-200 w-full shadow-inner">
                                   <button
                                     type="button"
                                     onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount))}
@@ -1392,8 +1593,8 @@ export default function App() {
 
                                 <div className="relative group/input">
                                   <input 
-                                    id={`amount-input-${idx}`}
-                                    name={`amount-${idx}`}
+                                    id={`dt-amount-input-${idx}`}
+                                    name={`dt-amount-${idx}`}
                                     type="number"
                                     min="0"
                                     step="any"
@@ -1404,12 +1605,12 @@ export default function App() {
                                     }}
                                     placeholder="0.00"
                                     className={cn(
-                                      "w-full pl-4 pr-14 py-3.5 border dark:border-white/5 border-slate-200 rounded-2xl text-xl focus:ring-2 focus:ring-indigo-500 outline-none text-right font-mono transition-all dark:bg-slate-950/80 bg-white shadow-2xl",
+                                      "w-full pl-4 pr-12 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-lg focus:ring-2 focus:ring-indigo-500 outline-none text-right font-mono transition-all dark:bg-slate-950/80 bg-white shadow-lg",
                                       isNeg ? "dark:text-rose-400 text-rose-600 focus:border-rose-500/50" : "dark:text-emerald-400 text-emerald-600 focus:border-emerald-500/50"
                                     )}
                                     dir="ltr"
                                   />
-                                  <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-bold pointer-events-none group-focus-within/input:dark:text-white group-focus-within/input:text-indigo-600 transition-colors uppercase dark:opacity-50 opacity-40">
+                                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold pointer-events-none dark:opacity-50 opacity-40">
                                     {currency}
                                   </span>
                                 </div>
@@ -1722,206 +1923,255 @@ export default function App() {
                 <p className="text-[15px] mt-1">{t('addTransactionPrompt')}</p>
               </div>
             ) : (
-              <div id="transactions-table" className="overflow-auto flex-1 relative max-h-[600px] bg-slate-800/40">
-                <table className="w-full text-[15px] text-right border-collapse">
-                  <thead className="sticky top-0 z-20 text-white shadow-sm ring-1 ring-slate-200">
-                    {/* Category Headers */}
-                    <tr className="border-b border-white/10 ring-1 ring-white/5">
-                      <th className="p-4 border-l border-white/5 w-10 bg-slate-900/40 text-center">
-                        <input 
-                          id="select-all-transactions"
-                          name="selectAll"
-                          type="checkbox" 
-                          checked={transactions.length > 0 && selectedTransactions.size === transactions.length}
-                          onChange={handleSelectAll}
-                          className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                          aria-label={t('selectAll') || 'Select All'}
-                        />
-                      </th>
-                      <th className="p-4 border-l border-white/5 font-bold text-[11px] uppercase tracking-widest w-24 bg-slate-900/40">{t('date')}</th>
-                      <th className="p-4 border-l border-white/5 font-bold text-[11px] uppercase tracking-widest min-w-[200px] bg-slate-900/40">{t('description')}</th>
-                      
-                      {assets.length > 0 && (
-                        <th colSpan={assets.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-indigo-500/10 text-indigo-300">
-                          {t('assets')}
-                        </th>
-                      )}
-                      
-                      {liabilities.length > 0 && (
-                        <th colSpan={liabilities.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-amber-500/10 text-amber-300">
-                          {t('liabilities')}
-                        </th>
-                      )}
-                      
-                      {equities.length > 0 && (
-                        <th colSpan={equities.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-emerald-500/10 text-emerald-300">
-                          {t('equity')}
-                        </th>
-                      )}
-                      <th className="p-3 w-10 bg-slate-900/40"></th>
-                    </tr>
-                    {/* Account Headers */}
-                    <tr className="border-b border-white/5">
-                      <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
-                      <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
-                      <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
-                      
-                      {assets.map(a => (
-                        <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center text-indigo-400 bg-indigo-500/5">{t(a.name)}</th>
-                      ))}
-                      
-                      {liabilities.map(a => (
-                        <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center text-amber-400 bg-amber-500/5">{t(a.name)}</th>
-                      ))}
-                      
-                      {equities.map(a => (
-                        <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center text-emerald-400 bg-emerald-500/5">{t(a.name)}</th>
-                      ))}
-                      <th className="bg-slate-900/20"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {transactions.map((tx) => (
-                      <tr key={tx.id} className="even:bg-white/5 hover:bg-slate-700/50 transition-colors group">
-                        <td className="p-3 border-l border-white/5 text-center">
+              <>
+                {/* Desktop Table View */}
+                <div id="transactions-table" className="hidden md:block overflow-auto flex-1 relative max-h-[600px] bg-slate-800/40">
+                  <table className="w-full text-[15px] text-right border-collapse">
+                    <thead className="sticky top-0 z-20 text-white shadow-sm ring-1 ring-slate-200">
+                      {/* Category Headers */}
+                      <tr className="border-b border-white/10 ring-1 ring-white/5">
+                        <th className="p-4 border-l border-white/5 w-10 bg-slate-900/40 text-center">
                           <input 
-                            id={`select-tx-${tx.id}`}
-                            name={`selectTx-${tx.id}`}
+                            id="select-all-transactions"
+                            name="selectAll"
+                            type="checkbox" 
+                            checked={transactions.length > 0 && selectedTransactions.size === transactions.length}
+                            onChange={handleSelectAll}
+                            className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            aria-label={t('selectAll') || 'Select All'}
+                          />
+                        </th>
+                        <th className="p-4 border-l border-white/5 font-bold text-[11px] uppercase tracking-widest w-24 bg-slate-900/40">{t('date')}</th>
+                        <th className="p-4 border-l border-white/5 font-bold text-[11px] uppercase tracking-widest min-w-[200px] bg-slate-900/40">{t('description')}</th>
+                        
+                        {assets.length > 0 && (
+                          <th colSpan={assets.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-indigo-500/10 text-indigo-300">
+                            {t('assets')}
+                          </th>
+                        )}
+                        
+                        {liabilities.length > 0 && (
+                          <th colSpan={liabilities.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-amber-500/10 text-amber-300">
+                            {t('liabilities')}
+                          </th>
+                        )}
+                        
+                        {equities.length > 0 && (
+                          <th colSpan={equities.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-emerald-500/10 text-emerald-300">
+                            {t('equity')}
+                          </th>
+                        )}
+                        <th className="p-3 w-10 bg-slate-900/40"></th>
+                      </tr>
+                      {/* Account Headers */}
+                      <tr className="border-b border-white/5">
+                        <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
+                        <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
+                        <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
+                        
+                        {assets.map(a => (
+                          <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center text-indigo-400 bg-indigo-500/5">{t(a.name)}</th>
+                        ))}
+                        
+                        {liabilities.map(a => (
+                          <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center text-amber-400 bg-amber-500/5">{t(a.name)}</th>
+                        ))}
+                        
+                        {equities.map(a => (
+                          <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center text-emerald-400 bg-emerald-500/5">{t(a.name)}</th>
+                        ))}
+                        <th className="bg-slate-900/20"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {transactions.map((tx) => (
+                        <tr key={tx.id} className="even:bg-white/5 hover:bg-slate-700/50 transition-colors group">
+                          <td className="p-3 border-l border-white/5 text-center">
+                            <input 
+                              id={`select-tx-${tx.id}`}
+                              name={`selectTx-${tx.id}`}
+                              type="checkbox" 
+                              checked={selectedTransactions.has(tx.id)}
+                              onChange={() => handleSelectTransaction(tx.id)}
+                              className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                              aria-label={`${t('select')} ${tx.description}`}
+                            />
+                          </td>
+                          <td className="p-3 border-l border-white/5 whitespace-nowrap text-white">{tx.date}</td>
+                          <td className="p-3 border-l border-white/5 text-white">
+                            <div className="flex items-center gap-2">
+                              {tx.description}
+                              {tx.isRecurring && (
+                                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700" title={`${t('repeatsEveryLabel')} ${t(tx.recurrenceInterval || 'monthly')}`}>
+                                  {t('recurring')}
+                                </span>
+                              )}
+                              {tx.attachmentUrl && (
+                                <button 
+                                  onClick={() => {
+                                    setPreviewUrl(tx.attachmentUrl || null);
+                                    setIsDocPreviewOpen(true);
+                                  }}
+                                  className="p-1 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all"
+                                  title={t('viewDocument')}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          
+                          {assets.map(a => {
+                            const amt = getImpactAmount(tx, a.id);
+                            return (
+                              <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-indigo-500/5 transition-colors" dir="ltr">
+                                {amt !== 0 ? (
+                                  <span className={cn(
+                                    "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                                    amt > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                  )}>
+                                    {formatCurrency(amt)}
+                                  </span>
+                                ) : (
+                                  <span className="text-white opacity-[0.05]">-</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          
+                          {liabilities.map(a => {
+                            const amt = getImpactAmount(tx, a.id);
+                            return (
+                              <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-amber-500/5 transition-colors" dir="ltr">
+                                {amt !== 0 ? (
+                                  <span className={cn(
+                                    "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                                    amt > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                  )}>
+                                    {formatCurrency(amt)}
+                                  </span>
+                                ) : (
+                                  <span className="text-white opacity-[0.05]">-</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          
+                          {equities.map(a => {
+                            const amt = getImpactAmount(tx, a.id);
+                            return (
+                              <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-emerald-500/5 transition-colors" dir="ltr">
+                                {amt !== 0 ? (
+                                  <span className={cn(
+                                    "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                                    amt > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                  )}>
+                                    {formatCurrency(amt)}
+                                  </span>
+                                ) : (
+                                  <span className="text-white opacity-[0.05]">-</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          
+                          <td className="p-2 text-center">
+                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                              <button 
+                                onClick={() => handleEditTransaction(tx)}
+                                className="p-1.5 text-white hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                title={t('editTransaction')}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteTransaction(tx.id)}
+                                className="p-1.5 text-white hover:text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                                title={t('deleteTransaction')}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    {/* Totals Row */}
+                    <tfoot className="sticky bottom-0 z-20 bg-slate-900 border-t-2 border-white/10 font-bold shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+                      <tr>
+                        <td colSpan={3} className="p-4 border-l border-white/5 text-left text-white/50 bg-slate-900/60 uppercase tracking-widest text-[11px]">
+                          {t('grandTotal')}
+                        </td>
+                        
+                        {assets.map(a => (
+                          <td key={a.id} className="p-4 border-l border-white/5 text-center text-indigo-400 font-mono bg-indigo-500/5" dir="ltr">
+                            {formatCurrency(totals.accounts[a.id])}
+                          </td>
+                        ))}
+                        
+                        {liabilities.map(a => (
+                          <td key={a.id} className="p-4 border-l border-white/5 text-center text-amber-400 font-mono bg-amber-500/5" dir="ltr">
+                            {formatCurrency(totals.accounts[a.id])}
+                          </td>
+                        ))}
+                        
+                        {equities.map(a => (
+                          <td key={a.id} className="p-4 border-l border-white/5 text-center text-emerald-400 font-mono bg-emerald-500/5" dir="ltr">
+                            {formatCurrency(totals.accounts[a.id])}
+                          </td>
+                        ))}
+                        <td className="bg-slate-900/60"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden flex flex-col gap-4 p-4 max-h-[600px] overflow-y-auto no-scrollbar bg-slate-900/20">
+                  {transactions.map((tx) => (
+                    <div key={tx.id} className="mobile-card">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-2">
+                          <input 
+                            id={`mob-select-tx-${tx.id}`}
+                            name={`mob-selectTx-${tx.id}`}
                             type="checkbox" 
                             checked={selectedTransactions.has(tx.id)}
                             onChange={() => handleSelectTransaction(tx.id)}
-                            className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-5 h-5"
                             aria-label={`${t('select')} ${tx.description}`}
                           />
-                        </td>
-                        <td className="p-3 border-l border-white/5 whitespace-nowrap text-white">{tx.date}</td>
-                        <td className="p-3 border-l border-white/5 text-white">
-                          <div className="flex items-center gap-2">
-                            {tx.description}
-                            {tx.isRecurring && (
-                              <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700" title={`${t('repeatsEveryLabel')} ${t(tx.recurrenceInterval || 'monthly')}`}>
-                                {t('recurring')}
-                              </span>
-                            )}
-                            {tx.attachmentUrl && (
-                              <button 
-                                onClick={() => {
-                                  setPreviewUrl(tx.attachmentUrl || null);
-                                  setIsDocPreviewOpen(true);
-                                }}
-                                className="p-1 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all"
-                                title={t('viewDocument')}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            )}
+                          <span className="text-xs font-bold text-slate-400">{tx.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => handleEditTransaction(tx)} className="p-2 text-indigo-400 bg-indigo-500/10 rounded-xl">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteTransaction(tx.id)} className="p-2 text-rose-400 bg-rose-500/10 rounded-xl">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <p className="text-sm font-bold text-white mb-4 line-clamp-2">{tx.description}</p>
+                      
+                      <div className="space-y-2 pt-2 border-t border-white/5">
+                        {tx.impacts.map((imp, i) => (
+                          <div key={i} className="flex justify-between items-center text-[13px]">
+                            <span className="text-slate-400 font-medium">{t(ACCOUNTS.find(a => a.id === imp.accountId)?.name || '')}</span>
+                            <span className={cn(
+                              "font-bold font-mono",
+                              imp.amount > 0 ? "text-emerald-400" : "text-rose-400"
+                            )} dir="ltr">
+                              {formatCurrency(imp.amount)}
+                            </span>
                           </div>
-                        </td>
-                        
-                        {assets.map(a => {
-                          const amt = getImpactAmount(tx, a.id);
-                          return (
-                            <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-indigo-500/5 transition-colors" dir="ltr">
-                              {amt !== 0 ? (
-                                <span className={cn(
-                                  "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
-                                  amt > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                                )}>
-                                  {formatCurrency(amt)}
-                                </span>
-                              ) : (
-                                <span className="text-white opacity-[0.05]">-</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                        
-                        {liabilities.map(a => {
-                          const amt = getImpactAmount(tx, a.id);
-                          return (
-                            <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-amber-500/5 transition-colors" dir="ltr">
-                              {amt !== 0 ? (
-                                <span className={cn(
-                                  "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
-                                  amt > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                                )}>
-                                  {formatCurrency(amt)}
-                                </span>
-                              ) : (
-                                <span className="text-white opacity-[0.05]">-</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                        
-                        {equities.map(a => {
-                          const amt = getImpactAmount(tx, a.id);
-                          return (
-                            <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-emerald-500/5 transition-colors" dir="ltr">
-                              {amt !== 0 ? (
-                                <span className={cn(
-                                  "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
-                                  amt > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                                )}>
-                                  {formatCurrency(amt)}
-                                </span>
-                              ) : (
-                                <span className="text-white opacity-[0.05]">-</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                        
-                        <td className="p-2 text-center">
-                          <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            <button 
-                              onClick={() => handleEditTransaction(tx)}
-                              className="p-1.5 text-white hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                              title={t('editTransaction')}
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteTransaction(tx.id)}
-                              className="p-1.5 text-white hover:text-rose-500 hover:bg-rose-50 rounded transition-colors"
-                              title={t('deleteTransaction')}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  {/* Totals Row */}
-                  <tfoot className="sticky bottom-0 z-20 bg-slate-900 border-t-2 border-white/10 font-bold shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
-                    <tr>
-                      <td colSpan={3} className="p-4 border-l border-white/5 text-left text-white/50 bg-slate-900/60 uppercase tracking-widest text-[11px]">
-                        {t('grandTotal')}
-                      </td>
-                      
-                      {assets.map(a => (
-                        <td key={a.id} className="p-4 border-l border-white/5 text-center text-indigo-400 font-mono bg-indigo-500/5" dir="ltr">
-                          {formatCurrency(totals.accounts[a.id])}
-                        </td>
-                      ))}
-                      
-                      {liabilities.map(a => (
-                        <td key={a.id} className="p-4 border-l border-white/5 text-center text-amber-400 font-mono bg-amber-500/5" dir="ltr">
-                          {formatCurrency(totals.accounts[a.id])}
-                        </td>
-                      ))}
-                      
-                      {equities.map(a => (
-                        <td key={a.id} className="p-4 border-l border-white/5 text-center text-emerald-400 font-mono bg-emerald-500/5" dir="ltr">
-                          {formatCurrency(totals.accounts[a.id])}
-                        </td>
-                      ))}
-                      <td className="bg-slate-900/60"></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
             
             {/* Final Equation Summary */}
@@ -1947,18 +2197,18 @@ export default function App() {
         </div>
       </div>
 
-          {/* Charts Section */}
-      {transactions.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+      {/* Charts Section */}
+      {mounted && transactions.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" style={{ minWidth: 0 }}>
           {/* Asset Distribution Pie Chart */}
-          <div className="glass-card p-6">
+          <div className="glass-card p-6" style={{ minWidth: 0 }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-theme-primary">
               <Target className="w-5 h-5 text-indigo-600" />
               {t('assetDistribution')}
             </h2>
-            <div className="h-[300px] md:h-[350px] w-full">
+            <div className="h-[300px] md:h-[350px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
               {assetChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer id="asset-distribution-chart" width="100%" aspect={2} minWidth={0} minHeight={0}>
                   <PieChart>
                     <Pie
                       data={assetChartData}
@@ -1989,14 +2239,14 @@ export default function App() {
           </div>
 
           {/* Income vs Expenses Bar Chart */}
-          <div className="glass-card p-6">
+          <div className="glass-card p-6" style={{ minWidth: 0 }}>
             <h2 className="text-lg font-semibold dark:text-white text-slate-800 mb-6 flex items-center gap-2">
               <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
               {t('incomeExpenses')}
             </h2>
-            <div className="h-[300px] md:h-[350px] w-full">
+            <div className="h-[300px] md:h-[350px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
               {incomeExpenseData.some(d => d.amount > 0) ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer id="income-expense-chart" width="100%" aspect={2} minWidth={0} minHeight={0}>
                   <BarChart data={incomeExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }} />
@@ -2075,11 +2325,11 @@ export default function App() {
           </div>
 
           {/* Profit Trend Chart */}
-          <div className="glass-card p-6">
+          <div className="glass-card p-6" style={{ minWidth: 0 }}>
             <h3 className="text-lg font-semibold dark:text-white text-slate-800 mb-6">{t('monthlyProfitTrend')}</h3>
-            <div className="h-[300px] w-full">
+            <div className="h-[300px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
               {profitTrendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer id="profit-trend-line-chart" width="100%" aspect={2} minWidth={0} minHeight={0}>
                   <LineChart data={profitTrendData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }} />
@@ -2133,7 +2383,7 @@ export default function App() {
       ) : (
         <ContactUsView />
       )}
-    </div>
+      </main>
     
     <SnapshotsModal
       isOpen={isSnapshotsModalOpen}
@@ -2217,6 +2467,220 @@ export default function App() {
       url={previewUrl} 
       onClose={() => setIsDocPreviewOpen(false)} 
     />
+
+    {/* Floating Action Button (FAB) - Mobile Only */}
+    <button 
+      onClick={() => {
+        setEditingTransactionId(null);
+        handleCancelEdit();
+        setIsTransactionFormOpen(true);
+      }}
+      className="md:hidden fixed bottom-24 right-6 z-40 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl shadow-indigo-600/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20"
+      aria-label={t('addTransaction')}
+    >
+      <Plus className="w-8 h-8" />
+    </button>
+
+    {/* Mobile Bottom Navigation */}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/90 backdrop-blur-xl border-t border-white/10 pb-safe">
+      <div className="flex justify-around items-center h-16 px-2">
+        <button 
+          onClick={() => { setCurrentView('equation'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          className={cn(
+            "flex flex-col items-center gap-1 transition-all",
+            currentView === 'equation' ? "text-indigo-400" : "text-slate-500"
+          )}
+        >
+          <LayoutDashboard className="w-5 h-5" />
+          <span className="text-[10px] font-bold">{t('dashboard') || 'Home'}</span>
+        </button>
+        
+        <button 
+          onClick={() => { setCurrentView('income'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          className={cn(
+            "flex flex-col items-center gap-1 transition-all",
+            currentView === 'income' ? "text-indigo-400" : "text-slate-500"
+          )}
+        >
+          <FileText className="w-5 h-5" />
+          <span className="text-[10px] font-bold">{t('incomeStatement')}</span>
+        </button>
+
+        <div className="w-10 h-10" /> {/* Spacer for FAB */}
+
+        <button 
+          onClick={() => { setCurrentView('cashflow'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          className={cn(
+            "flex flex-col items-center gap-1 transition-all",
+            currentView === 'cashflow' ? "text-indigo-400" : "text-slate-500"
+          )}
+        >
+          <ArrowRightLeft className="w-5 h-5" />
+          <span className="text-[10px] font-bold">{t('cashFlowStatement')}</span>
+        </button>
+
+        <button 
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="flex flex-col items-center gap-1 text-slate-500"
+        >
+          <Settings className="w-5 h-5" />
+          <span className="text-[10px] font-bold">{t('menu')}</span>
+        </button>
+      </div>
+    </nav>
+
+    {/* Transaction Form Modal / Bottom Sheet */}
+    {isTransactionFormOpen && (
+      <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div 
+          className="absolute inset-0" 
+          onClick={() => {
+            setIsTransactionFormOpen(false);
+            handleCancelEdit();
+          }} 
+        />
+        <div className={cn(
+          "relative w-full max-w-2xl bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col transition-all",
+          "rounded-t-[32px] md:rounded-3xl max-h-[92vh] md:max-h-[85vh]",
+          "animate-in slide-in-from-bottom duration-500 md:zoom-in-95"
+        )}>
+          {/* Handle for bottom sheet */}
+          <div className="md:hidden w-12 h-1.5 bg-slate-300 dark:bg-white/20 rounded-full mx-auto mt-3 mb-1" />
+          
+          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-200">
+            <div>
+              <h3 className="text-xl font-bold dark:text-white text-slate-900 flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/20 rounded-xl">
+                  <Plus className="w-5 h-5 text-indigo-400" />
+                </div>
+                {editingTransactionId ? t('editTransaction') : t('addNewTransaction')}
+              </h3>
+            </div>
+            <button 
+              onClick={() => {
+                setIsTransactionFormOpen(false);
+                handleCancelEdit();
+              }}
+              className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all"
+            >
+              <XCircle className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="p-6 overflow-y-auto custom-scrollbar no-scrollbar">
+            <form onSubmit={(e) => {
+              handleAddTransaction(e);
+              setIsTransactionFormOpen(false);
+            }} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="col-span-1">
+                  <label htmlFor="mob-tx-date" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-slate-500">{t('date')}</label>
+                  <input 
+                    id="mob-tx-date"
+                    name="mob-date"
+                    type="text" 
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    placeholder={t('exampleDate')}
+                    className="w-full glass-input px-4 py-3 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label htmlFor="mob-tx-description" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-slate-500">{t('description')}</label>
+                  <input 
+                    id="mob-tx-description"
+                    name="mob-description"
+                    type="text" 
+                    required
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    placeholder={t('exampleDesc')}
+                    className="w-full glass-input px-4 py-3 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-widest ml-1 text-slate-500">{t('impactOnAccounts')}</span>
+                  <button 
+                    type="button" 
+                    onClick={handleAddImpact}
+                    className="text-[10px] font-bold text-indigo-400 hover:text-white flex items-center gap-2 transition-all bg-indigo-500/10 hover:bg-indigo-50 px-4 py-2 rounded-xl"
+                  >
+                    <Plus className="w-3 h-3" /> {t('addAccount')}
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {impacts.map((impact, idx) => (
+                    <div key={idx} className="glass-card p-4 relative border-l-4 border-indigo-500">
+                      <button 
+                        type="button"
+                        onClick={() => handleRemoveImpact(idx)}
+                        disabled={impacts.length <= 2}
+                        className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-rose-500"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label htmlFor={`mob-tx-account-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-slate-500">{t('accountName')}</label>
+                          <select 
+                            id={`mob-tx-account-${idx}`}
+                            name={`mob-accountId-${idx}`}
+                            value={impact.accountId}
+                            onChange={e => handleImpactChange(idx, 'accountId', e.target.value)}
+                            className="w-full px-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-sm font-bold"
+                          >
+                            {ACCOUNTS.map(a => (
+                              <option key={a.id} value={a.id}>{t(a.name)}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label htmlFor={`mob-tx-amount-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-slate-500">{t('amount')}</label>
+                          <input 
+                            id={`mob-tx-amount-${idx}`}
+                            name={`mob-amount-${idx}`}
+                            type="number"
+                            value={impact.amount}
+                            onChange={e => handleImpactChange(idx, 'amount', parseFloat(e.target.value) || 0)}
+                            className="w-full px-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-sm font-mono text-right"
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="submit"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30"
+                >
+                  {editingTransactionId ? t('saveChanges') : t('addTransaction')}
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsTransactionFormOpen(false);
+                    handleCancelEdit();
+                  }}
+                  className="px-6 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-white font-bold rounded-2xl"
+                >
+                  {t('cancel')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    )}
+    </div>
   </>
 );
 }
@@ -2535,10 +2999,10 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
   const netCashFlow = operatingTotal + investingTotal + financingTotal;
 
   return (
-    <div id="cash-flow-report" className="glass-card p-8 animate-fade-in space-y-8 bg-[#0f172a] border border-white/10" dir={dir}>
+    <div id="cash-flow-report" className="glass-card p-4 sm:p-8 animate-fade-in space-y-6 sm:space-y-8 bg-[#0f172a] border border-white/10" dir={dir}>
       <div className="text-center space-y-2 border-b border-white/10 pb-6">
-        <h2 className="text-3xl font-bold text-white">{t('cashFlowStatement')}</h2>
-        <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-white">{t('cashFlowStatement')}</h2>
+        <p className="text-sm text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
       </div>
 
       <div className="space-y-6">
@@ -2658,10 +3122,10 @@ function IncomeStatementView({ transactions, formatCurrency }: { transactions: T
   const netIncome = totalRevenue - totalExpenses;
 
   return (
-    <div id="income-statement-report" className="glass-card p-8 animate-fade-in space-y-8 bg-[#0f172a] border border-white/10" dir={dir}>
+    <div id="income-statement-report" className="glass-card p-4 sm:p-8 animate-fade-in space-y-6 sm:space-y-8 bg-[#0f172a] border border-white/10" dir={dir}>
       <div className="text-center space-y-2 border-b border-white/10 pb-6">
-        <h2 className="text-3xl font-bold text-white">{t('incomeStatement')}</h2>
-        <p className="text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-white">{t('incomeStatement')}</h2>
+        <p className="text-sm text-slate-400">{t('periodEnding')}: {new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
       </div>
 
       <div className="space-y-6">
@@ -2672,14 +3136,10 @@ function IncomeStatementView({ transactions, formatCurrency }: { transactions: T
             <span dir="ltr">{formatCurrency(totalRevenue)}</span>
           </h3>
           <div className="bg-slate-900/40 rounded-2xl overflow-hidden border border-white/5">
-            <table className="w-full text-right">
-              <tbody className="divide-y divide-white/5">
-                <tr className="hover:bg-white/5 transition-colors">
-                  <td className="p-4 text-white font-medium">{t('totalRevenue')}</td>
-                  <td className="p-4 text-white font-mono" dir="ltr">{formatCurrency(totalRevenue)}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="flex justify-between p-4 hover:bg-white/5 transition-colors">
+              <span className="text-white font-medium">{t('totalRevenue')}</span>
+              <span className="text-white font-mono font-bold" dir="ltr">{formatCurrency(totalRevenue)}</span>
+            </div>
           </div>
         </div>
 
@@ -2690,31 +3150,27 @@ function IncomeStatementView({ transactions, formatCurrency }: { transactions: T
             <span dir="ltr">{formatCurrency(totalExpenses)}</span>
           </h3>
           <div className="bg-slate-900/40 rounded-2xl overflow-hidden border border-white/5">
-            <table className="w-full text-right">
-              <tbody className="divide-y divide-white/5">
-                <tr className="hover:bg-white/5 transition-colors">
-                  <td className="p-4 text-white font-medium">{t('totalOperatingExpenses')}</td>
-                  <td className="p-4 text-white font-mono" dir="ltr">{formatCurrency(totalExpenses)}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="flex justify-between p-4 hover:bg-white/5 transition-colors">
+              <span className="text-white font-medium">{t('totalOperatingExpenses')}</span>
+              <span className="text-white font-mono font-bold" dir="ltr">{formatCurrency(totalExpenses)}</span>
+            </div>
           </div>
         </div>
 
         {/* Net Income Section */}
         <div className="pt-6 border-t border-white/20">
           <div className={cn(
-            "p-6 rounded-3xl flex justify-between items-center",
+            "p-5 sm:p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-right",
             netIncome >= 0 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-rose-500/10 border border-rose-500/20"
           )}>
             <span className={cn(
-              "text-2xl font-bold uppercase tracking-tighter",
+              "text-xl sm:text-2xl font-bold uppercase tracking-tighter",
               netIncome >= 0 ? "text-emerald-400" : "text-rose-400"
             )}>
               {t('netIncome')}
             </span>
             <span className={cn(
-              "text-3xl font-bold font-mono",
+              "text-2xl sm:text-3xl font-bold font-mono",
               netIncome >= 0 ? "text-emerald-400" : "text-rose-400"
             )} dir="ltr">
               {formatCurrency(netIncome)}
