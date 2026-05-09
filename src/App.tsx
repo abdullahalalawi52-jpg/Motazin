@@ -361,6 +361,7 @@ export default function App() {
             recurrenceInterval: tx.recurrenceInterval || null,
             nextRecurrenceDate: tx.nextRecurrenceDate || null
           }
+        }))
       ];
 
       const CHUNK_SIZE = 500;
