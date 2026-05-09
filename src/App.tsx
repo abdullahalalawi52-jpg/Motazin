@@ -342,59 +342,37 @@ export default function App() {
       const txRef = collection(db, 'users', user.uid, 'transactions');
       const newIds = new Set(newTransactions.map(t => t.id));
       
-      const operations: (() => void)[] = [];
-
-      // Delete removed
-      transactions.forEach(tx => {
-        if (!newIds.has(tx.id)) {
-          operations.push(() => batch.delete(doc(txRef, tx.id)));
-        }
-      });
-      
-      // Set added/updated
-      newTransactions.forEach(tx => {
-        operations.push(() => batch.set(doc(txRef, tx.id), {
-          date: tx.date,
-          description: tx.description,
-          impacts: tx.impacts,
-          attachmentUrl: tx.attachmentUrl || null,
-          createdAt: tx.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          isRecurring: tx.isRecurring || false,
-          recurrenceInterval: tx.recurrenceInterval || null,
-          nextRecurrenceDate: tx.nextRecurrenceDate || null
-        }, { merge: true }));
-      });
-
-      // Commit in chunks of 500
-      const CHUNK_SIZE = 500;
-      for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
-        const chunkBatch = writeBatch(db);
-        // This is a bit tricky with functions, let's just do it directly
-      }
-
-      // Re-doing the batch logic to be chunk-aware
-      const allOps = [
-        ...transactions.filter(tx => !newIds.has(tx.id)).map(tx => ({ type: 'delete', ref: doc(txRef, tx.id) })),
-        ...newTransactions.map(tx => ({ type: 'set', ref: doc(txRef, tx.id), data: {
-          date: tx.date,
-          description: tx.description,
-          impacts: tx.impacts,
-          attachmentUrl: tx.attachmentUrl || null,
-          createdAt: tx.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          isRecurring: tx.isRecurring || false,
-          recurrenceInterval: tx.recurrenceInterval || null,
-          nextRecurrenceDate: tx.nextRecurrenceDate || null
-        }}))
+      const allOps: { type: 'delete' | 'set'; ref: any; data?: any }[] = [
+        ...transactions.filter(tx => !newIds.has(tx.id)).map(tx => ({ 
+          type: 'delete' as const, 
+          ref: doc(txRef, tx.id) 
+        })),
+        ...newTransactions.map(tx => ({ 
+          type: 'set' as const, 
+          ref: doc(txRef, tx.id), 
+          data: {
+            date: tx.date,
+            description: tx.description,
+            impacts: tx.impacts,
+            attachmentUrl: tx.attachmentUrl || null,
+            createdAt: tx.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isRecurring: tx.isRecurring || false,
+            recurrenceInterval: tx.recurrenceInterval || null,
+            nextRecurrenceDate: tx.nextRecurrenceDate || null
+          }
+        }))
       ];
 
       for (let i = 0; i < allOps.length; i += CHUNK_SIZE) {
         const currentBatch = writeBatch(db);
         const chunk = allOps.slice(i, i + CHUNK_SIZE);
         chunk.forEach(op => {
-          if (op.type === 'delete') currentBatch.delete(op.ref);
-          else if (op.type === 'set') currentBatch.set(op.ref, op.data, { merge: true });
+          if (op.type === 'delete') {
+            currentBatch.delete(op.ref);
+          } else if (op.type === 'set' && op.data) {
+            currentBatch.set(op.ref, op.data, { merge: true });
+          }
         });
         await currentBatch.commit();
       }
