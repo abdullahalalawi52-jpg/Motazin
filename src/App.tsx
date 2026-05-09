@@ -361,9 +361,9 @@ export default function App() {
             recurrenceInterval: tx.recurrenceInterval || null,
             nextRecurrenceDate: tx.nextRecurrenceDate || null
           }
-        }))
       ];
 
+      const CHUNK_SIZE = 500;
       for (let i = 0; i < allOps.length; i += CHUNK_SIZE) {
         const currentBatch = writeBatch(db);
         const chunk = allOps.slice(i, i + CHUNK_SIZE);
