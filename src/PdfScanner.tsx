@@ -489,22 +489,22 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-12 lg:p-20 bg-slate-950/60 backdrop-blur-sm transition-all duration-700 animate-in fade-in" dir={dir}>
-      <div className="bg-[#0f172a]/95 border border-white/10 rounded-[3rem] w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)] relative transition-all duration-500 animate-in zoom-in-95 fade-in">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 md:p-12 lg:p-20 bg-slate-950/60 backdrop-blur-sm transition-all duration-700 animate-in fade-in" dir={dir}>
+      <div className="bg-[#0f172a]/95 border-t sm:border border-white/10 rounded-t-[2.5rem] sm:rounded-[3rem] w-full max-w-5xl h-[92vh] sm:h-auto sm:max-h-[85vh] overflow-hidden flex flex-col shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)] relative transition-all duration-500 animate-in slide-in-from-bottom sm:zoom-in-95 fade-in">
         
         {/* Decorative subtle top light */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent blur-sm"></div>
 
         {/* Header Section */}
-        <div className="p-10 pb-6 relative flex items-start justify-between">
+        <div className="p-6 sm:p-10 pb-4 sm:pb-6 relative flex items-start justify-between">
           <div className="flex flex-col gap-2">
-            <h2 className="text-3xl font-black flex items-center gap-4 text-white">
-              <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
-                <UploadCloud className="text-indigo-400 w-8 h-8" />
+            <h2 className="text-xl sm:text-3xl font-black flex items-center gap-3 sm:gap-4 text-white">
+              <div className="p-2 sm:p-3 bg-indigo-500/10 rounded-xl sm:rounded-2xl border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+                <UploadCloud className="text-indigo-400 w-5 h-5 sm:w-8 sm:h-8" />
               </div>
               {language === 'ar' ? 'استيراد ملفات/صور' : 'Import Files / Images'}
             </h2>
-            <p className="text-slate-400 text-base font-medium max-w-xl leading-relaxed mt-2 opacity-80">
+            <p className="text-slate-400 text-xs sm:text-base font-medium max-w-xl leading-relaxed mt-1 sm:mt-2 opacity-80">
               {language === 'ar' 
                 ? 'استخرج المعاملات المالية بذكاء من PDF، Word، Excel، أو حتى الصور الملتقطة.' 
                 : 'Intelligently extract financial transactions from PDF, Word, Excel, or captured photos.'}
@@ -520,23 +520,23 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
         </div>
 
         {parsedRows.length === 0 && !isProcessing && (
-          <div className="px-10 pb-10 flex flex-col flex-1 overflow-hidden">
+          <div className="px-6 sm:px-10 pb-6 sm:pb-10 flex flex-col flex-1 overflow-hidden">
             {/* Language Selector Pill */}
-            <div className="flex items-center justify-center mb-10">
-              <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 p-2 rounded-[2.5rem] flex items-center gap-3 shadow-2xl">
-                <div className="flex items-center gap-3 px-5 py-2 border-r border-white/10 rtl:border-r-0 rtl:border-l">
-                   <AlertCircle className="w-4 h-4 text-amber-500" />
-                   <span className="text-[11px] font-black text-slate-300 uppercase tracking-widest">
+            <div className="flex items-center justify-center mb-6 sm:mb-10">
+              <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 p-1.5 sm:p-2 rounded-[2.5rem] flex flex-col sm:flex-row items-center gap-2 sm:gap-3 shadow-2xl w-full sm:w-auto">
+                <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-1.5 sm:py-2 border-b sm:border-b-0 sm:border-r border-white/10 rtl:sm:border-r-0 rtl:sm:border-l w-full sm:w-auto justify-center sm:justify-start">
+                   <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
+                   <span className="text-[9px] sm:text-[11px] font-black text-slate-300 uppercase tracking-widest">
                      {language === 'ar' ? 'لغة التعرف' : 'OCR Language'}
                    </span>
                 </div>
-                <div className="flex gap-2 pr-2 rtl:pr-0 rtl:pl-2">
+                <div className="flex gap-1.5 sm:gap-2 pr-0 sm:pr-2 rtl:sm:pr-0 rtl:sm:pl-2">
                   {(['ara+eng', 'ara', 'eng'] as const).map(lang => (
                     <button 
                       key={lang}
                       onClick={() => setOcrLanguage(lang)}
                       className={cn(
-                        "px-6 py-2.5 rounded-[1.5rem] text-[11px] font-black transition-all uppercase tracking-widest",
+                        "px-4 sm:px-6 py-2 sm:py-2.5 rounded-[1.5rem] text-[9px] sm:text-[11px] font-black transition-all uppercase tracking-widest",
                         ocrLanguage === lang 
                           ? "bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.4)] scale-105" 
                           : "text-slate-500 hover:text-white hover:bg-white/5"
@@ -546,7 +546,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-amber-400/80 font-bold px-4">
+                <div className="hidden sm:flex items-center gap-2 text-[10px] text-amber-400/80 font-bold px-4">
                   <AlertCircle className="w-3.5 h-3.5" />
                   <span>Tip: Use <b>ENG</b> for purely English docs</span>
                 </div>
@@ -558,7 +558,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
               htmlFor="file-upload-input"
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleFileDrop}
-              className="flex-1 min-h-[380px] border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] hover:bg-indigo-500/[0.05] transition-all duration-500 rounded-[3rem] flex flex-col items-center justify-center cursor-pointer p-12 group relative overflow-hidden shadow-inner"
+              className="flex-1 min-h-[250px] sm:min-h-[380px] border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] hover:bg-indigo-500/[0.05] transition-all duration-500 rounded-[2rem] sm:rounded-[3rem] flex flex-col items-center justify-center cursor-pointer p-6 sm:p-12 group relative overflow-hidden shadow-inner"
             >
               <input 
                 id="file-upload-input"
@@ -570,27 +570,26 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
                 onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
               />
               
-              <div className="flex gap-8 mb-12 relative z-10">
+              <div className="flex gap-4 sm:gap-8 mb-6 sm:mb-12 relative z-10">
                 {[
                   { icon: FileText, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
                   { icon: FileSpreadsheet, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-                  { icon: Presentation, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
                   { icon: Image, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
                 ].map((item, i) => (
                   <div key={i} className={cn(
-                    "p-5 rounded-2xl border transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:-translate-y-2",
+                    "p-3 sm:p-5 rounded-xl sm:rounded-2xl border transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:-translate-y-2",
                     item.bg, item.border
                   )}>
-                    <item.icon className={cn("w-10 h-10", item.color)} />
+                    <item.icon className={cn("w-6 h-6 sm:w-10 sm:h-10", item.color)} />
                   </div>
                 ))}
               </div>
 
-              <div className="text-center space-y-4 relative z-10">
-                <h3 className="text-3xl font-black text-white tracking-tight leading-tight">
+              <div className="text-center space-y-2 sm:space-y-4 relative z-10">
+                <h3 className="text-lg sm:text-3xl font-black text-white tracking-tight leading-tight px-4">
                   {language === 'ar' ? 'انقر هنا للرفع أو اسحب الملف هنا' : 'Click to upload or drag files here'}
                 </h3>
-                <p className="text-slate-500 text-sm font-black uppercase tracking-[0.3em] opacity-60">
+                <p className="text-slate-500 text-[8px] sm:text-sm font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] opacity-60">
                   PDF, Word, Excel, PPTX, PNG, JPG (Max 10MB)
                 </p>
               </div>
@@ -629,8 +628,8 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
         )}
 
         {parsedRows.length > 0 && !isProcessing && (
-          <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 px-10 pb-10">
-            <div className="flex-1 overflow-auto rounded-[2rem] border border-white/10 bg-black/20 mb-6 custom-scrollbar shadow-inner relative">
+          <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 sm:px-10 pb-4 sm:pb-10">
+            <div className="flex-1 overflow-auto rounded-2xl sm:rounded-[2rem] border border-white/10 bg-black/20 mb-4 sm:mb-6 custom-scrollbar shadow-inner relative">
               <table className="w-full text-left rtl:text-right text-sm">
                 <thead className="text-[10px] uppercase bg-slate-900/90 text-slate-500 sticky top-0 backdrop-blur-xl z-10 font-black tracking-[0.15em] border-b border-white/5">
                   <tr>
@@ -748,47 +747,49 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
               </table>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 justify-end pt-6 border-t border-white/10">
-              <div className="mr-auto flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 justify-end pt-4 sm:pt-6 border-t border-white/10">
+              <div className="flex flex-col sm:flex-row sm:mr-auto items-stretch sm:items-center gap-3 sm:gap-4">
                 <button 
                   onClick={handleAddManualRow}
-                  className="px-6 py-3 rounded-2xl text-[11px] font-black bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-all border border-indigo-500/20 uppercase tracking-[0.1em] shadow-lg shadow-indigo-500/5"
+                  className="px-6 py-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-all border border-indigo-500/20 uppercase tracking-[0.1em] shadow-lg shadow-indigo-500/5"
                 >
-                  + Add Row Manually
+                  + {language === 'ar' ? 'إضافة صف يدوياً' : 'Add Row Manually'}
                 </button>
                 
-                <div className="flex gap-4 p-2 bg-black/20 rounded-[1.25rem] border border-white/5">
-                   <div className="px-4 py-1.5 flex flex-col items-center">
-                      <span className="text-[9px] uppercase font-black text-slate-500 mb-0.5">Assets</span>
-                      <span className="text-sm font-black text-emerald-400">
+                <div className="flex gap-2 sm:gap-4 p-1.5 sm:p-2 bg-black/20 rounded-xl sm:rounded-[1.25rem] border border-white/5 justify-around">
+                   <div className="px-3 sm:px-4 py-1 sm:py-1.5 flex flex-col items-center">
+                      <span className="text-[8px] sm:text-[9px] uppercase font-black text-slate-500 mb-0.5">{t('assets')}</span>
+                      <span className="text-xs sm:text-sm font-black text-emerald-400">
                         {parsedRows.filter(r => r.selected && r.accountId !== 'ap' && r.accountId !== 'capital' && r.accountId !== 'retained_earnings').reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
                       </span>
                    </div>
                    <div className="w-[1px] bg-white/5 self-stretch"></div>
-                   <div className="px-4 py-1.5 flex flex-col items-center">
-                      <span className="text-[9px] uppercase font-black text-slate-500 mb-0.5">L + E</span>
-                      <span className="text-sm font-black text-rose-400">
+                   <div className="px-3 sm:px-4 py-1 sm:py-1.5 flex flex-col items-center">
+                      <span className="text-[8px] sm:text-[9px] uppercase font-black text-slate-500 mb-0.5">{t('liabilities')}+E</span>
+                      <span className="text-xs sm:text-sm font-black text-rose-400">
                         {parsedRows.filter(r => r.selected && (r.accountId === 'ap' || r.accountId === 'capital' || r.accountId === 'retained_earnings' || r.accountId === 'short_term_loans')).reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
                       </span>
                    </div>
                 </div>
               </div>
 
-              <button 
-                onClick={() => setShowRawText(!showRawText)}
-                className="px-6 py-3 rounded-2xl text-[11px] font-black bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/10 uppercase tracking-[0.1em]"
-              >
-                {showRawText ? 'Hide Text' : 'View Raw Text'}
-              </button>
-              
-              <button 
-                onClick={handleImport}
-                disabled={!parsedRows.some(r => r.selected)}
-                className="px-10 py-4 rounded-[1.5rem] bg-indigo-600 hover:bg-indigo-500 text-white font-black transition-all shadow-xl shadow-indigo-600/20 disabled:opacity-50 flex items-center gap-3 uppercase tracking-[0.2em] text-xs"
-              >
-                <CheckCircle2 className="w-5 h-5" />
-                {t('save')} ({parsedRows.filter(r => r.selected).length})
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowRawText(!showRawText)}
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/10 uppercase tracking-[0.1em]"
+                >
+                  {showRawText ? (language === 'ar' ? 'إخفاء النص' : 'Hide Text') : (language === 'ar' ? 'عرض النص' : 'View Text')}
+                </button>
+                
+                <button 
+                  onClick={handleImport}
+                  disabled={!parsedRows.some(r => r.selected)}
+                  className="flex-[2] sm:flex-none px-6 sm:px-10 py-3 sm:py-4 rounded-xl sm:rounded-[1.5rem] bg-indigo-600 hover:bg-indigo-500 text-white font-black transition-all shadow-xl shadow-indigo-600/20 disabled:opacity-50 flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.2em] text-[10px] sm:text-xs"
+                >
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {t('save')} ({parsedRows.filter(r => r.selected).length})
+                </button>
+              </div>
             </div>
 
             {showRawText && (

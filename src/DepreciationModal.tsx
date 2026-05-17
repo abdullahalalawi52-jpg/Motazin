@@ -31,21 +31,22 @@ export const DepreciationModal: React.FC<DepreciationModalProps> = ({ isOpen, on
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-500 animate-in fade-in" dir={dir}>
-      <div className="bg-[#0f172a] border border-white/10 p-8 rounded-[2.5rem] w-full max-w-md shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative animate-in zoom-in-95 slide-in-from-bottom-4 transition-all duration-300">
-        <button 
-          onClick={onClose} 
-          className="absolute top-8 left-8 rtl:left-8 rtl:right-auto text-slate-400 hover:text-white transition-all bg-white/5 hover:bg-white/10 p-2 rounded-xl border border-white/10"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-white">
-          <div className="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-            <Calculator className="text-indigo-400 w-6 h-6" />
-          </div>
-          {t('depreciationCalc')}
-        </h2>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-500 animate-in fade-in" dir={dir}>
+      <div className="bg-[#0f172a] border-t sm:border border-white/10 p-6 sm:p-8 rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md h-[90vh] sm:h-auto overflow-y-auto shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative animate-in slide-in-from-bottom sm:zoom-in-95 sm:slide-in-from-bottom-4 transition-all duration-300">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-xl sm:text-2xl font-black flex items-center gap-3 text-white">
+            <div className="p-2 sm:p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+              <Calculator className="text-indigo-400 w-5 h-5 sm:w-6 sm:h-6" />
+            </div>
+            {t('depreciationCalc')}
+          </h2>
+          <button 
+            onClick={onClose} 
+            className="text-slate-400 hover:text-white transition-all bg-white/5 hover:bg-white/10 p-2 rounded-xl border border-white/10"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         <div className="space-y-6">
           <div>
@@ -89,14 +90,14 @@ export const DepreciationModal: React.FC<DepreciationModalProps> = ({ isOpen, on
           </div>
 
           <div>
-            <label htmlFor="useful-life" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">{t('usefulLife')}</label>
+            <label htmlFor="useful-life" className="block text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">{t('usefulLife')}</label>
             <input
               id="useful-life"
               name="usefulLife"
               type="number"
               value={life || ''}
               onChange={(e) => setLife(parseFloat(e.target.value) || 1)}
-              className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-inner"
+              className="w-full bg-slate-900/50 border border-white/10 rounded-xl sm:rounded-2xl px-5 py-3 sm:py-3.5 text-white outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-inner text-sm sm:text-base"
             />
           </div>
 
