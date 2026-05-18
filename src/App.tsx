@@ -254,12 +254,20 @@ export default function App() {
 
   // Track scroll position for header/nav animations
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
 
   // Sync User Preferences
   useEffect(() => {
@@ -437,6 +445,14 @@ export default function App() {
   // Form State
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
   const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const modalScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isTransactionFormOpen && modalScrollRef.current) {
+      modalScrollRef.current.scrollTop = 0;
+    }
+  }, [isTransactionFormOpen]);
+
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -571,6 +587,20 @@ export default function App() {
       profit: value
     })).slice(-12); // Last 12 months
   }, [transactions]);
+
+  // --- Confetti Celebration Effect ---
+  const [showConfetti, setShowConfetti] = useState(false);
+  const prevBalancedRef = useRef(totals.isBalanced);
+
+  useEffect(() => {
+    // Only celebrate if it transitions from unbalanced to balanced
+    if (totals.isBalanced && !prevBalancedRef.current && transactions.length > 0) {
+      setShowConfetti(true);
+      const timer = setTimeout(() => setShowConfetti(false), 5000);
+      return () => clearTimeout(timer);
+    }
+    prevBalancedRef.current = totals.isBalanced;
+  }, [totals.isBalanced, transactions.length]);
 
   // --- Budget Alerts Effect ---
   const isFirstRender = useRef(true);
@@ -955,8 +985,73 @@ export default function App() {
   );
 
   if (!isAuthReady) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-800/10 dark:bg-slate-800/20 dark:text-white text-slate-900 font-black tracking-widest">{t('loading')}</div>;
+    return (
+      <div className="min-h-screen w-full flex flex-col p-4 md:p-8 space-y-6 select-none overflow-hidden">
+        {/* Header Skeleton */}
+        <div className="glass rounded-[2rem] p-4 flex items-center justify-between animate-pulse">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+            <div className="space-y-2">
+              <div className="w-32 h-6 bg-slate-300/40 dark:bg-slate-700/40 rounded-md animate-shimmer" />
+              <div className="w-20 h-3 bg-slate-300/40 dark:bg-slate-700/40 rounded-md animate-shimmer" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="hidden md:block w-24 h-10 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+            <div className="w-10 h-10 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+            <div className="hidden md:block w-32 h-10 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+          </div>
+        </div>
+
+        {/* Navigation Tabs Skeleton */}
+        <div className="hidden md:flex justify-center w-full">
+          <div className="glass p-2 rounded-[2rem] flex items-center gap-2 animate-pulse">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="w-28 h-10 bg-slate-300/40 dark:bg-slate-700/40 rounded-full animate-shimmer" />
+            ))}
+          </div>
+        </div>
+
+        {/* Main Content Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 flex-grow">
+          {/* Left Column Skeleton */}
+          <div className="col-span-1 md:col-span-5 space-y-6">
+            <div className="glass-card p-6 space-y-6 animate-pulse">
+              <div className="w-1/2 h-6 bg-slate-300/40 dark:bg-slate-700/40 rounded-md animate-shimmer" />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-1 h-12 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+                <div className="col-span-2 h-12 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+              </div>
+              <div className="h-20 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+              <div className="h-12 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+              <div className="h-28 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+              <div className="h-14 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+            </div>
+          </div>
+
+          {/* Right Column Skeleton */}
+          <div className="col-span-1 md:col-span-7">
+            <div className="glass-card p-6 h-full space-y-6 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <div className="w-16 h-8 bg-slate-300/40 dark:bg-slate-700/40 rounded-xl animate-shimmer" />
+                  <div className="w-24 h-8 bg-slate-300/40 dark:bg-slate-700/40 rounded-xl animate-shimmer" />
+                </div>
+                <div className="w-24 h-8 bg-slate-300/40 dark:bg-slate-700/40 rounded-xl animate-shimmer" />
+              </div>
+              <div className="space-y-4">
+                <div className="h-12 bg-slate-300/40 dark:bg-slate-700/40 rounded-xl animate-shimmer" />
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-14 bg-slate-300/40 dark:bg-slate-700/40 rounded-2xl animate-shimmer" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
+
 
   const navItems = [
     { id: 'equation', label: t('balanceSheet'), icon: Calculator, color: 'indigo' },
@@ -1008,7 +1103,7 @@ export default function App() {
                 </button>
                 
                 {isLangOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-40 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden animate-fade-in py-1">
+                  <div className="absolute top-full left-0 mt-2 w-40 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden animate-scale-in origin-top-left py-1">
                     {[
                       { id: 'ar', label: 'العربية' },
                       { id: 'en', label: 'English' },
@@ -1074,7 +1169,7 @@ export default function App() {
                   <span>{CURRENCIES.find(c => c.code === currency)?.symbol}</span>
                 </button>
                 {isCurrencyOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-48 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+                  <div className="absolute top-full right-0 mt-2 w-48 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto animate-scale-in origin-top-right">
                     {CURRENCIES.map((c) => (
                       <button
                         key={c.code}
@@ -1390,7 +1485,7 @@ export default function App() {
 
       <main className="mb-6 md:mb-0">
       {currentView === 'equation' ? (
-        <>
+        <div className="animate-scale-in space-y-6 sm:space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8">
         
         {/* Left Column: Form & Status Dashboard - Hidden on mobile to avoid redundancy */}
@@ -1644,21 +1739,21 @@ export default function App() {
 
           {/* Balance Equation Status Visualization */}
           <div className={cn(
-            "rounded-[2.5rem] shadow-2xl border-2 p-8 transition-all duration-700 backdrop-blur-3xl overflow-hidden relative",
+            "rounded-[2.5rem] shadow-2xl border-2 p-8 transition-all duration-700 backdrop-blur-3xl overflow-hidden relative group/card",
             totals.isBalanced 
-              ? "dark:bg-emerald-950/20 bg-emerald-50 border-emerald-500/20" 
-              : "dark:bg-rose-950/20 bg-rose-50 border-rose-500/20"
+              ? "dark:bg-emerald-950/20 bg-emerald-50 border-emerald-500/30 dark:shadow-[0_0_30px_rgba(16,185,129,0.12)] shadow-[0_0_20px_rgba(16,185,129,0.06)]" 
+              : "dark:bg-rose-950/20 bg-rose-50 border-rose-500/30 dark:shadow-[0_0_30px_rgba(244,63,94,0.12)] shadow-[0_0_20px_rgba(244,63,94,0.06)]"
           )}>
             {/* Background Glow */}
             <div className={cn(
-              "absolute -top-24 -right-24 w-64 h-64 blur-[100px] opacity-20 rounded-full",
+              "absolute -top-24 -right-24 w-64 h-64 blur-[100px] opacity-20 rounded-full transition-all duration-1000 group-hover/card:scale-125",
               totals.isBalanced ? "bg-emerald-500" : "bg-rose-500"
             )}></div>
 
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
               <div className={cn(
-                "p-5 rounded-[2rem] shadow-2xl",
-                totals.isBalanced ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+                "p-5 rounded-[2rem] shadow-2xl transition-all duration-500",
+                totals.isBalanced ? "bg-emerald-500/20 text-emerald-400 group-hover/card:scale-105" : "bg-rose-500/20 text-rose-400 animate-pulse-slow"
               )}>
                 {totals.isBalanced ? <CheckCircle2 className="w-12 h-12" /> : <AlertCircle className="w-12 h-12" />}
               </div>
@@ -1823,13 +1918,13 @@ export default function App() {
         {/* Right Column: Table */}
         <div className="md:col-span-7">
           <div className="glass-card overflow-hidden flex flex-col h-full" style={{ borderRadius: '1.5rem' }}>
-            <div className="p-4 border-b border-white/10 bg-slate-800/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                <div className="flex items-center gap-1 dark:bg-white/5 bg-slate-100 p-1 rounded-xl border dark:border-white/10 border-slate-200">
                   <button 
                     onClick={handleUndo}
                     disabled={historyIndex <= 0}
-                    className="p-2 text-slate-400 hover:text-white disabled:opacity-20 transition-all active:scale-90"
+                    className="p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
                     title={language === 'ar' ? "تراجع" : "Undo"}
                   >
                     <Undo2 className="w-4 h-4" />
@@ -1837,7 +1932,7 @@ export default function App() {
                   <button 
                     onClick={handleRedo}
                     disabled={historyIndex >= history.length - 1}
-                    className="p-2 text-slate-400 hover:text-white disabled:opacity-20 transition-all active:scale-90"
+                    className="p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
                     title={language === 'ar' ? "إعادة التعديل المتراجع عنه" : "Redo"}
                   >
                     <Redo2 className="w-4 h-4" />
@@ -1884,11 +1979,11 @@ export default function App() {
                   </button>
                   <button
                     onClick={handleExportPDF}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-[15px] font-medium text-white bg-slate-800/40 border border-white/10 rounded-lg hover:bg-slate-800/20 hover:text-rose-600 transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-rose-600/50 hover:bg-rose-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
                     title={t('exportPDF')}
                   >
-                    <FileText className="w-4 h-4" />
-                    PDF
+                    <FileText className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-rose-600" />
+                    <span className="sr-only sm:not-sr-only">PDF</span>
                   </button>
                 </div>
               )}
@@ -1905,12 +2000,12 @@ export default function App() {
             ) : (
               <>
                 {/* Desktop Table View */}
-                <div id="transactions-table" className="hidden md:block overflow-auto flex-1 relative max-h-[600px] bg-slate-800/40" style={{ borderRadius: '0 0 1.5rem 1.5rem' }}>
+                <div id="transactions-table" className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-slate-50/30">
                   <table className="w-full text-[15px] text-right border-collapse">
-                    <thead className="sticky top-0 z-20 text-white shadow-sm ring-1 ring-slate-200">
+                    <thead className="sticky top-0 z-20 dark:text-white text-slate-800 shadow-sm ring-1 dark:ring-white/10 ring-slate-200/50">
                       {/* Category Headers */}
-                      <tr className="border-b border-white/10 ring-1 ring-white/5">
-                        <th className="p-4 border-l border-white/5 w-10 bg-slate-900/40 text-center">
+                      <tr className="border-b dark:border-white/10 border-slate-200 ring-1 dark:ring-white/5 ring-slate-100/50">
+                        <th className="p-4 border-l dark:border-white/5 border-slate-200/50 w-10 dark:bg-slate-900/40 bg-slate-100/80 text-center">
                           <input 
                             id="select-all-transactions"
                             name="selectAll"
@@ -1921,52 +2016,52 @@ export default function App() {
                             aria-label={t('selectAll') || 'Select All'}
                           />
                         </th>
-                        <th className="p-4 border-l border-white/5 font-bold text-[11px] uppercase tracking-widest w-24 bg-slate-900/40">{t('date')}</th>
-                        <th className="p-4 border-l border-white/5 font-bold text-[11px] uppercase tracking-widest min-w-[200px] bg-slate-900/40">{t('description')}</th>
+                        <th className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest w-24 dark:bg-slate-900/40 bg-slate-100/80 text-center">{t('date')}</th>
+                        <th className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest min-w-[200px] dark:bg-slate-900/40 bg-slate-100/80">{t('description')}</th>
                         
                         {assets.length > 0 && (
-                          <th colSpan={assets.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-indigo-500/10 dark:text-indigo-300 text-indigo-950">
+                          <th colSpan={assets.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-indigo-500/10 dark:text-indigo-300 text-indigo-950">
                             {t('assets')}
                           </th>
                         )}
                         
                         {liabilities.length > 0 && (
-                          <th colSpan={liabilities.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-amber-500/10 dark:text-amber-300 text-amber-950">
+                          <th colSpan={liabilities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-amber-500/10 dark:text-amber-300 text-amber-950">
                             {t('liabilities')}
                           </th>
                         )}
                         
                         {equities.length > 0 && (
-                          <th colSpan={equities.length} className="p-2 border-l border-white/5 font-black text-[10px] uppercase tracking-tighter text-center bg-emerald-500/10 dark:text-emerald-300 text-emerald-950">
+                          <th colSpan={equities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-emerald-500/10 dark:text-emerald-300 text-emerald-950">
                             {t('equity')}
                           </th>
                         )}
-                        <th className="p-3 w-10 bg-slate-900/40"></th>
+                        <th className="p-3 w-10 dark:bg-slate-900/40 bg-slate-100/80"></th>
                       </tr>
                       {/* Account Headers */}
-                      <tr className="border-b border-white/5">
-                        <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
-                        <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
-                        <th className="p-2 border-l border-white/5 bg-slate-900/20"></th>
+                      <tr className="border-b dark:border-white/5 border-slate-200/30">
+                        <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
+                        <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
+                        <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
                         
                         {assets.map(a => (
-                          <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center dark:text-indigo-400 text-indigo-900 bg-indigo-500/5">{t(a.name)}</th>
+                          <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-indigo-400 text-indigo-900 bg-indigo-500/5">{t(a.name)}</th>
                         ))}
                         
                         {liabilities.map(a => (
-                          <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center dark:text-amber-400 text-amber-900 bg-amber-500/5">{t(a.name)}</th>
+                          <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-amber-400 text-amber-900 bg-amber-500/5">{t(a.name)}</th>
                         ))}
                         
                         {equities.map(a => (
-                          <th key={a.id} className="p-2 border-l border-white/5 font-black text-[10px] uppercase text-center dark:text-emerald-400 text-emerald-900 bg-emerald-500/5">{t(a.name)}</th>
+                          <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-emerald-400 text-emerald-900 bg-emerald-500/5">{t(a.name)}</th>
                         ))}
-                        <th className="bg-slate-900/20"></th>
+                        <th className="dark:bg-slate-900/20 bg-slate-50/50"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y dark:divide-white/5 divide-slate-200/60">
                       {transactions.map((tx) => (
-                        <tr key={tx.id} className="even:bg-white/5 hover:bg-slate-700/50 transition-colors group">
-                          <td className="p-3 border-l border-white/5 text-center">
+                        <tr key={tx.id} className="dark:even:bg-white/5 even:bg-slate-100/20 dark:hover:bg-slate-700/50 hover:bg-slate-100/80 transition-colors group">
+                          <td className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center">
                             <input 
                               id={`select-tx-${tx.id}`}
                               name={`selectTx-${tx.id}`}
@@ -1977,8 +2072,8 @@ export default function App() {
                               aria-label={`${t('select')} ${tx.description}`}
                             />
                           </td>
-                          <td className="p-3 border-l border-white/5 whitespace-nowrap text-white">{tx.date}</td>
-                          <td className="p-3 border-l border-white/5 text-white">
+                          <td className="p-3 border-l dark:border-white/5 border-slate-200/30 whitespace-nowrap dark:text-white text-slate-800 text-center"><span dir="ltr" className="inline-block transform -translate-y-[3px]">{tx.date}</span></td>
+                          <td className="p-3 border-l dark:border-white/5 border-slate-200/30 dark:text-white text-slate-850">
                             <div className="flex items-center gap-2">
                               {tx.description}
                               {tx.isRecurring && (
@@ -2004,7 +2099,7 @@ export default function App() {
                           {assets.map(a => {
                             const amt = getImpactAmount(tx, a.id);
                             return (
-                              <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-indigo-500/5 transition-colors" dir="ltr">
+                              <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-indigo-500/5 transition-colors" dir="ltr">
                                 {amt !== 0 ? (
                                   <span className={cn(
                                     "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
@@ -2013,7 +2108,7 @@ export default function App() {
                                     {formatCurrency(amt)}
                                   </span>
                                 ) : (
-                                  <span className="text-white opacity-[0.05]">-</span>
+                                  <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
                                 )}
                               </td>
                             );
@@ -2022,7 +2117,7 @@ export default function App() {
                           {liabilities.map(a => {
                             const amt = getImpactAmount(tx, a.id);
                             return (
-                              <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-amber-500/5 transition-colors" dir="ltr">
+                              <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-amber-500/5 transition-colors" dir="ltr">
                                 {amt !== 0 ? (
                                   <span className={cn(
                                     "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
@@ -2031,7 +2126,7 @@ export default function App() {
                                     {formatCurrency(amt)}
                                   </span>
                                 ) : (
-                                  <span className="text-white opacity-[0.05]">-</span>
+                                  <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
                                 )}
                               </td>
                             );
@@ -2040,7 +2135,7 @@ export default function App() {
                           {equities.map(a => {
                             const amt = getImpactAmount(tx, a.id);
                             return (
-                              <td key={a.id} className="p-3 border-l border-white/5 text-center font-mono group-hover:bg-emerald-500/5 transition-colors" dir="ltr">
+                              <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-emerald-500/5 transition-colors" dir="ltr">
                                 {amt !== 0 ? (
                                   <span className={cn(
                                     "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
@@ -2049,7 +2144,7 @@ export default function App() {
                                     {formatCurrency(amt)}
                                   </span>
                                 ) : (
-                                  <span className="text-white opacity-[0.05]">-</span>
+                                  <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
                                 )}
                               </td>
                             );
@@ -2059,14 +2154,14 @@ export default function App() {
                             <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                               <button 
                                 onClick={() => handleEditTransaction(tx)}
-                                className="p-1.5 text-white hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                className="p-1.5 dark:text-white text-slate-600 hover:text-indigo-600 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
                                 title={t('editTransaction')}
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
                               <button 
                                 onClick={() => handleDeleteTransaction(tx.id)}
-                                className="p-1.5 text-white hover:text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                                className="p-1.5 dark:text-white text-slate-600 hover:text-rose-500 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
                                 title={t('deleteTransaction')}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -2077,26 +2172,26 @@ export default function App() {
                       ))}
                     </tbody>
                     {/* Totals Row */}
-                    <tfoot className="sticky bottom-0 z-20 bg-slate-900 border-t-2 border-white/10 font-bold shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+                    <tfoot className="sticky bottom-0 z-20 bg-slate-900 border-t-2 dark:border-white/10 border-slate-800 font-bold shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
                       <tr>
-                        <td colSpan={3} className="p-4 border-l border-white/5 text-left text-white/50 bg-slate-900/60 uppercase tracking-widest text-[11px]">
+                        <td colSpan={3} className="p-4 border-l dark:border-white/5 border-slate-800 text-left text-white/90 bg-slate-900/60 uppercase tracking-widest text-[11px]">
                           {t('grandTotal')}
                         </td>
                         
                         {assets.map(a => (
-                          <td key={a.id} className="p-4 border-l border-white/5 text-center dark:text-indigo-400 text-indigo-950 font-mono bg-indigo-500/5" dir="ltr">
+                          <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-indigo-400 text-white font-mono bg-indigo-500/5" dir="ltr">
                             {formatCurrency(totals.accounts[a.id])}
                           </td>
                         ))}
                         
                         {liabilities.map(a => (
-                          <td key={a.id} className="p-4 border-l border-white/5 text-center dark:text-amber-400 text-amber-950 font-mono bg-amber-500/5" dir="ltr">
+                          <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-amber-400 text-white font-mono bg-amber-500/5" dir="ltr">
                             {formatCurrency(totals.accounts[a.id])}
                           </td>
                         ))}
                         
                         {equities.map(a => (
-                          <td key={a.id} className="p-4 border-l border-white/5 text-center dark:text-emerald-400 text-emerald-950 font-mono bg-emerald-500/5" dir="ltr">
+                          <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-emerald-400 text-white font-mono bg-emerald-500/5" dir="ltr">
                             {formatCurrency(totals.accounts[a.id])}
                           </td>
                         ))}
@@ -2124,7 +2219,7 @@ export default function App() {
                             />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] leading-none mb-1.5">{tx.date}</span>
+                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] leading-none mb-1.5 inline-block transform -translate-y-[2.5px]" dir="ltr">{tx.date}</span>
                             <p className="text-[15px] font-black dark:text-white text-slate-900 leading-snug">{tx.description}</p>
                           </div>
                         </div>
@@ -2185,20 +2280,20 @@ export default function App() {
             
             {/* Final Equation Summary */}
             {transactions.length > 0 && (
-              <div className="bg-slate-900/60 backdrop-blur-md border-t border-white/10 text-white p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 font-mono text-lg animate-fade-in">
+              <div className="dark:bg-slate-900/60 bg-slate-50/90 backdrop-blur-md border-t dark:border-white/10 border-slate-200 dark:text-white text-slate-800 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 font-mono text-lg animate-fade-in">
                 <div className="flex flex-col items-center">
-                  <span className="text-sm font-medium text-white font-sans mb-1">{t('assets')}</span>
-                  <span className="text-indigo-300">{formatCurrency(totals.totalAssets)}</span>
+                  <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('assets')}</span>
+                  <span className="dark:text-indigo-300 text-indigo-600 font-bold">{formatCurrency(totals.totalAssets)}</span>
                 </div>
-                <span className="text-white">=</span>
+                <span className="dark:text-white text-slate-400">=</span>
                 <div className="flex flex-col items-center">
-                  <span className="text-sm font-medium text-white font-sans mb-1">{t('liabilities')}</span>
-                  <span className="text-amber-300">{formatCurrency(totals.totalLiabilities)}</span>
+                  <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('liabilities')}</span>
+                  <span className="dark:text-amber-300 text-amber-600 font-bold">{formatCurrency(totals.totalLiabilities)}</span>
                 </div>
-                <span className="text-white">+</span>
+                <span className="dark:text-white text-slate-400">+</span>
                 <div className="flex flex-col items-center">
-                  <span className="text-sm font-medium text-white font-sans mb-1">{t('equity')}</span>
-                  <span className="text-emerald-300">{formatCurrency(totals.totalEquity)}</span>
+                  <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('equity')}</span>
+                  <span className="dark:text-emerald-300 text-emerald-600 font-bold">{formatCurrency(totals.totalEquity)}</span>
                 </div>
               </div>
             )}
@@ -2256,9 +2351,9 @@ export default function App() {
             <div className="h-[300px] md:h-[350px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
               {incomeExpenseData.some(d => d.amount > 0) ? (
                 <ResponsiveContainer id="income-expense-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
-                  <BarChart data={incomeExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart data={incomeExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900, dy: -5 }} />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
@@ -2339,9 +2434,9 @@ export default function App() {
             <div className="h-[300px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
               {profitTrendData.length > 0 ? (
                 <ResponsiveContainer id="profit-trend-line-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
-                  <LineChart data={profitTrendData}>
+                  <LineChart data={profitTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900, dy: -5 }} />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
@@ -2376,7 +2471,7 @@ export default function App() {
         </div>
       )}
 
-    </>
+        </div>
       ) : currentView === 'income' ? (
         <IncomeStatementView 
           formatCurrency={formatCurrency}
@@ -2489,15 +2584,21 @@ export default function App() {
             handleCancelEdit();
           }} 
         />
-        <div className={cn(
-          "relative w-full max-w-2xl bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col transition-all",
-          "rounded-t-[2.5rem] md:rounded-[2rem] max-h-[92vh] md:max-h-[85vh]",
-          "animate-in slide-in-from-bottom duration-500 md:zoom-in-95"
-        )}>
+        <form 
+          onSubmit={(e) => {
+            handleAddTransaction(e);
+            setIsTransactionFormOpen(false);
+          }}
+          className={cn(
+            "relative w-full max-w-2xl bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col transition-all",
+            "rounded-t-[2.5rem] md:rounded-[2rem] h-fit max-h-[92vh] md:max-h-[85vh] overflow-hidden",
+            "animate-in slide-in-from-bottom duration-500 md:zoom-in-95"
+          )}
+        >
           {/* Handle for bottom sheet */}
-          <div className="md:hidden w-12 h-1.5 bg-slate-300 dark:bg-white/20 rounded-full mx-auto mt-3 mb-1" />
+          <div className="md:hidden w-12 h-1.5 bg-slate-300 dark:bg-white/20 rounded-full mx-auto mt-3 mb-1 flex-none" />
           
-          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-200">
+          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-200 flex-none bg-white dark:bg-slate-900 z-10">
             <div>
               <h3 className="text-xl font-bold dark:text-white text-slate-900 flex items-center gap-3">
                 <div className="p-2 bg-indigo-500/20 rounded-xl">
@@ -2507,6 +2608,7 @@ export default function App() {
               </h3>
             </div>
             <button 
+              type="button"
               onClick={() => {
                 setIsTransactionFormOpen(false);
                 handleCancelEdit();
@@ -2517,192 +2619,197 @@ export default function App() {
             </button>
           </div>
 
-          <div className="p-6 overflow-y-auto custom-scrollbar no-scrollbar pb-24">
-            <form onSubmit={(e) => {
-              handleAddTransaction(e);
-              setIsTransactionFormOpen(false);
-            }} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="col-span-1">
-                  <label htmlFor="mob-tx-date" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('date')}</label>
-                  <input 
-                    id="mob-tx-date"
-                    name="mob-date"
-                    type="text" 
-                    value={date}
-                    onChange={e => setDate(e.target.value)}
-                    placeholder={t('exampleDate')}
-                    className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label htmlFor="mob-tx-description" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('description')}</label>
-                  <input 
-                    id="mob-tx-description"
-                    name="mob-description"
-                    type="text" 
-                    required
-                    value={description}
-                    onChange={e => setDescription(e.target.value)}
-                    placeholder={t('exampleDesc')}
-                    className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10"
-                  />
-                </div>
+          <div 
+            ref={modalScrollRef} 
+            className="p-6 overflow-y-auto custom-scrollbar no-scrollbar flex-1 max-h-[calc(92vh-180px)] md:max-h-[calc(85vh-180px)] space-y-6 pb-6 bg-slate-50/50 dark:bg-slate-950/20"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="col-span-1">
+                <label htmlFor="mob-tx-date" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('date')}</label>
+                <input 
+                  id="mob-tx-date"
+                  name="mob-date"
+                  type="text" 
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  placeholder={t('exampleDate')}
+                  className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
+                />
               </div>
-
-              {/* Recurring Transaction Logic Mobile */}
-              <div className="flex flex-col gap-4 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
-                <label htmlFor="mob-tx-recurring" className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    id="mob-tx-recurring"
-                    name="mob-isRecurring"
-                    type="checkbox"
-                    checked={isRecurring}
-                    onChange={(e) => setIsRecurring(e.target.checked)}
-                    className="w-6 h-6 rounded-lg border-slate-300 dark:border-white/20 bg-white dark:bg-slate-900 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
-                  />
-                  <span className="text-sm font-black dark:text-white text-slate-700 uppercase tracking-tight">{t('recurringTransaction')}</span>
-                </label>
-                
-                {isRecurring && (
-                  <div className="flex items-center gap-3 animate-fade-in pt-3 border-t border-indigo-500/10">
-                    <label htmlFor="mob-tx-recurrence-interval" className="text-[10px] font-black dark:text-slate-400 text-slate-500 uppercase tracking-widest">{t('repeatsEveryLabel')}</label>
-                    <select
-                      id="mob-tx-recurrence-interval"
-                      name="mob-recurrenceInterval"
-                      value={recurrenceInterval}
-                      onChange={(e) => setRecurrenceInterval(e.target.value as any)}
-                      className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-black focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900 dark:text-white text-slate-800"
-                    >
-                      <option value="daily">{t('day')}</option>
-                      <option value="weekly">{t('week')}</option>
-                      <option value="monthly">{t('month')}</option>
-                      <option value="yearly">{t('year')}</option>
-                    </select>
-                  </div>
-                )}
+              <div className="col-span-2">
+                <label htmlFor="mob-tx-description" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('description')}</label>
+                <input 
+                  id="mob-tx-description"
+                  name="mob-description"
+                  type="text" 
+                  required
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder={t('exampleDesc')}
+                  className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
+                />
               </div>
+            </div>
 
-              <div className="space-y-4 pt-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest ml-1 dark:text-slate-400 text-slate-500">{t('impactOnAccounts')}</span>
-                  <button 
-                    type="button" 
-                    onClick={handleAddImpact}
-                    className="text-[10px] font-black text-white flex items-center gap-2 transition-all bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
+            {/* Recurring Transaction Logic Mobile */}
+            <div className="flex flex-col gap-4 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
+              <label htmlFor="mob-tx-recurring" className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  id="mob-tx-recurring"
+                  name="mob-isRecurring"
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  className="w-6 h-6 rounded-lg border-slate-300 dark:border-white/20 bg-white dark:bg-slate-900 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                />
+                <span className="text-sm font-black dark:text-white text-slate-700 uppercase tracking-tight">{t('recurringTransaction')}</span>
+              </label>
+              
+              {isRecurring && (
+                <div className="flex items-center gap-3 animate-fade-in pt-3 border-t border-indigo-500/10">
+                  <label htmlFor="mob-tx-recurrence-interval" className="text-[10px] font-black dark:text-slate-400 text-slate-500 uppercase tracking-widest">{t('repeatsEveryLabel')}</label>
+                  <select
+                    id="mob-tx-recurrence-interval"
+                    name="mob-recurrenceInterval"
+                    value={recurrenceInterval}
+                    onChange={(e) => setRecurrenceInterval(e.target.value as any)}
+                    className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-black focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900 dark:text-white text-slate-800"
                   >
-                    <Plus className="w-3.5 h-3.5" /> {t('addAccount')}
-                  </button>
+                    <option value="daily">{t('day')}</option>
+                    <option value="weekly">{t('week')}</option>
+                    <option value="monthly">{t('month')}</option>
+                    <option value="yearly">{t('year')}</option>
+                  </select>
                 </div>
-                
-                <div className="space-y-4">
-                  {impacts.map((impact, idx) => (
-                    <div key={idx} className="glass-card p-5 relative border-l-4 border-indigo-500 shadow-sm">
-                      <button 
-                        type="button"
-                        onClick={() => handleRemoveImpact(idx)}
-                        disabled={impacts.length <= 2}
-                        className="absolute top-3 right-3 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+              )}
+            </div>
 
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <label htmlFor={`mob-tx-account-${idx}`} className="text-[9px] font-black uppercase tracking-widest block ml-1 dark:text-slate-400 text-slate-500">{t('accountName')}</label>
-                          <select 
-                            id={`mob-tx-account-${idx}`}
-                            name={`mob-accountId-${idx}`}
-                            value={impact.accountId}
-                            onChange={e => handleImpactChange(idx, 'accountId', e.target.value)}
-                            className="w-full px-4 py-3 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-2xl text-sm font-bold shadow-inner appearance-none"
-                          >
-                            {renderAccountOptions()}
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label htmlFor={`mob-tx-amount-${idx}`} className="text-[9px] font-black uppercase tracking-widest block ml-1 dark:text-slate-400 text-slate-500">{t('impactValue')}</label>
-                          {(() => {
-                            const amount = typeof impact.amount === 'number' ? impact.amount : 0;
-                            const isNeg = amount < 0 || Object.is(amount, -0);
-                            return (
-                              <div className="space-y-3">
-                                <div className="flex dark:bg-slate-950 bg-slate-100 p-1 rounded-2xl border dark:border-white/10 border-slate-200 w-full shadow-inner">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount))}
-                                    className={cn(
-                                      "flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest",
-                                      !isNeg ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-slate-500"
-                                    )}
-                                  >
-                                    {t('debit')}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount) === 0 ? -0 : -Math.abs(amount))}
-                                    className={cn(
-                                      "flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest",
-                                      isNeg ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" : "text-slate-500"
-                                    )}
-                                  >
-                                    {t('credit')}
-                                  </button>
-                                </div>
-                                <div className="relative">
-                                  <input 
-                                    id={`mob-tx-amount-${idx}`}
-                                    name={`mob-amount-${idx}`}
-                                    type="number"
-                                    min="0"
-                                    step="any"
-                                    value={amount !== 0 ? Math.abs(amount) : ''}
-                                    onChange={e => {
-                                      const val = Math.abs(parseFloat(e.target.value) || 0);
-                                      handleImpactChange(idx, 'amount', isNeg ? (val === 0 ? -0 : -val) : val);
-                                    }}
-                                    className={cn(
-                                      "w-full px-4 py-3.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-2xl text-lg font-mono text-right font-bold transition-all",
-                                      isNeg ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"
-                                    )}
-                                    placeholder="0.00"
-                                    dir="ltr"
-                                  />
-                                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black dark:text-white/30 text-slate-400 pointer-events-none uppercase tracking-widest">
-                                    {currency}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest ml-1 dark:text-slate-400 text-slate-500">{t('impactOnAccounts')}</span>
+                <button 
+                  type="button" 
+                  onClick={handleAddImpact}
+                  className="text-[10px] font-black text-white flex items-center gap-2 transition-all bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
+                >
+                  <Plus className="w-3.5 h-3.5" /> {t('addAccount')}
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {impacts.map((impact, idx) => (
+                  <div key={idx} className="glass-card p-4 relative border-l-4 border-indigo-500 shadow-sm hover:shadow-md transition-shadow">
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveImpact(idx)}
+                      disabled={impacts.length <= 2}
+                      className="absolute top-2 left-2 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all disabled:opacity-30 disabled:pointer-events-none z-10"
+                      title={t('delete') || 'Delete'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end pl-8 sm:pl-0">
+                      <div className="col-span-1 sm:col-span-5 space-y-1.5">
+                        <label htmlFor={`mob-tx-account-${idx}`} className="text-[9px] font-black uppercase tracking-widest block ml-1 dark:text-slate-400 text-slate-500">{t('accountName')}</label>
+                        <select 
+                          id={`mob-tx-account-${idx}`}
+                          name={`mob-accountId-${idx}`}
+                          value={impact.accountId}
+                          onChange={e => handleImpactChange(idx, 'accountId', e.target.value)}
+                          className="w-full px-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs font-bold shadow-inner appearance-none outline-none focus:border-indigo-500/50"
+                        >
+                          {renderAccountOptions()}
+                        </select>
+                      </div>
+                      <div className="col-span-1 sm:col-span-4 space-y-1.5">
+                        <label className="text-[9px] font-black uppercase tracking-widest block ml-1 dark:text-slate-400 text-slate-500">{t('impactValue')}</label>
+                        {(() => {
+                          const amount = typeof impact.amount === 'number' ? impact.amount : 0;
+                          const isNeg = amount < 0 || Object.is(amount, -0);
+                          return (
+                            <div className="flex dark:bg-slate-950 bg-slate-100 p-0.5 rounded-xl border dark:border-white/10 border-slate-200 shadow-inner">
+                              <button
+                                type="button"
+                                onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount))}
+                                className={cn(
+                                  "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
+                                  !isNeg ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                                )}
+                              >
+                                {t('debit')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount) === 0 ? -0 : -Math.abs(amount))}
+                                className={cn(
+                                  "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
+                                  isNeg ? "bg-rose-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                                )}
+                              >
+                                {t('credit')}
+                              </button>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <div className="col-span-1 sm:col-span-3 space-y-1.5">
+                        {(() => {
+                          const amount = typeof impact.amount === 'number' ? impact.amount : 0;
+                          const isNeg = amount < 0 || Object.is(amount, -0);
+                          return (
+                            <div className="relative">
+                              <input 
+                                id={`mob-tx-amount-${idx}`}
+                                name={`mob-amount-${idx}`}
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={amount !== 0 ? Math.abs(amount) : ''}
+                                onChange={e => {
+                                  const val = Math.abs(parseFloat(e.target.value) || 0);
+                                  handleImpactChange(idx, 'amount', isNeg ? (val === 0 ? -0 : -val) : val);
+                                }}
+                                className={cn(
+                                  "w-full pl-12 pr-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-sm font-mono text-right font-bold transition-all outline-none focus:border-indigo-500/50",
+                                  isNeg ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"
+                                )}
+                                placeholder="0.00"
+                                dir="ltr"
+                              />
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black dark:text-white/30 text-slate-400 pointer-events-none uppercase tracking-widest">
+                                {currency}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-
-              <div className="fixed bottom-0 left-0 right-0 p-6 bg-white dark:bg-slate-900 border-t dark:border-white/10 border-slate-200 flex gap-4 z-50">
-                <button 
-                  type="submit"
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 uppercase tracking-widest text-xs"
-                >
-                  {editingTransactionId ? t('saveChanges') : t('addTransaction')}
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setIsTransactionFormOpen(false);
-                    handleCancelEdit();
-                  }}
-                  className="px-8 bg-slate-100 dark:bg-slate-800 active:scale-95 text-slate-600 dark:text-white font-black py-4 rounded-2xl transition-all border dark:border-white/10 border-slate-200 uppercase tracking-widest text-[10px]"
-                >
-                  {t('cancel')}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
+
+          <div className="p-6 bg-white dark:bg-slate-900 border-t dark:border-white/10 border-slate-200 flex gap-4 flex-none z-10 shadow-[0_-10px_30px_rgba(0,0,0,0.04)]">
+            <button 
+              type="submit"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 uppercase tracking-widest text-xs"
+            >
+              {editingTransactionId ? t('saveChanges') : t('addTransaction')}
+            </button>
+            <button 
+              type="button"
+              onClick={() => {
+                setIsTransactionFormOpen(false);
+                handleCancelEdit();
+              }}
+              className="px-8 bg-slate-100 dark:bg-slate-800 active:scale-95 text-slate-600 dark:text-white font-black py-4 rounded-2xl transition-all border dark:border-white/10 border-slate-200 uppercase tracking-widest text-[10px]"
+            >
+              {t('cancel')}
+            </button>
+          </div>
+        </form>
       </div>
     )}
     </div>
@@ -2731,14 +2838,15 @@ export default function App() {
         })}
 
         {/* Integrated Center Action Button */}
-        <div className="relative -top-8">
+        <div className="relative -top-8 animate-float">
+          <div className="absolute inset-0 bg-indigo-500 rounded-full blur-md opacity-40 animate-pulse-slow -z-10 scale-105" />
           <button 
             onClick={() => {
               setEditingTransactionId(null);
               handleCancelEdit();
               setIsTransactionFormOpen(true);
             }}
-            className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-full shadow-[0_15px_30px_-5px_rgba(99,102,241,0.5)] flex items-center justify-center border-4 dark:border-slate-900 border-white active:scale-90 transition-all group"
+            className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-full shadow-[0_15px_30px_-5px_rgba(99,102,241,0.35)] flex items-center justify-center border-4 dark:border-slate-900 border-white active:scale-90 transition-all group relative z-10"
             aria-label={t('addTransaction')}
           >
             <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform" />
@@ -2765,6 +2873,7 @@ export default function App() {
         })}
       </div>
     </nav>
+    {showConfetti && <Confetti />}
   </>
 );
 }
@@ -3332,3 +3441,36 @@ const DocPreviewModal: React.FC<{ isOpen: boolean, url: string | null, onClose: 
     </div>
   );
 }
+
+const Confetti: React.FC = () => {
+  const colors = ['bg-indigo-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-purple-500', 'bg-sky-500'];
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[999] overflow-hidden">
+      {Array.from({ length: 45 }).map((_, i) => {
+        const size = Math.random() * 8 + 6;
+        const left = Math.random() * 100;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const delay = Math.random() * 3;
+        const duration = Math.random() * 2 + 3;
+        const rotationSpeed = Math.random() * 720 - 360;
+        return (
+          <div
+            key={i}
+            className={cn("absolute rounded-sm opacity-90 animate-confetti-fall", color)}
+            style={{
+              width: `${size}px`,
+              height: `${size * 1.5}px`,
+              left: `${left}%`,
+              top: `-20px`,
+              animationDelay: `${delay}s`,
+              animationDuration: `${duration}s`,
+              transform: `rotate(${Math.random() * 360}deg)`,
+              '--rotation-deg': `${rotationSpeed}deg`,
+            } as React.CSSProperties}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
