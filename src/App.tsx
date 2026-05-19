@@ -216,6 +216,24 @@ export default function App() {
   const [isDepreciationModalOpen, setIsDepreciationModalOpen] = useState(false);
   const [isSnapshotsModalOpen, setIsSnapshotsModalOpen] = useState(false);
 
+  // Custom Accounts State
+  const [customAccounts, setCustomAccounts] = useState<Account[]>(() => {
+    const saved = localStorage.getItem('motazin_custom_accounts');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [];
+  });
+  const [customAccountModalIdx, setCustomAccountModalIdx] = useState<number | null>(null);
+  const [newCustomAccountName, setNewCustomAccountName] = useState('');
+  const [newCustomAccountCategory, setNewCustomAccountCategory] = useState<Category>('asset');
+
+  const allAccounts = useMemo(() => {
+    return [...ACCOUNTS, ...customAccounts];
+  }, [customAccounts]);
+
   // Document Archiving State
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -279,11 +297,13 @@ export default function App() {
         const data = docSnap.data();
         if (data.budgets) setBudgets(data.budgets);
         if (data.currency) setCurrency(data.currency);
+        if (data.customAccounts) setCustomAccounts(data.customAccounts);
       } else {
         // Initialize user doc
         setDoc(userDocRef, {
           currency: 'SAR',
           budgets: { cars: 20000, furniture: 12000, expenses: 5000 },
+          customAccounts: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }).catch(error => {
@@ -333,6 +353,7 @@ export default function App() {
 
   // Helper to update transactions and history
   const updateTransactions = async (newTransactions: Transaction[], skipHistory = false) => {
+    shouldCelebrateRef.current = true;
     if (!skipHistory) {
       const newHistory = history.slice(0, historyIndex + 1);
       newHistory.push(newTransactions);
@@ -390,6 +411,46 @@ export default function App() {
       console.error("Error updating transactions:", error);
       toast.error(t('errorSavingTransactions'));
     }
+  };
+
+  const addCustomAccount = async (name: string, category: Category) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return null;
+    
+    // Check if account name already exists in default or custom accounts
+    const nameExists = allAccounts.some(
+      a => a.name.toLowerCase() === trimmedName.toLowerCase() || 
+      t(a.name).toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (nameExists) {
+      toast.error(language === 'ar' ? 'هذا الحساب موجود بالفعل!' : 'This account already exists!');
+      return null;
+    }
+
+    const newId = 'custom_' + Math.random().toString(36).substr(2, 9);
+    const newAccount: Account = {
+      id: newId,
+      name: trimmedName,
+      category: category
+    };
+
+    const updated = [...customAccounts, newAccount];
+    setCustomAccounts(updated);
+    localStorage.setItem('motazin_custom_accounts', JSON.stringify(updated));
+
+    if (user) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          customAccounts: updated,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (error) {
+        console.error("Error saving custom accounts to Firebase:", error);
+      }
+    }
+    
+    toast.success(language === 'ar' ? 'تم إضافة الحساب الجديد بنجاح!' : 'New account added successfully!');
+    return newAccount;
   };
 
   // Process Recurring Transactions
@@ -477,8 +538,8 @@ export default function App() {
   }, [transactions]);
 
   const activeAccounts = useMemo(() => {
-    return ACCOUNTS.filter(a => activeAccountIds.includes(a.id));
-  }, [activeAccountIds]);
+    return allAccounts.filter(a => activeAccountIds.includes(a.id));
+  }, [activeAccountIds, allAccounts]);
 
   const assets = activeAccounts.filter(a => a.category === 'asset');
   const liabilities = activeAccounts.filter(a => a.category === 'liability');
@@ -591,15 +652,18 @@ export default function App() {
   // --- Confetti Celebration Effect ---
   const [showConfetti, setShowConfetti] = useState(false);
   const prevBalancedRef = useRef(totals.isBalanced);
+  const shouldCelebrateRef = useRef(false);
 
   useEffect(() => {
     // Only celebrate if it transitions from unbalanced to balanced
-    if (totals.isBalanced && !prevBalancedRef.current && transactions.length > 0) {
+    if (totals.isBalanced && !prevBalancedRef.current && transactions.length > 0 && shouldCelebrateRef.current) {
       setShowConfetti(true);
       const timer = setTimeout(() => setShowConfetti(false), 5000);
+      shouldCelebrateRef.current = false;
       return () => clearTimeout(timer);
     }
     prevBalancedRef.current = totals.isBalanced;
+    shouldCelebrateRef.current = false;
   }, [totals.isBalanced, transactions.length]);
 
   // --- Budget Alerts Effect ---
@@ -622,7 +686,7 @@ export default function App() {
       
       const oldSpent = Math.abs(prev[accountId] || 0);
       const newSpent = Math.abs(current[accountId] || 0);
-      const accountName = ACCOUNTS.find(a => a.id === accountId)?.name || '';
+      const accountName = allAccounts.find(a => a.id === accountId)?.name || '';
 
       const oldPercentage = oldSpent / budget;
       const newPercentage = newSpent / budget;
@@ -966,18 +1030,21 @@ export default function App() {
 
   const renderAccountOptions = () => (
     <>
+      <option value="NEW_CUSTOM_ACCOUNT" className="dark:text-indigo-400 text-indigo-600 font-extrabold text-sm">
+        {language === 'ar' ? '+ إضافة حساب جديد...' : '+ Add Custom Account...'}
+      </option>
       <optgroup label={t('assets')} className="dark:bg-slate-900 bg-slate-100 font-black text-[10px] uppercase text-indigo-400">
-        {ACCOUNTS.filter(a => a.category === 'asset').map(a => (
+        {allAccounts.filter(a => a.category === 'asset').map(a => (
           <option key={a.id} value={a.id} className="dark:text-white text-slate-900 font-bold">{t(a.name)}</option>
         ))}
       </optgroup>
       <optgroup label={t('liabilities')} className="dark:bg-slate-900 bg-slate-100 font-black text-[10px] uppercase text-amber-400">
-        {ACCOUNTS.filter(a => a.category === 'liability').map(a => (
+        {allAccounts.filter(a => a.category === 'liability').map(a => (
           <option key={a.id} value={a.id} className="dark:text-white text-slate-900 font-bold">{t(a.name)}</option>
         ))}
       </optgroup>
       <optgroup label={t('equity')} className="dark:bg-slate-900 bg-slate-100 font-black text-[10px] uppercase text-emerald-400">
-        {ACCOUNTS.filter(a => a.category === 'equity').map(a => (
+        {allAccounts.filter(a => a.category === 'equity').map(a => (
           <option key={a.id} value={a.id} className="dark:text-white text-slate-900 font-bold">{t(a.name)}</option>
         ))}
       </optgroup>
@@ -1622,24 +1689,18 @@ export default function App() {
                             id={`dt-account-id-${idx}`}
                             name={`dt-accountId-${idx}`}
                             value={impact.accountId}
-                            onChange={e => handleImpactChange(idx, 'accountId', e.target.value)}
+                            onChange={e => {
+                              if (e.target.value === 'NEW_CUSTOM_ACCOUNT') {
+                                setCustomAccountModalIdx(idx);
+                                setNewCustomAccountName('');
+                                setNewCustomAccountCategory('asset');
+                              } else {
+                                handleImpactChange(idx, 'accountId', e.target.value);
+                              }
+                            }}
                             className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold cursor-pointer transition-colors"
                           >
-                            <optgroup label={t('assets')} className="bg-slate-900 text-indigo-400 font-bold uppercase text-[10px]">
-                              {ACCOUNTS.filter(a => a.category === 'asset').map(a => (
-                                <option key={a.id} value={a.id} className="bg-slate-900 text-white font-bold text-sm">{t(a.name)}</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label={t('liabilities')} className="bg-slate-900 text-rose-400 font-bold uppercase text-[10px]">
-                              {ACCOUNTS.filter(a => a.category === 'liability').map(a => (
-                                <option key={a.id} value={a.id} className="bg-slate-900 text-white font-bold text-sm">{t(a.name)}</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label={t('equity')} className="bg-slate-900 text-emerald-400 font-bold uppercase text-[10px]">
-                              {ACCOUNTS.filter(a => a.category === 'equity').map(a => (
-                                <option key={a.id} value={a.id} className="bg-slate-900 text-white font-bold text-sm">{t(a.name)}</option>
-                              ))}
-                            </optgroup>
+                            {renderAccountOptions()}
                           </select>
                         </div>
                         
@@ -2508,7 +2569,7 @@ export default function App() {
         onImport={(rows) => {
           const newTransactions = rows.map(r => {
             const accountId = r.accountId || 'bank'; 
-            const account = ACCOUNTS.find(a => a.id === accountId);
+            const account = allAccounts.find(a => a.id === accountId);
             const category = account?.category || 'asset';
 
             let impacts: Omit<Impact, 'id'>[] = [];
@@ -2547,7 +2608,7 @@ export default function App() {
     <DepreciationModal 
       isOpen={isDepreciationModalOpen}
       onClose={() => setIsDepreciationModalOpen(false)}
-      assets={ACCOUNTS.filter(a => a.category === 'asset' && !['cash', 'bank', 'ar', 'inventory', 'supplies', 'prepaid_expenses'].includes(a.id))}
+      assets={allAccounts.filter(a => a.category === 'asset' && !['cash', 'bank', 'ar', 'inventory', 'supplies', 'prepaid_expenses'].includes(a.id))}
       onApply={(accountId, amount, description) => {
         const txId = Math.random().toString(36).substr(2, 9);
         const newTx: Transaction = {
@@ -2571,6 +2632,89 @@ export default function App() {
       url={previewUrl} 
       onClose={() => setIsDocPreviewOpen(false)} 
     />
+
+    {customAccountModalIdx !== null && (
+      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+        <div 
+          className="absolute inset-0" 
+          onClick={() => setCustomAccountModalIdx(null)} 
+        />
+        <div 
+          className={cn(
+            "relative w-full max-w-md bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col p-6 transition-all rounded-[2rem]",
+            "animate-in zoom-in-95 duration-200"
+          )}
+          dir={dir}
+        >
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+            {language === 'ar' ? 'إضافة حساب جديد' : 'Add New Account'}
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] uppercase font-bold tracking-widest block mb-2 text-theme-muted">
+                {language === 'ar' ? 'اسم الحساب' : 'Account Name'}
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={newCustomAccountName}
+                onChange={e => setNewCustomAccountName(e.target.value)}
+                className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold transition-colors"
+                placeholder={language === 'ar' ? 'مثال: أراضي زراعية، قرض بنكي...' : 'e.g. Land, Bank Loan...'}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-bold tracking-widest block mb-2 text-theme-muted">
+                {language === 'ar' ? 'نوع الحساب' : 'Account Type'}
+              </label>
+              <div className="flex dark:bg-slate-950 bg-slate-100 p-1 rounded-2xl border dark:border-white/5 border-slate-200 w-full shadow-inner">
+                {(['asset', 'liability', 'equity'] as const).map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setNewCustomAccountCategory(cat)}
+                    className={cn(
+                      "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
+                      newCustomAccountCategory === cat
+                        ? cat === 'asset'
+                          ? "bg-indigo-500 text-white shadow-xl shadow-indigo-500/30 scale-[1.02]"
+                          : cat === 'liability'
+                          ? "bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-[1.02]"
+                          : "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]"
+                        : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
+                    )}
+                  >
+                    {t(cat)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={() => setCustomAccountModalIdx(null)}
+              className="px-5 py-3 rounded-2xl border border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold transition-colors"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const newAcc = await addCustomAccount(newCustomAccountName, newCustomAccountCategory);
+                if (newAcc) {
+                  handleImpactChange(customAccountModalIdx, 'accountId', newAcc.id);
+                  setCustomAccountModalIdx(null);
+                }
+              }}
+              className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors"
+            >
+              {language === 'ar' ? 'إضافة الحساب' : 'Add Account'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Mobile Bottom Navigation moved outside animated wrapper - see below */}
 
@@ -2716,7 +2860,15 @@ export default function App() {
                           id={`mob-tx-account-${idx}`}
                           name={`mob-accountId-${idx}`}
                           value={impact.accountId}
-                          onChange={e => handleImpactChange(idx, 'accountId', e.target.value)}
+                          onChange={e => {
+                            if (e.target.value === 'NEW_CUSTOM_ACCOUNT') {
+                              setCustomAccountModalIdx(idx);
+                              setNewCustomAccountName('');
+                              setNewCustomAccountCategory('asset');
+                            } else {
+                              handleImpactChange(idx, 'accountId', e.target.value);
+                            }
+                          }}
                           className="w-full px-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs font-bold shadow-inner appearance-none outline-none focus:border-indigo-500/50"
                         >
                           {renderAccountOptions()}
