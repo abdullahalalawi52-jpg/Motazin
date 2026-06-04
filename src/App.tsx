@@ -1166,7 +1166,7 @@ export default function App() {
                   className="flex items-center gap-2 pl-9 pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 hover:bg-white/10 dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black transition-all shadow-sm group"
                 >
                   <Globe className="w-4 h-4 text-indigo-400" />
-                  <span>{language === 'ar' ? 'العربية' : language === 'en' ? 'English' : language === 'fr' ? 'Français' : language === 'es' ? 'Español' : language === 'tr' ? 'Türkçe' : 'اردو'}</span>
+                  <span>{language === 'ar' ? 'العربية' : language === 'en' ? 'English' : language === 'fr' ? 'Français' : language === 'es' ? 'Español' : language === 'tr' ? 'Türkçe' : language === 'ur' ? 'اردو' : language === 'ja' ? '日本語' : language === 'zh' ? '中文' : language === 'ru' ? 'Русский' : language === 'pt' ? 'Português' : 'English'}</span>
                 </button>
                 
                 {isLangOpen && (
@@ -1177,7 +1177,11 @@ export default function App() {
                       { id: 'fr', label: 'Français' },
                       { id: 'es', label: 'Español' },
                       { id: 'tr', label: 'Türkçe' },
-                      { id: 'ur', label: 'اردو' }
+                      { id: 'ur', label: 'اردو' },
+                      { id: 'ja', label: '日本語' },
+                      { id: 'zh', label: '中文' },
+                      { id: 'ru', label: 'Русский' },
+                      { id: 'pt', label: 'Português' }
                     ].map((lang) => (
                       <button
                         key={lang.id}
@@ -1401,7 +1405,11 @@ export default function App() {
                   { id: 'fr', label: 'FR' },
                   { id: 'es', label: 'ES' },
                   { id: 'tr', label: 'TR' },
-                  { id: 'ur', label: 'UR' }
+                  { id: 'ur', label: 'UR' },
+                  { id: 'ja', label: 'JA' },
+                  { id: 'zh', label: 'ZH' },
+                  { id: 'ru', label: 'RU' },
+                  { id: 'pt', label: 'PT' }
                 ].map((lang) => (
                   <button
                     key={lang.id}
