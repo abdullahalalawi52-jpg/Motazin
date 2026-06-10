@@ -1717,27 +1717,39 @@ export default function App() {
                           <label htmlFor={`dt-amount-input-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('impactValue')}</label>
                           {(() => {
                             const amount = typeof impact.amount === 'number' ? impact.amount : 0;
+                            const account = allAccounts.find(a => a.id === impact.accountId);
                             const isNeg = amount < 0 || Object.is(amount, -0);
+                            const isCredit = account 
+                              ? (account.category === 'asset' ? isNeg : !isNeg)
+                              : isNeg;
                             return (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {/* Segmented Debit/Credit Control */}
                                 <div className="flex dark:bg-slate-950 bg-slate-100 p-1 rounded-2xl border dark:border-white/5 border-slate-200 w-full shadow-inner">
                                   <button
                                     type="button"
-                                    onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount))}
+                                    onClick={() => {
+                                      const absAmt = Math.abs(amount);
+                                      const isLiabilityOrEquity = account && (account.category === 'liability' || account.category === 'equity');
+                                      handleImpactChange(idx, 'amount', isLiabilityOrEquity ? (absAmt === 0 ? -0 : -absAmt) : absAmt);
+                                    }}
                                     className={cn(
                                       "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
-                                      !isNeg ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
+                                      !isCredit ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
                                     )}
                                   >
                                     {t('debit')}
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount) === 0 ? -0 : -Math.abs(amount))}
+                                    onClick={() => {
+                                      const absAmt = Math.abs(amount);
+                                      const isLiabilityOrEquity = account && (account.category === 'liability' || account.category === 'equity');
+                                      handleImpactChange(idx, 'amount', isLiabilityOrEquity ? absAmt : (absAmt === 0 ? -0 : -absAmt));
+                                    }}
                                     className={cn(
                                       "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
-                                      isNeg ? "bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
+                                      isCredit ? "bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
                                     )}
                                   >
                                     {t('credit')}
@@ -1749,17 +1761,16 @@ export default function App() {
                                     id={`dt-amount-input-${idx}`}
                                     name={`dt-amount-${idx}`}
                                     type="number"
-                                    min="0"
                                     step="any"
-                                    value={amount !== 0 ? Math.abs(amount) : ''}
+                                    value={amount !== 0 ? amount : ''}
                                     onChange={e => {
-                                      const val = Math.abs(parseFloat(e.target.value) || 0);
-                                      handleImpactChange(idx, 'amount', isNeg ? (val === 0 ? -0 : -val) : val);
+                                      const val = parseFloat(e.target.value) || 0;
+                                      handleImpactChange(idx, 'amount', val);
                                     }}
                                     placeholder="0.00"
                                     className={cn(
                                       "w-full pl-4 pr-12 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-lg focus:ring-2 focus:ring-indigo-500 outline-none text-right font-mono transition-all dark:bg-slate-950/80 bg-white shadow-lg",
-                                      isNeg ? "dark:text-rose-400 text-rose-600 focus:border-rose-500/50" : "dark:text-emerald-400 text-emerald-600 focus:border-emerald-500/50"
+                                      isCredit ? "dark:text-rose-400 text-rose-600 focus:border-rose-500/50" : "dark:text-emerald-400 text-emerald-600 focus:border-emerald-500/50"
                                     )}
                                     dir="ltr"
                                   />
@@ -2886,25 +2897,37 @@ export default function App() {
                         <label className="text-[9px] font-black uppercase tracking-widest block ml-1 dark:text-slate-400 text-slate-500">{t('impactValue')}</label>
                         {(() => {
                           const amount = typeof impact.amount === 'number' ? impact.amount : 0;
+                          const account = allAccounts.find(a => a.id === impact.accountId);
                           const isNeg = amount < 0 || Object.is(amount, -0);
+                          const isCredit = account 
+                            ? (account.category === 'asset' ? isNeg : !isNeg)
+                            : isNeg;
                           return (
                             <div className="flex dark:bg-slate-950 bg-slate-100 p-0.5 rounded-xl border dark:border-white/10 border-slate-200 shadow-inner">
                               <button
                                 type="button"
-                                onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount))}
+                                onClick={() => {
+                                  const absAmt = Math.abs(amount);
+                                  const isLiabilityOrEquity = account && (account.category === 'liability' || account.category === 'equity');
+                                  handleImpactChange(idx, 'amount', isLiabilityOrEquity ? (absAmt === 0 ? -0 : -absAmt) : absAmt);
+                                }}
                                 className={cn(
                                   "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
-                                  !isNeg ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                                  !isCredit ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                                 )}
                               >
                                 {t('debit')}
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleImpactChange(idx, 'amount', Math.abs(amount) === 0 ? -0 : -Math.abs(amount))}
+                                onClick={() => {
+                                  const absAmt = Math.abs(amount);
+                                  const isLiabilityOrEquity = account && (account.category === 'liability' || account.category === 'equity');
+                                  handleImpactChange(idx, 'amount', isLiabilityOrEquity ? absAmt : (absAmt === 0 ? -0 : -absAmt));
+                                }}
                                 className={cn(
                                   "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
-                                  isNeg ? "bg-rose-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                                  isCredit ? "bg-rose-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                                 )}
                               >
                                 {t('credit')}
@@ -2916,23 +2939,26 @@ export default function App() {
                       <div className="col-span-1 sm:col-span-3 space-y-1.5">
                         {(() => {
                           const amount = typeof impact.amount === 'number' ? impact.amount : 0;
+                          const account = allAccounts.find(a => a.id === impact.accountId);
                           const isNeg = amount < 0 || Object.is(amount, -0);
+                          const isCredit = account 
+                            ? (account.category === 'asset' ? isNeg : !isNeg)
+                            : isNeg;
                           return (
                             <div className="relative">
                               <input 
                                 id={`mob-tx-amount-${idx}`}
                                 name={`mob-amount-${idx}`}
                                 type="number"
-                                min="0"
                                 step="any"
-                                value={amount !== 0 ? Math.abs(amount) : ''}
+                                value={amount !== 0 ? amount : ''}
                                 onChange={e => {
-                                  const val = Math.abs(parseFloat(e.target.value) || 0);
-                                  handleImpactChange(idx, 'amount', isNeg ? (val === 0 ? -0 : -val) : val);
+                                  const val = parseFloat(e.target.value) || 0;
+                                  handleImpactChange(idx, 'amount', val);
                                 }}
                                 className={cn(
                                   "w-full pl-12 pr-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-sm font-mono text-right font-bold transition-all outline-none focus:border-indigo-500/50",
-                                  isNeg ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"
+                                  isCredit ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"
                                 )}
                                 placeholder="0.00"
                                 dir="ltr"
