@@ -1,0 +1,4 @@
+Contact: https://github.com/abdullahalalawi52-jpg/Motazin/issues
+Expires: 2027-06-10T17:50:00.000Z
+Preferred-Languages: ar, en
+Canonical: https://abdullahalalawi52-jpg.github.io/Motazin/.well-known/security.txt
