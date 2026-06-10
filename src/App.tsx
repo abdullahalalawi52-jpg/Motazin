@@ -2586,6 +2586,7 @@ export default function App() {
         <ContactUsView />
       )}
       </main>
+    </div>
     
     <SnapshotsModal
       isOpen={isSnapshotsModalOpen}
@@ -3016,7 +3017,6 @@ export default function App() {
         </form>
       </div>
     )}
-    </div>
 
     {/* Mobile Bottom Navigation - OUTSIDE animated wrapper to ensure true fixed positioning */}
     <nav className="md:hidden fixed bottom-6 left-6 right-6 z-[200] glass-card !rounded-[2.5rem] !p-1 border dark:border-white/20 border-slate-300 dark:bg-slate-900/90 bg-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)]">
