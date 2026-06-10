@@ -14,6 +14,7 @@ import { useLanguage } from './i18n';
 import { FileScanner as PdfScanner } from './PdfScanner';
 import { DepreciationModal } from './DepreciationModal';
 import { SnapshotsModal } from './SnapshotsModal';
+import { calculateTotals } from './utils/accounting';
 
 // Utility for tailwind classes
 function cn(...inputs: ClassValue[]) {
@@ -546,34 +547,8 @@ export default function App() {
   const liabilities = activeAccounts.filter(a => a.category === 'liability');
   const equities = activeAccounts.filter(a => a.category === 'equity');
 
-  // Calculate totals
   const totals = useMemo(() => {
-    const accTotals: Record<string, number> = {};
-    activeAccountIds.forEach(id => accTotals[id] = 0);
-
-    transactions.forEach(t => {
-      t.impacts.forEach(i => {
-        if (accTotals[i.accountId] !== undefined) {
-          accTotals[i.accountId] += i.amount;
-        }
-      });
-    });
-
-    let totalAssets = 0;
-    let totalLiabilities = 0;
-    let totalEquity = 0;
-
-    assets.forEach(a => totalAssets += accTotals[a.id]);
-    liabilities.forEach(a => totalLiabilities += accTotals[a.id]);
-    equities.forEach(a => totalEquity += accTotals[a.id]);
-
-    return {
-      accounts: accTotals,
-      totalAssets,
-      totalLiabilities,
-      totalEquity,
-      isBalanced: totalAssets === (totalLiabilities + totalEquity)
-    };
+    return calculateTotals(transactions as any, activeAccountIds, assets as any, liabilities as any, equities as any);
   }, [transactions, activeAccountIds, assets, liabilities, equities]);
 
   // --- Chart Data ---
