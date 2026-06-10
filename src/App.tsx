@@ -975,40 +975,42 @@ export default function App() {
     if (!tableElement) return;
     
     try {
-      // Temporarily remove max-height to capture full table
-      const originalMaxHeight = tableElement.style.maxHeight;
-      const originalOverflow = tableElement.style.overflow;
-      tableElement.style.maxHeight = 'none';
-      tableElement.style.overflow = 'visible';
       const html2canvas = (await import('html2canvas')).default;
       const jsPDF = (await import('jspdf')).default;
+      
       const canvas = await html2canvas(tableElement, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
         logging: false,
         allowTaint: true,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: document.documentElement.offsetWidth,
-        windowHeight: document.documentElement.offsetHeight
+        height: tableElement.scrollHeight,
+        windowHeight: tableElement.scrollHeight + 200,
+        onclone: (clonedDoc) => {
+          const clonedTable = clonedDoc.getElementById('transactions-table');
+          if (clonedTable) {
+            clonedTable.style.maxHeight = 'none';
+            clonedTable.style.overflow = 'visible';
+            // Hide selection column and actions column in PDF
+            const rows = clonedTable.querySelectorAll('tr');
+            rows.forEach(row => {
+              const lastCell = row.lastElementChild;
+              if (lastCell) (lastCell as HTMLElement).style.display = 'none';
+              const firstCell = row.firstElementChild;
+              if (firstCell) (firstCell as HTMLElement).style.display = 'none';
+            });
+          }
+        }
       });
       
-      // Restore original styles
-      tableElement.style.maxHeight = originalMaxHeight;
-      tableElement.style.overflow = originalOverflow;
-
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape for wide tables
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
+      });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      // Add a title
-      pdf.addFont('Arial', 'Arial', 'normal');
-      pdf.setFont('Arial');
-      
-      pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
       pdf.save('transactions.pdf');
     } catch (error) {
       console.error('Error exporting PDF:', error);
