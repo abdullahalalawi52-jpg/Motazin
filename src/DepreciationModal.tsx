@@ -31,7 +31,7 @@ export const DepreciationModal: React.FC<DepreciationModalProps> = ({ isOpen, on
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-500 animate-in fade-in" dir={dir}>
+    <div data-testid="depreciation-modal" className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-500 animate-in fade-in" dir={dir}>
       <div className="bg-[#0f172a] border-t sm:border border-white/10 p-6 sm:p-8 rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md h-[90vh] sm:h-auto overflow-y-auto shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative animate-in slide-in-from-bottom sm:zoom-in-95 sm:slide-in-from-bottom-4 transition-all duration-300">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-xl sm:text-2xl font-black flex items-center gap-3 text-white">
