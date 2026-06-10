@@ -975,6 +975,12 @@ export default function App() {
     if (!tableElement) return;
     
     try {
+      // Temporarily remove max-height on original element to calculate correct dimensions
+      const originalMaxHeight = tableElement.style.maxHeight;
+      const originalOverflow = tableElement.style.overflow;
+      tableElement.style.maxHeight = 'none';
+      tableElement.style.overflow = 'visible';
+      
       const html2canvas = (await import('html2canvas')).default;
       const jsPDF = (await import('jspdf')).default;
       
@@ -984,8 +990,6 @@ export default function App() {
         backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
         logging: false,
         allowTaint: true,
-        height: tableElement.scrollHeight,
-        windowHeight: tableElement.scrollHeight + 200,
         onclone: (clonedDoc) => {
           const clonedTable = clonedDoc.getElementById('transactions-table');
           if (clonedTable) {
@@ -1003,12 +1007,12 @@ export default function App() {
         }
       });
       
+      // Restore original styles
+      tableElement.style.maxHeight = originalMaxHeight;
+      tableElement.style.overflow = originalOverflow;
+      
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'px',
-        format: [canvas.width / 2, canvas.height / 2]
-      });
+      const pdf = new jsPDF('l', 'px', [canvas.width / 2, canvas.height / 2]);
       
       pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
       pdf.save('transactions.pdf');
