@@ -30,9 +30,10 @@ interface Account {
 }
 
 interface Impact {
-  id: string;
+  id?: string;
   accountId: string;
   amount: number;
+  type?: 'debit' | 'credit';
 }
 
 interface Transaction {
@@ -1025,7 +1026,20 @@ export default function App() {
 
   const getImpactAmount = (tx: Transaction, accountId: string) => {
     const impact = tx.impacts.find(i => i.accountId === accountId);
-    return impact ? impact.amount : 0;
+    if (!impact) return 0;
+    if (impact.type) {
+      const account = allAccounts.find(a => a.id === accountId);
+      const isCredit = impact.type === 'credit';
+      if (account) {
+        if (account.category === 'asset') {
+          return isCredit ? -impact.amount : impact.amount;
+        } else {
+          return isCredit ? impact.amount : -impact.amount;
+        }
+      }
+      return impact.amount;
+    }
+    return impact.amount;
   };
 
   const renderAccountOptions = () => (
@@ -1719,9 +1733,11 @@ export default function App() {
                             const amount = typeof impact.amount === 'number' ? impact.amount : 0;
                             const account = allAccounts.find(a => a.id === impact.accountId);
                             const isNeg = amount < 0 || Object.is(amount, -0);
-                            const isCredit = account 
-                              ? (account.category === 'asset' ? isNeg : !isNeg)
-                              : isNeg;
+                            const isCredit = impact.type 
+                              ? impact.type === 'credit' 
+                              : (account 
+                                ? (account.category === 'asset' ? isNeg : !isNeg)
+                                : isNeg);
                             return (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {/* Segmented Debit/Credit Control */}
@@ -1729,9 +1745,7 @@ export default function App() {
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      const absAmt = Math.abs(amount);
-                                      const isLiabilityOrEquity = account && (account.category === 'liability' || account.category === 'equity');
-                                      handleImpactChange(idx, 'amount', isLiabilityOrEquity ? (absAmt === 0 ? -0 : -absAmt) : absAmt);
+                                      handleImpactChange(idx, 'type', 'debit');
                                     }}
                                     className={cn(
                                       "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
@@ -1743,9 +1757,7 @@ export default function App() {
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      const absAmt = Math.abs(amount);
-                                      const isLiabilityOrEquity = account && (account.category === 'liability' || account.category === 'equity');
-                                      handleImpactChange(idx, 'amount', isLiabilityOrEquity ? absAmt : (absAmt === 0 ? -0 : -absAmt));
+                                      handleImpactChange(idx, 'type', 'credit');
                                     }}
                                     className={cn(
                                       "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
@@ -2899,17 +2911,17 @@ export default function App() {
                           const amount = typeof impact.amount === 'number' ? impact.amount : 0;
                           const account = allAccounts.find(a => a.id === impact.accountId);
                           const isNeg = amount < 0 || Object.is(amount, -0);
-                          const isCredit = account 
-                            ? (account.category === 'asset' ? isNeg : !isNeg)
-                            : isNeg;
+                          const isCredit = impact.type 
+                            ? impact.type === 'credit' 
+                            : (account 
+                              ? (account.category === 'asset' ? isNeg : !isNeg)
+                              : isNeg);
                           return (
                             <div className="flex dark:bg-slate-950 bg-slate-100 p-0.5 rounded-xl border dark:border-white/10 border-slate-200 shadow-inner">
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const absAmt = Math.abs(amount);
-                                  const isLiabilityOrEquity = account && (account.category === 'liability' || account.category === 'equity');
-                                  handleImpactChange(idx, 'amount', isLiabilityOrEquity ? (absAmt === 0 ? -0 : -absAmt) : absAmt);
+                                  handleImpactChange(idx, 'type', 'debit');
                                 }}
                                 className={cn(
                                   "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
@@ -2921,9 +2933,7 @@ export default function App() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const absAmt = Math.abs(amount);
-                                  const isLiabilityOrEquity = account && (account.category === 'liability' || account.category === 'equity');
-                                  handleImpactChange(idx, 'amount', isLiabilityOrEquity ? absAmt : (absAmt === 0 ? -0 : -absAmt));
+                                  handleImpactChange(idx, 'type', 'credit');
                                 }}
                                 className={cn(
                                   "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
@@ -2941,9 +2951,11 @@ export default function App() {
                           const amount = typeof impact.amount === 'number' ? impact.amount : 0;
                           const account = allAccounts.find(a => a.id === impact.accountId);
                           const isNeg = amount < 0 || Object.is(amount, -0);
-                          const isCredit = account 
-                            ? (account.category === 'asset' ? isNeg : !isNeg)
-                            : isNeg;
+                          const isCredit = impact.type 
+                            ? impact.type === 'credit' 
+                            : (account 
+                              ? (account.category === 'asset' ? isNeg : !isNeg)
+                              : isNeg);
                           return (
                             <div className="relative">
                               <input 
