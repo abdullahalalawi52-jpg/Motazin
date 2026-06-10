@@ -176,7 +176,7 @@ export default function App() {
         console.error("Error parsing local transactions", e);
       }
     }
-    return INITIAL_TRANSACTIONS;
+    return [];
   });
   
   // History State for Undo/Redo
@@ -187,7 +187,7 @@ export default function App() {
         return [JSON.parse(saved)];
       } catch (e) {}
     }
-    return [INITIAL_TRANSACTIONS];
+    return [[]];
   });
   const [historyIndex, setHistoryIndex] = useState<number>(0);
 
