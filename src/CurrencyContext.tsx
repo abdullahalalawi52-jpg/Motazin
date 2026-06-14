@@ -33,7 +33,7 @@ export const currencies: { code: Currency; symbol: string; label: string; locale
 ];
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currency, setCurrencyState] = useState<Currency>('USD');
+  const [currency, setCurrencyState] = useState<Currency>('OMR');
 
   useEffect(() => {
     const savedCurrency = localStorage.getItem('app_currency') as Currency;

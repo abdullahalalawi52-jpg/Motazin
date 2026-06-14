@@ -848,8 +848,200 @@ ar: 'لوحة القيادة', en: 'Dashboard', fr: 'Tableau de bord', es: 'Tabl
     ja: 'Dashboard', zh: 'Dashboard', ru: 'Dashboard', pt: 'Dashboard'
   },
   home: {
-ar: 'الرئيسية', en: 'Home', fr: 'Accueil', es: 'Inicio', tr: 'Ana Sayfa', ur: 'ہوم',
+    ar: 'الرئيسية', en: 'Home', fr: 'Accueil', es: 'Inicio', tr: 'Ana Sayfa', ur: 'ہوم',
     ja: 'Home', zh: 'Home', ru: 'Home', pt: 'Home'
+  },
+  aiAdvisor: {
+    ar: 'المستشار الذكي', en: 'AI Advisor', fr: 'Conseiller IA', es: 'Asesor IA', tr: 'Yapay Zeka Danışmanı', ur: 'آئی اے مشیر',
+    ja: 'AI Advisor', zh: 'AI Advisor', ru: 'AI Advisor', pt: 'AI Advisor'
+  },
+  imageGenerator: {
+    ar: 'مولد الصور', en: 'Image Generator', fr: 'Générateur d\'images', es: 'Generador de imágenes', tr: 'Resim Oluşturucu', ur: 'تصوير بنانے والا',
+    ja: 'Image Generator', zh: 'Image Generator', ru: 'Image Generator', pt: 'Image Generator'
+  },
+  aiAdvisorTitle: {
+    ar: 'المستشار المالي الذكي', en: 'AI Financial Advisor', fr: 'Conseiller Financier IA', es: 'Asesor Financiero IA', tr: 'Yapay Zeka Finansal Danışman', ur: 'آئی اے مالیاتی مشیر',
+    ja: 'AI Financial Advisor', zh: 'AI Financial Advisor', ru: 'AI Financial Advisor', pt: 'AI Financial Advisor'
+  },
+  aiAdvisorSubtitle: {
+    ar: 'اطرح أسئلة حول أموالك، الميزانيات العمومية، أو قوائم الدخل.',
+    en: 'Ask questions about your finances, balance sheets, or income statements.',
+    fr: 'Posez des questions sur vos finances, bilans ou comptes de résultat.',
+    es: 'Haga preguntas sobre sus finanzas, balances o estados de resultados.',
+    tr: 'Finansmanınız, bilançolarınız veya gelir tablolarınız hakkında sorular sorun.',
+    ur: 'اپنے مالیات، بیلنس شیٹس، یا آمدنی کے گوشواروں کے بارے میں سوالات پوچھیں۔',
+    ja: 'Ask questions about your finances, balance sheets, or income statements.',
+    zh: 'Ask questions about your finances, balance sheets, or income statements.',
+    ru: 'Ask questions about your finances, balance sheets, or income statements.',
+    pt: 'Ask questions about your finances, balance sheets, or income statements.'
+  },
+  aiAdvisorWelcome: {
+    ar: 'مرحباً! أنا مستشارك المالي الذكي. كيف يمكنني مساعدتك اليوم؟',
+    en: 'Hello! I am your AI Financial Advisor. How can I help you today?',
+    fr: 'Bonjour! Je suis votre conseiller financier IA. Comment puis-je vous aider aujourd\'hui?',
+    es: '¡Hola! Soy su asesor financiero de IA. ¿Cómo puedo ayudarle hoy?',
+    tr: 'Merhaba! Ben Yapay Zeka Finansal Danışmanınız. Bugün size nasıl yardımcı olabilirim?',
+    ur: 'ہیلو! میں آپ کا آئی اے مالیاتی مشیر ہوں۔ آج میں آپ کی کیسے مدد کر سکتا ہوں؟',
+    ja: 'Hello! I am your AI Financial Advisor. How can I help you today?',
+    zh: 'Hello! I am your AI Financial Advisor. How can I help you today?',
+    ru: 'Hello! I am your AI Financial Advisor. How can I help you today?',
+    pt: 'Hello! I am your AI Financial Advisor. How can I help you today?'
+  },
+  imageGeneratorTitle: {
+    ar: 'مولد الصور المالية', en: 'Financial Image Generator', fr: 'Générateur d\'Images Financières', es: 'Generador de Imágenes Financieras', tr: 'Finansal Resim Oluşturucu', ur: 'مالیاتی تصویر بنانے والا',
+    ja: 'Financial Image Generator', zh: 'Financial Image Generator', ru: 'Financial Image Generator', pt: 'Financial Image Generator'
+  },
+  imageGeneratorSubtitle: {
+    ar: 'قم بإنشاء رسوم بيانية، رسوم توضيحية، أو رسومات مالية باستخدام الذكاء الاصطناعي Gemini.',
+    en: 'Generate charts, illustrations, or financial graphics using Gemini AI.',
+    fr: 'Générez des graphiques, des illustrations ou des visuels financiers à l\'aide de Gemini IA.',
+    es: 'Genere gráficos, ilustraciones o imágenes financieras usando Gemini IA.',
+    tr: 'Gemini AI kullanarak grafikler, çizimler veya finansal görseller oluşturun.',
+    ur: 'Gemini AI کا استعمال کرتے ہوئے چارٹ، عکاسی، یا مالیاتی گرافکس بنائیں۔',
+    ja: 'Generate charts, illustrations, or financial graphics using Gemini AI.',
+    zh: 'Generate charts, illustrations, or financial graphics using Gemini AI.',
+    ru: 'Generate charts, illustrations, or financial graphics using Gemini AI.',
+    pt: 'Generate charts, illustrations, or financial graphics using Gemini AI.'
+  },
+  apiKeyLabel: {
+    ar: 'مفتاح Gemini API (السرّي)', en: 'Gemini API Key (Secret)', fr: 'Clé API Gemini (Secrète)', es: 'Clave API Gemini (Secreta)', tr: 'Gemini API Anahtarı (Gizli)', ur: 'جیمنی API کی (خفیہ)',
+    ja: 'Gemini API Key (Secret)', zh: 'Gemini API Key (Secret)', ru: 'Gemini API Key (Secret)', pt: 'Gemini API Key (Secret)'
+  },
+  apiKeyPlaceholder: {
+    ar: 'أدخل مفتاح Gemini API هنا...', en: 'Enter your Gemini API key here...', fr: 'Entrez votre clé API Gemini ici...', es: 'Ingrese su clave API Gemini aquí...', tr: 'Gemini API anahtarınızı buraya girin...', ur: 'اپنا جیمنی API کی یہاں درج کریں...',
+    ja: 'Enter your Gemini API key here...', zh: 'Enter your Gemini API key here...', ru: 'Enter your Gemini API key here...', pt: 'Enter your Gemini API key here...'
+  },
+  getApiKeyLink: {
+    ar: 'احصل على مفتاح مجاني من Google AI Studio ↗',
+    en: 'Get a free API key from Google AI Studio ↗',
+    fr: 'Obtenez une clé API gratuite de Google AI Studio ↗',
+    es: 'Obtenga una clave API gratuita de Google AI Studio ↗',
+    tr: 'Google AI Studio\'dan ücretsiz bir API anahtarı alın ↗',
+    ur: 'Google AI Studio سے مفت API کی حاصل کریں ↗',
+    ja: 'Get a free API key from Google AI Studio ↗',
+    zh: 'Get a free API key from Google AI Studio ↗',
+    ru: 'Get a free API key from Google AI Studio ↗',
+    pt: 'Get a free API key from Google AI Studio ↗'
+  },
+  settingsTitle: {
+    ar: 'إعدادات الذكاء الاصطناعي', en: 'AI Settings', fr: 'Paramètres IA', es: 'Ajustes de IA', tr: 'Yapay Zeka Ayarları', ur: 'آئی اے کی ترتیبات',
+    ja: 'AI Settings', zh: 'AI Settings', ru: 'AI Settings', pt: 'AI Settings'
+  },
+  saveSettings: {
+    ar: 'حفظ الإعدادات', en: 'Save Settings', fr: 'Enregistrer', es: 'Guardar Ajustes', tr: 'Ayarları Kaydet', ur: 'ترتیبات محفوظ کریں',
+    ja: 'Save Settings', zh: 'Save Settings', ru: 'Save Settings', pt: 'Save Settings'
+  },
+  apiKeySaved: {
+    ar: 'تم حفظ مفتاح Gemini API بنجاح!', en: 'Gemini API Key saved successfully!', fr: 'Clé API Gemini enregistrée !', es: '¡Clave API Gemini guardada con éxito!', tr: 'Gemini API Anahtarı başarıyla kaydedildi!', ur: 'جیمنی API کی کامیابی سے محفوظ ہو گیا!',
+    ja: 'Gemini API Key saved successfully!', zh: 'Gemini API Key saved successfully!', ru: 'Gemini API Key saved successfully!', pt: 'Gemini API Key saved successfully!'
+  },
+  apiKeyRequired: {
+    ar: 'يرجى تهيئة مفتاح Gemini API في إعدادات الذكاء الاصطناعي (أيقونة الترس في الأعلى) أولاً.',
+    en: 'Please configure your Gemini API Key in the AI Settings (gear icon at the top) first.',
+    fr: 'Veuillez d\'abord configurer votre clé API Gemini dans les paramètres (icône d\'engrenage).',
+    es: 'Configure primero su clave API Gemini en los Ajustes de IA (icono de engranaje).',
+    tr: 'Lütfen önce Yapay Zeka Ayarlarında (üstteki dişli simgesi) Gemini API Anahtarınızı yapılandırın.',
+    ur: 'براہ کرم پہلے آئی اے کی ترتیبات (اوپر گیئر آئیکن) میں اپنا جیمنی API کی ترتیب دیں۔',
+    ja: 'Please configure your Gemini API Key in the AI Settings (gear icon at the top) first.',
+    zh: 'Please configure your Gemini API Key in the AI Settings (gear icon at the top) first.',
+    ru: 'Please configure your Gemini API Key in the AI Settings (gear icon at the top) first.',
+    pt: 'Please configure your Gemini API Key in the AI Settings (gear icon at the top) first.'
+  },
+  promptPlaceholder: {
+    ar: 'مثال: رسم بياني ثلاثي الأبعاد يعبر عن نمو مبيعات قوي، ألوان نيون، خلفية داكنة...',
+    en: 'e.g. A futuristic 3D bar chart showing exponential growth, neon colors, dark background...',
+    fr: 'ex. Un graphique 3D futuriste montrant une croissance exponentielle, couleurs néon...',
+    es: 'ej. Un gráfico de barras 3D futurista que muestra un crecimiento exponencial, colores de neón...',
+    tr: 'ör. Üstel büyümeyi gösteren fütüristik bir 3D çubuk grafik, neon renkler, karanlık arka plan...',
+    ur: 'مثال: ایک مستقبل کا 3D بار چارٹ جو تیز رفتار ترقی کو ظاہر کرتا ہے، نیون رنگ، گہرا پس منظر...',
+    ja: 'e.g. A futuristic 3D bar chart showing exponential growth, neon colors, dark background...',
+    zh: 'e.g. A futuristic 3D bar chart showing exponential growth, neon colors, dark background...',
+    ru: 'e.g. A futuristic 3D bar chart showing exponential growth, neon colors, dark background...',
+    pt: 'e.g. A futuristic 3D bar chart showing exponential growth, neon colors, dark background...'
+  },
+  aspectRatio: {
+    ar: 'نسبة العرض إلى الارتفاع', en: 'Aspect Ratio', fr: 'Ratio d\'aspect', es: 'Relación de aspecto', tr: 'En Boy Oranı', ur: 'پہلو کا تناسب',
+    ja: 'Aspect Ratio', zh: 'Aspect Ratio', ru: 'Aspect Ratio', pt: 'Aspect Ratio'
+  },
+  generateImage: {
+    ar: 'إنشاء صورة', en: 'Generate Image', fr: 'Générer l\'Image', es: 'Generar Imagen', tr: 'Resim Oluştur', ur: 'تصویر بنائیں',
+    ja: 'Generate Image', zh: 'Generate Image', ru: 'Generate Image', pt: 'Generate Image'
+  },
+  generating: {
+    ar: 'جاري الإنشاء...', en: 'Generating...', fr: 'Génération en cours...', es: 'Generando...', tr: 'Oluşturuluyor...', ur: 'بن رہا ہے...',
+    ja: 'Generating...', zh: 'Generating...', ru: 'Generating...', pt: 'Generating...'
+  },
+  download: {
+    ar: 'تحميل', en: 'Download', fr: 'Télécharger', es: 'Descargar', tr: 'İndir', ur: 'ڈاؤن لوڈ',
+    ja: 'Download', zh: 'Download', ru: 'Download', pt: 'Download'
+  },
+  attachReports: {
+    ar: 'إرفاق التقارير المالية كـ سياق', en: 'Attach Financial Context', fr: 'Joindre Contexte Financier', es: 'Adjuntar Contexto Financiero', tr: 'Finansal Bağlam Ekle', ur: 'مالیاتی سیاق منسلک کریں',
+    ja: 'Attach Financial Context', zh: 'Attach Financial Context', ru: 'Attach Financial Context', pt: 'Attach Financial Context'
+  },
+  attachAndSend: {
+    ar: 'إرفاق وإرسال', en: 'Attach & Send', fr: 'Joindre & Envoyer', es: 'Adjuntar y Enviar', tr: 'Ekle ve Gönder', ur: 'منسلک کریں اور بھیجیں',
+    ja: 'Attach & Send', zh: 'Attach & Send', ru: 'Attach & Send', pt: 'Attach & Send'
+  },
+  sendWithoutReports: {
+    ar: 'إرسال بدون تقارير', en: 'Send without reports', fr: 'Envoyer sans rapports', es: 'Enviar sin informes', tr: 'Raporlar olmadan gönder', ur: 'رپورٹس کے بغیر بھیجیں',
+    ja: 'Send without reports', zh: 'Send without reports', ru: 'Send without reports', pt: 'Send without reports'
+  },
+  suggestReportsMessage: {
+    ar: 'لقد لاحظت أنك تسأل عن أرقامك المالية. هل ترغب في إرفاق التقارير الحالية (الميزانية وقائمة الدخل) لتمكين المستشار من تقديم إجابة دقيقة بناءً عليها؟',
+    en: 'I noticed you\'re asking about your financial details. Would you like to attach the current reports to help the advisor analyze them directly?',
+    fr: 'J\'ai remarqué que vous posiez des questions sur vos finances. Souhaitez-vous joindre les rapports actuels pour analyse ?',
+    es: 'Noté que pregunta sobre sus finanzas. ¿Desea adjuntar los informes actuales para que el asesor los analice ?',
+    tr: 'Finansal detaylarınız hakkında soru sorduğunuzu fark ettim. Danışmanın doğrudan analiz etmesi için güncel raporları eklemek ister misiniz?',
+    ur: 'میں نے دیکھا کہ آپ اپنے مالیاتی تفصیلات کے بارے میں پوچھ رہے ہیں۔ کیا آپ مشیر کو براہ راست تجزیہ کرنے میں مدد کے لیے موجودہ رپورٹس منسلک کرنا چاہیں گے؟',
+    ja: 'I noticed you\'re asking about your financial details. Would you like to attach the current reports to help the advisor analyze them directly?',
+    zh: 'I noticed you\'re asking about your financial details. Would you like to attach the current reports to help the advisor analyze them directly?',
+    ru: 'I noticed you\'re asking about your financial details. Would you like to attach the current reports to help the advisor analyze them directly?',
+    pt: 'I noticed you\'re asking about your financial details. Would you like to attach the current reports to help the advisor analyze them directly?'
+  },
+  chatInputPlaceholder: {
+    ar: 'اطرح سؤالاً مالياً أو ارفع صورة فاتورة...', en: 'Ask a financial question or upload a receipt...', fr: 'Posez une question ou joignez un reçu...', es: 'Pregunte o adjunte un recibo...', tr: 'Finansal bir soru sorun veya fiş ekleyin...', ur: 'مالیاتی سوال پوچھیں یا رسید اپ لوڈ کریں...',
+    ja: 'Ask a financial question or upload a receipt...', zh: 'Ask a financial question or upload a receipt...', ru: 'Ask a financial question or upload a receipt...', pt: 'Ask a financial question or upload a receipt...'
+  },
+  prompt: {
+    ar: 'الوصف أو الموجه (Prompt)', en: 'Prompt', fr: 'Prompt', es: 'Prompt', tr: 'Prompt', ur: 'پرمپٹ',
+    ja: 'Prompt', zh: 'Prompt', ru: 'Prompt', pt: 'Prompt'
+  },
+  generatedImage: {
+    ar: 'الصورة الناتجة', en: 'Generated Image', fr: 'Image Générée', es: 'Imagen Generada', tr: 'Oluşturulan Resim', ur: 'پیدا کردہ تصویر',
+    ja: 'Generated Image', zh: 'Generated Image', ru: 'Generated Image', pt: 'Generated Image'
+  },
+  noImage: {
+    ar: 'ستظهر الصورة المولدة هنا بعد الكتابة والنقر على إنشاء.',
+    en: 'The generated image will appear here after you input a prompt and click generate.',
+    fr: 'L\'image générée apparaîtra ici.',
+    es: 'La imagen generada aparecerá aquí.',
+    tr: 'Oluşturulan resim burada görünecektir.',
+    ur: 'پیدا کردہ تصویر یہاں ظاہر ہوگی۔',
+    ja: 'The generated image will appear here after you input a prompt and click generate.',
+    zh: 'The generated image will appear here after you input a prompt and click generate.',
+    ru: 'The generated image will appear here after you input a prompt and click generate.',
+    pt: 'The generated image will appear here after you input a prompt and click generate.'
+  },
+  errorGenerate: {
+    ar: 'فشل في إنشاء الصورة. يرجى تجربة وصف آخر أو التحقق من مفتاح الـ API.',
+    en: 'Failed to generate image. Please try another prompt or check your API key.',
+    fr: 'Échec de la génération.',
+    es: 'Fallo al generar imagen.',
+    tr: 'Resim oluşturulamadı.',
+    ur: 'تصویر بنانے میں ناکام۔',
+    ja: 'Failed to generate image. Please try another prompt or check your API key.',
+    zh: 'Failed to generate image. Please try another prompt or check your API key.',
+    ru: 'Failed to generate image. Please try another prompt or check your API key.',
+    pt: 'Failed to generate image. Please try another prompt or check your API key.'
+  },
+  newChat: {
+    ar: 'محادثة جديدة', en: 'New Chat', fr: 'Nouvelle Discussion', es: 'Nueva Conversación', tr: 'Yeni Sohbet', ur: 'نئی بات چیت',
+    ja: 'New Chat', zh: 'New Chat', ru: 'New Chat', pt: 'New Chat'
+  },
+  send: {
+    ar: 'إرسال', en: 'Send', fr: 'Envoyer', es: 'Enviar', tr: 'Gönder', ur: 'بھیجیں',
+    ja: 'Send', zh: 'Send', ru: 'Send', pt: 'Send'
   }
 };
 

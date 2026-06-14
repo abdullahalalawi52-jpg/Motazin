@@ -194,7 +194,7 @@ export default function App() {
 
   // Currency State
   const [currency, setCurrency] = useState(() => {
-    return localStorage.getItem('motazin_currency') || 'SAR';
+    return localStorage.getItem('motazin_currency') || 'OMR';
   });
 
   // Budget State
@@ -217,6 +217,13 @@ export default function App() {
   const [isPdfScannerOpen, setIsPdfScannerOpen] = useState(false);
   const [isDepreciationModalOpen, setIsDepreciationModalOpen] = useState(false);
   const [isSnapshotsModalOpen, setIsSnapshotsModalOpen] = useState(false);
+
+  // Gemini API & Settings State
+  const [geminiApiKey, setGeminiApiKey] = useState(() => {
+    return localStorage.getItem('motazin_gemini_api_key') || '';
+  });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState('');
 
   // Custom Accounts State
   const [customAccounts, setCustomAccounts] = useState<Account[]>(() => {
@@ -241,7 +248,7 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDocPreviewOpen, setIsDocPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'equation' | 'income' | 'cashflow' | 'about' | 'contact'>('equation');
+  const [currentView, setCurrentView] = useState<'equation' | 'income' | 'cashflow' | 'aiAdvisor' | 'imageGenerator' | 'about' | 'contact'>('equation');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
@@ -303,7 +310,7 @@ export default function App() {
       } else {
         // Initialize user doc
         setDoc(userDocRef, {
-          currency: 'SAR',
+          currency: 'OMR',
           budgets: { cars: 20000, furniture: 12000, expenses: 5000 },
           customAccounts: [],
           createdAt: new Date().toISOString(),
@@ -1119,6 +1126,8 @@ export default function App() {
     { id: 'equation', label: t('balanceSheet'), icon: Calculator, color: 'indigo' },
     { id: 'income', label: t('incomeStatement'), icon: FileText, color: 'indigo' },
     { id: 'cashflow', label: t('cashFlowStatement'), icon: ArrowRightLeft, color: 'indigo' },
+    { id: 'aiAdvisor', label: t('aiAdvisor'), icon: UserIcon, color: 'indigo' },
+    { id: 'imageGenerator', label: t('imageGenerator'), icon: ImageIcon, color: 'indigo' },
     { id: 'about', label: t('aboutUs'), icon: Info, color: 'emerald' },
     { id: 'contact', label: t('contactUs'), icon: Mail, color: 'emerald' },
   ];
@@ -1201,6 +1210,17 @@ export default function App() {
                 className="p-2.5 dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 rounded-2xl transition-all group"
               >
                 {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-400" />}
+              </button>
+
+              <button
+                onClick={() => {
+                  setTempApiKey(geminiApiKey);
+                  setIsSettingsOpen(true);
+                }}
+                className="p-2.5 dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 rounded-2xl transition-all group"
+                title={t('settingsTitle')}
+              >
+                <Settings className="w-5 h-5 text-indigo-400 group-hover:rotate-45 transition-transform" />
               </button>
 
               {/* User Profile Area */}
@@ -1387,6 +1407,27 @@ export default function App() {
                     theme === 'dark' ? "right-1 bg-indigo-400" : "left-1 bg-white"
                   )}></div>
                 </div>
+              </button>
+            </div>
+
+            {/* AI Settings Mobile */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('settingsTitle')}</p>
+              <button
+                onClick={() => {
+                  setTempApiKey(geminiApiKey);
+                  setIsSettingsOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-between p-4 bg-slate-100 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 transition-all active:scale-95"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-500/10 rounded-xl">
+                    <Settings className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <span className="text-sm font-bold dark:text-white text-slate-800">{t('settingsTitle')}</span>
+                </div>
+                <ChevronRight className={cn("w-4 h-4 text-slate-400", language === 'ar' ? "rotate-180" : "")} />
               </button>
             </div>
 
@@ -2555,6 +2596,18 @@ export default function App() {
           formatCurrency={formatCurrency}
           transactions={transactions}
         />
+      ) : currentView === 'aiAdvisor' ? (
+        <AIAdvisorView 
+          geminiApiKey={geminiApiKey}
+          transactions={transactions}
+          totals={totals}
+          currency={currency}
+          formatCurrency={formatCurrency}
+        />
+      ) : currentView === 'imageGenerator' ? (
+        <ImageGeneratorView 
+          geminiApiKey={geminiApiKey}
+        />
       ) : currentView === 'about' ? (
         <AboutUsView />
       ) : (
@@ -3053,6 +3106,67 @@ export default function App() {
       </div>
     </nav>
     {showConfetti && <Confetti />}
+
+    {isSettingsOpen && (
+      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+        <div 
+          className="absolute inset-0" 
+          onClick={() => setIsSettingsOpen(false)} 
+        />
+        <div 
+          className="relative w-full max-w-md bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col p-6 transition-all rounded-[2rem]"
+          dir={dir}
+        >
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <Settings className="w-5 h-5 text-indigo-500" />
+            {t('settingsTitle')}
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] uppercase font-bold tracking-widest block mb-2 text-theme-muted">
+                {t('apiKeyLabel')}
+              </label>
+              <input
+                type="password"
+                value={tempApiKey}
+                onChange={e => setTempApiKey(e.target.value)}
+                className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold transition-colors"
+                placeholder={t('apiKeyPlaceholder')}
+              />
+            </div>
+            <a 
+              href="https://aistudio.google.com/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-xs text-indigo-500 hover:text-indigo-600 font-semibold block underline"
+            >
+              {t('getApiKeyLink')}
+            </a>
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(false)}
+              className="px-5 py-3 rounded-2xl border border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold transition-colors"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setGeminiApiKey(tempApiKey);
+                localStorage.setItem('motazin_gemini_api_key', tempApiKey);
+                setIsSettingsOpen(false);
+                toast.success(t('apiKeySaved'));
+              }}
+              className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors"
+            >
+              {t('saveSettings')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   </>
 );
 }
@@ -3144,7 +3258,7 @@ function AboutUsView() {
 // --- Component: ContactUsView ---
 
 function ContactUsView() {
-  const { t, dir } = useLanguage();
+  const { t, dir, language } = useLanguage();
   const [formName, setFormName] = React.useState('');
   const [formEmail, setFormEmail] = React.useState('');
   const [formMessage, setFormMessage] = React.useState('');
@@ -3315,7 +3429,7 @@ function ContactUsView() {
             </div>
             <iframe
               title="location-map"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3624.6746540579165!2d46.71613!3d24.68773!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e2f03890d489399%3A0xba974d1c98e79fd5!2sRiyadh!5e0!3m2!1sen!2ssa!4v1710000000000!5m2!1sen!2ssa"
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(t('addressValue'))}&hl=${language}&output=embed`}
               width="100%"
               height="220"
               style={{ border: 0 }}
@@ -3652,4 +3766,326 @@ const Confetti: React.FC = () => {
     </div>
   );
 };
+
+// --- Component: AIAdvisorView ---
+
+interface AIAdvisorViewProps {
+  geminiApiKey: string;
+  transactions: any[];
+  totals: any;
+  currency: string;
+  formatCurrency: (amount: number) => string;
+}
+
+function AIAdvisorView({ geminiApiKey, transactions, totals, currency, formatCurrency }: AIAdvisorViewProps) {
+  const { t, dir, language } = useLanguage();
+  const [messages, setMessages] = useState<{ sender: 'user' | 'ai'; text: string }[]>(() => {
+    const saved = localStorage.getItem('motazin_chat_messages');
+    return saved ? JSON.parse(saved) : [
+      { sender: 'ai', text: t('aiAdvisorWelcome') }
+    ];
+  });
+  const [input, setInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [attachContext, setAttachContext] = useState(true);
+
+  useEffect(() => {
+    localStorage.setItem('motazin_chat_messages', JSON.stringify(messages));
+  }, [messages]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    if (!geminiApiKey) {
+      toast.error(t('apiKeyRequired'));
+      return;
+    }
+
+    const userText = input.trim();
+    setInput('');
+    
+    // Add user message to state
+    const newMessages = [...messages, { sender: 'user' as const, text: userText }];
+    setMessages(newMessages);
+    setIsSending(true);
+
+    try {
+      const contents: any[] = [];
+      
+      let contextPrefix = '';
+      if (attachContext) {
+        contextPrefix += `[سياق مالي / Financial Context]:\n`;
+        contextPrefix += `Currency: ${currency}\n`;
+        contextPrefix += `Total Assets: ${formatCurrency(totals.totalAssets)}\n`;
+        contextPrefix += `Total Liabilities: ${formatCurrency(totals.totalLiabilities)}\n`;
+        contextPrefix += `Total Equity: ${formatCurrency(totals.totalEquity)}\n`;
+        contextPrefix += `Equation is Balanced: ${totals.isBalanced ? "Yes" : "No"}\n`;
+        contextPrefix += `Transactions Log:\n`;
+        transactions.forEach((tx, idx) => {
+          contextPrefix += `- ${idx + 1}. Date: ${tx.date}, Desc: ${tx.description}, Impacts: ${JSON.stringify(tx.impacts)}\n`;
+        });
+        contextPrefix += `\n[تعليمات / Instructions]: استخدم هذا السياق للإجابة عن أسئلة المستخدم المالي بدقة ومهنية ومودة باللغة العربية أو الإنجليزية حسب لغة كلام المستخدم.\n\n`;
+      }
+
+      // Map previous messages
+      const chatHistory = newMessages.slice(1);
+      
+      chatHistory.forEach((msg, idx) => {
+        let textVal = msg.text;
+        if (idx === 0 && msg.sender === 'user' && attachContext) {
+          textVal = contextPrefix + textVal;
+        }
+        
+        contents.push({
+          role: msg.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: textVal }]
+        });
+      });
+
+      if (contents.length === 0) {
+        contents.push({
+          role: 'user',
+          parts: [{ text: attachContext ? contextPrefix + userText : userText }]
+        });
+      }
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ contents })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate response');
+      }
+
+      const data = await response.json();
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || t('errorOccurred');
+
+      setMessages(prev => [...prev, { sender: 'ai' as const, text: aiText }]);
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      setMessages(prev => [...prev, { sender: 'ai' as const, text: t('errorOccurred') }]);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleClearChat = () => {
+    setMessages([{ sender: 'ai', text: t('aiAdvisorWelcome') }]);
+  };
+
+  return (
+    <div className="animate-fade-in flex flex-col h-[70vh] glass-card overflow-hidden border-t-4 border-indigo-500 shadow-2xl relative" dir={dir}>
+      <div className="p-6 border-b dark:border-white/10 border-slate-200 flex justify-between items-center bg-slate-900/10 backdrop-blur-sm flex-none">
+        <div>
+          <h2 className="text-xl font-bold dark:text-white text-slate-900">{t('aiAdvisorTitle')}</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('aiAdvisorSubtitle')}</p>
+        </div>
+        <button 
+          onClick={handleClearChat}
+          className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+        >
+          {t('newChat')}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar flex flex-col">
+        {messages.map((msg, idx) => (
+          <div 
+            key={idx} 
+            className={cn(
+              "flex flex-col max-w-[80%] rounded-[2rem] p-5 shadow-sm animate-in slide-in-from-bottom-2 mb-2",
+              msg.sender === 'user' 
+                ? "bg-indigo-600 text-white rounded-br-none self-end ml-auto" 
+                : "bg-slate-100 dark:bg-slate-800 dark:text-slate-100 text-slate-800 rounded-bl-none self-start mr-auto border dark:border-white/5 border-slate-200"
+            )}
+          >
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+          </div>
+        ))}
+        {isSending && (
+          <div className="flex items-center gap-1.5 p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-bl-none self-start w-24 justify-center shadow-sm">
+            <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></span>
+            <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+            <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleSend} className="p-4 border-t dark:border-white/10 border-slate-200 bg-slate-900/10 backdrop-blur-sm space-y-3 flex-none">
+        {transactions.length > 0 && (
+          <label className="flex items-center gap-2 cursor-pointer select-none py-1.5 px-3 bg-indigo-500/5 hover:bg-indigo-500/10 rounded-xl border border-indigo-500/10 w-fit text-xs font-bold text-indigo-500 dark:text-indigo-400 transition-colors">
+            <input 
+              type="checkbox" 
+              checked={attachContext}
+              onChange={e => setAttachContext(e.target.checked)}
+              className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-white/10"
+            />
+            {t('attachReports')}
+          </label>
+        )}
+        <div className="flex gap-3">
+          <input 
+            type="text" 
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            disabled={isSending}
+            placeholder={t('chatInputPlaceholder')}
+            className="flex-1 px-5 py-4 border dark:border-white/10 border-slate-200 dark:bg-slate-950 bg-white dark:text-white text-slate-900 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
+          />
+          <button 
+            type="submit"
+            disabled={isSending || !input.trim()}
+            className="px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center font-bold text-sm uppercase tracking-widest disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// --- Component: ImageGeneratorView ---
+
+interface ImageGeneratorViewProps {
+  geminiApiKey: string;
+}
+
+function ImageGeneratorView({ geminiApiKey }: ImageGeneratorViewProps) {
+  const { t, dir } = useLanguage();
+  const [prompt, setPrompt] = useState('');
+  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedImgUrl, setGeneratedImgUrl] = useState<string | null>(null);
+
+  const handleGenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prompt.trim()) return;
+
+    if (!geminiApiKey) {
+      toast.error(t('apiKeyRequired'));
+      return;
+    }
+
+    setIsGenerating(true);
+    setGeneratedImgUrl(null);
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          numberOfImages: 1,
+          aspectRatio: aspectRatio,
+          outputMimeType: 'image/jpeg'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
+      }
+
+      const data = await response.json();
+      const imageBytes = data.generatedImages?.[0]?.image?.imageBytes;
+      
+      if (!imageBytes) {
+        throw new Error('No image bytes returned');
+      }
+
+      setGeneratedImgUrl(`data:image/jpeg;base64,${imageBytes}`);
+    } catch (error) {
+      console.error('Image Generation Error:', error);
+      toast.error(t('errorGenerate'));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="animate-fade-in grid grid-cols-1 md:grid-cols-12 gap-8" dir={dir}>
+      <form onSubmit={handleGenerate} className="col-span-1 md:col-span-5 glass-card p-6 border-t-4 border-indigo-500 shadow-2xl space-y-6">
+        <h2 className="text-xl font-bold dark:text-white text-slate-900 flex items-center gap-3">
+          <div className="p-2 bg-indigo-500/20 rounded-xl">
+            <ImageIcon className="w-5 h-5 text-indigo-400" />
+          </div>
+          {t('imageGeneratorTitle')}
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t('imageGeneratorSubtitle')}</p>
+
+        <div className="space-y-2">
+          <label htmlFor="img-prompt" className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('prompt')}</label>
+          <textarea 
+            id="img-prompt"
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            disabled={isGenerating}
+            placeholder={t('promptPlaceholder')}
+            rows={4}
+            className="w-full px-4 py-3 border dark:border-white/10 border-slate-200 dark:bg-slate-950 bg-white dark:text-white text-slate-900 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors custom-scrollbar"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="img-aspect" className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('aspectRatio')}</label>
+          <select 
+            id="img-aspect"
+            value={aspectRatio}
+            onChange={e => setAspectRatio(e.target.value)}
+            disabled={isGenerating}
+            className="w-full px-4 py-3.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            <option value="1:1">1:1 (Square)</option>
+            <option value="16:9">16:9 (Landscape)</option>
+            <option value="9:16">9:16 (Portrait)</option>
+            <option value="4:3">4:3 (Classic)</option>
+            <option value="3:4">3:4 (Tall)</option>
+          </select>
+        </div>
+
+        <button 
+          type="submit"
+          disabled={isGenerating || !prompt.trim()}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 active:scale-95 uppercase tracking-widest text-xs disabled:opacity-40 disabled:pointer-events-none"
+        >
+          {isGenerating ? t('generating') : t('generateImage')}
+        </button>
+      </form>
+
+      <div className="col-span-1 md:col-span-7 glass-card p-6 flex flex-col items-center justify-center min-h-[300px] sm:min-h-[450px] relative overflow-hidden">
+        {isGenerating ? (
+          <div className="space-y-4 text-center">
+            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto shadow-[0_0_20px_rgba(99,102,241,0.3)]"></div>
+            <p className="font-black text-sm uppercase tracking-widest text-indigo-400 animate-pulse">{t('generating')}</p>
+          </div>
+        ) : generatedImgUrl ? (
+          <div className="w-full h-full flex flex-col items-center gap-6 animate-scale-in">
+            <div className="relative rounded-2xl overflow-hidden border dark:border-white/10 border-slate-200 shadow-xl max-w-full max-h-[400px]">
+              <img src={generatedImgUrl} alt="AI Generated" className="object-contain max-h-[380px] rounded-2xl" />
+            </div>
+            <a 
+              href={generatedImgUrl}
+              download="financial-ai-image.jpg"
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-600/20 active:scale-95 transition-all uppercase tracking-widest"
+            >
+              <Send className="w-4 h-4 rotate-90" /> {t('download')}
+            </a>
+          </div>
+        ) : (
+          <div className="text-center p-8 text-slate-500 space-y-4">
+            <ImageIcon className="w-16 h-16 text-slate-300 dark:text-slate-700 mx-auto" />
+            <p className="text-sm font-semibold max-w-sm mx-auto">{t('noImage')}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 

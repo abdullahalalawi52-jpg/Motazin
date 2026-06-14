@@ -81,75 +81,84 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = '';
     
-    for (let i = 1; i <= pdf.numPages; i++) {
-        setProgress(Math.round((i / pdf.numPages) * 100));
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        
-        const items = content.items as any[];
-        
-        if (items.length === 0) {
-            // Scanned PDF fallback
-            setStatus(`Page ${i} appears to be scanned. Running OCR...`);
-            const viewport = page.getViewport({ scale: 2.0 });
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                await page.render({ canvasContext: ctx, viewport }).promise;
-                
-                const worker = await createWorker(ocrLanguage, 1, {
-                  logger: m => {
-                    if (m.status === 'recognizing text') {
-                      setProgress(Math.round(((i - 1) + m.progress) / pdf.numPages * 100));
-                      setStatus(`OCR Page ${i}: Recognizing ${ocrLanguage.toUpperCase()} text...`);
-                    }
+    let worker: any = null;
+    let currentPageOCR = 1; 
+    
+    try {
+      for (let i = 1; i <= pdf.numPages; i++) {
+          currentPageOCR = i;
+          setProgress(Math.round((i / pdf.numPages) * 100));
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          
+          const items = content.items as any[];
+          
+          if (items.length === 0) {
+              // Scanned PDF fallback
+              setStatus(`Page ${i} appears to be scanned. Running OCR...`);
+              const viewport = page.getViewport({ scale: 2.0 });
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              if (ctx) {
+                  canvas.width = viewport.width;
+                  canvas.height = viewport.height;
+                  await page.render({ canvasContext: ctx, canvas, viewport }).promise;
+                  
+                  if (!worker) {
+                    worker = await createWorker(ocrLanguage, 1, {
+                      logger: m => {
+                        if (m.status === 'recognizing text') {
+                          setProgress(Math.round(((currentPageOCR - 1) + m.progress) / pdf.numPages * 100));
+                          setStatus(`OCR Page ${currentPageOCR}: Recognizing ${ocrLanguage.toUpperCase()} text...`);
+                        }
+                      }
+                    });
                   }
-                });
-                
-                try {
+                  
                   const { data: { text } } = await worker.recognize(canvas);
                   fullText += text + '\n';
-                } finally {
-                  await worker.terminate();
+              }
+              continue;
+          }
+          
+          const linesMap = new Map<number, any[]>();
+          
+          items.forEach((item) => {
+            if (!item.str.trim() && item.str !== ' ') return;
+            const y = Math.round(item.transform[5]);
+            
+            let foundLineY = -1;
+            for (const lineY of linesMap.keys()) {
+                if (Math.abs(lineY - y) < 5) {
+                    foundLineY = lineY;
+                    break;
                 }
             }
-            continue;
-        }
-        
-        const linesMap = new Map<number, any[]>();
-        
-        items.forEach((item) => {
-          if (!item.str.trim() && item.str !== ' ') return;
-          const y = Math.round(item.transform[5]);
-          
-          let foundLineY = -1;
-          for (const lineY of linesMap.keys()) {
-              if (Math.abs(lineY - y) < 5) {
-                  foundLineY = lineY;
-                  break;
-              }
-          }
-          
-          if (foundLineY === -1) {
-              linesMap.set(y, [item]);
-          } else {
-              linesMap.get(foundLineY)!.push(item);
-          }
-        });
-
-        // Sort by Y descending (top to bottom)
-        const sortedY = Array.from(linesMap.keys()).sort((a, b) => b - a);
-        
-        sortedY.forEach(y => {
-            const lineItems = linesMap.get(y)!;
-            // Sort by X ascending (left to right)
-            lineItems.sort((a, b) => a.transform[4] - b.transform[4]);
             
-            const lineText = lineItems.map(item => item.str).join(' ');
-            fullText += lineText + '\n';
-        });
+            if (foundLineY === -1) {
+                linesMap.set(y, [item]);
+            } else {
+                linesMap.get(foundLineY)!.push(item);
+            }
+          });
+
+          // Sort by Y descending (top to bottom)
+          const sortedY = Array.from(linesMap.keys()).sort((a, b) => b - a);
+          
+          sortedY.forEach(y => {
+              const lineItems = linesMap.get(y)!;
+              // Sort by X ascending (left to right)
+              lineItems.sort((a, b) => a.transform[4] - b.transform[4]);
+              
+              const lineText = lineItems.map(item => item.str).join(' ');
+              fullText += lineText + '\n';
+          });
+      }
+    } finally {
+      if (worker) {
+        await worker.terminate();
+      }
     }
     
     setRawText(fullText);

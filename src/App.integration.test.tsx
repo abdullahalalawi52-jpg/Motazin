@@ -116,16 +116,41 @@ describe('App Integration Tests', () => {
   it('can open the Depreciation Modal and displays correct title', async () => {
     renderApp();
 
-    // Find and click the depreciation calculator button
-    // The depreciation button in Arabic contains "إهلاك" (depreciation) or has the calculator icon
     const depBtn = screen.getByRole('button', { name: /حاسبة الإهلاك/i });
     expect(depBtn).toBeInTheDocument();
     
     fireEvent.click(depBtn);
 
-    // Verify the depreciation modal is shown via its test ID
     await waitFor(() => {
       expect(screen.getByTestId('depreciation-modal')).toBeInTheDocument();
+    });
+  });
+
+  it('can open the AI Settings modal and save API Key', async () => {
+    renderApp();
+    
+    // Find settings button in header and click
+    const settingsBtn = screen.getByTitle(/إعدادات الذكاء الاصطناعي/i);
+    expect(settingsBtn).toBeInTheDocument();
+    fireEvent.click(settingsBtn);
+    
+    // Verify inputs appear
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/أدخل مفتاح Gemini API هنا/i)).toBeInTheDocument();
+    });
+  });
+
+  it('can navigate to AI Advisor and renders the view', async () => {
+    renderApp();
+    
+    // Find and click the AI Advisor nav button
+    const aiNavBtns = screen.getAllByRole('button', { name: /المستشار الذكي/i });
+    expect(aiNavBtns.length).toBeGreaterThan(0);
+    fireEvent.click(aiNavBtns[0]);
+    
+    // Verify the AI Advisor chat input is rendered
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/اطرح سؤالاً مالياً/i)).toBeInTheDocument();
     });
   });
 });
