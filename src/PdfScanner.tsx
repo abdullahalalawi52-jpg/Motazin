@@ -103,7 +103,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
               if (ctx) {
                   canvas.width = viewport.width;
                   canvas.height = viewport.height;
-                  await page.render({ canvasContext: ctx, canvas, viewport }).promise;
+                  await page.render({ canvasContext: ctx, viewport } as any).promise;
                   
                   if (!worker) {
                     worker = await createWorker(ocrLanguage, 1, {
