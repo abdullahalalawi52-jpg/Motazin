@@ -1397,8 +1397,6 @@ export default function App() {
               </button>
             </div>
 
-            </div>
-
             {/* Language Selector Mobile */}
             <div className="space-y-2">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('language') || 'Language'}</p>
