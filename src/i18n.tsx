@@ -1079,18 +1079,6 @@ ar: 'لوحة القيادة', en: 'Dashboard', fr: 'Tableau de bord', es: 'Tabl
     ru: 'Произошла ошибка. Пожалуйста, проверьте ваш ключ API Gemini.',
     pt: 'Ocorreu um erro. Verifique sua chave da API Gemini.'
   },
-  errorGenerate: {
-    ar: 'حدث خطأ أثناء إنشاء الصورة. يرجى المحاولة مرة أخرى.',
-    en: 'An error occurred while generating the image. Please try again.',
-    fr: 'Une erreur s\'est produite lors de la génération de l\'image.',
-    es: 'Se produjo un error al generar la imagen.',
-    tr: 'Görüntü oluşturulurken bir hata oluştu.',
-    ur: 'تصویر بنانے کے دوران ایک خرابی پیش آگئی۔',
-    ja: '画像の生成中にエラーが発生しました。',
-    zh: '生成图像时发生错误。',
-    ru: 'Произошла ошибка при создании изображения.',
-    pt: 'Ocorreu um erro ao gerar a imagem.'
-  }
 };
 
 interface LanguageContextType {
