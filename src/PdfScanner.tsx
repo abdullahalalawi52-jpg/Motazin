@@ -103,7 +103,8 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
               if (ctx) {
                   canvas.width = viewport.width;
                   canvas.height = viewport.height;
-                  await page.render({ canvasContext: ctx, viewport } as any).promise;
+                  // @ts-ignore - The @types/pdfjs-dist package is outdated and expects the 'canvas' property which is no longer used.
+                  await page.render({ canvasContext: ctx, viewport }).promise;
                   
                   if (!worker) {
                     worker = await createWorker(ocrLanguage, 1, {
