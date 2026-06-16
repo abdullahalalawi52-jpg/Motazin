@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './',
-  envPrefix: 'REACT_APP_',
+  envPrefix: ['VITE_', 'REACT_APP_'],
   plugins: [react()],
   test: {
     globals: true,
@@ -18,10 +18,8 @@ export default defineConfig({
     sourcemap: false,
     chunkSizeWarningLimit: 1500,
     rolldownOptions: {
-      external: ['@firebase/webchannel-wrapper/bloom-blob'],
     },
     rollupOptions: {
-      external: ['@firebase/webchannel-wrapper/bloom-blob'],
       output: {
         manualChunks(id: string) {
           if (id.includes('node_modules')) {
