@@ -1293,11 +1293,11 @@ export default function App() {
             : (isMobileMenuOpen ? "left-0 rounded-r-[2.5rem]" : "-left-full rounded-r-none")
         )} dir={dir}>
           {/* Header Area */}
-          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02]">
+          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-white dark:bg-slate-900 z-10 relative">
             <h2 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight">{t('menu') || 'Menu'}</h2>
             <button 
               onClick={() => setIsMobileMenuOpen(false)} 
-              className="p-2.5 text-slate-400 hover:text-rose-500 transition-all bg-white dark:bg-slate-800 rounded-2xl border dark:border-white/10 border-slate-200 shadow-sm"
+              className="p-2.5 text-slate-400 hover:text-rose-500 transition-all bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-white/10 border-slate-200 shadow-sm"
             >
               <XCircle className="w-5 h-5" />
             </button>
@@ -1357,20 +1357,24 @@ export default function App() {
             {/* Quick Actions Mobile */}
             <div className="space-y-2">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('quickActions') || 'Quick Actions'}</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
                 <button
                   onClick={() => { setIsPdfScannerOpen(true); setIsMobileMenuOpen(false); }}
-                  className="flex flex-col items-center justify-center gap-2 p-4 dark:bg-white/5 bg-slate-50 rounded-2xl border dark:border-white/10 border-slate-200 transition-all active:scale-95 hover:bg-slate-100 dark:hover:bg-white/10 shadow-sm"
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
                 >
-                  <FileSearch className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                  <span className="text-[10px] font-black uppercase text-slate-700 dark:text-white">{t('scanPDF')}</span>
+                  <div className="p-2 rounded-xl bg-indigo-500/10">
+                    <FileSearch className="w-5 h-5 text-indigo-500" />
+                  </div>
+                  <span className="text-sm font-bold uppercase tracking-widest">{t('scanPDF')}</span>
                 </button>
                 <button
                   onClick={() => { setIsSnapshotsModalOpen(true); setIsMobileMenuOpen(false); }}
-                  className="flex flex-col items-center justify-center gap-2 p-4 dark:bg-white/5 bg-slate-50 rounded-2xl border dark:border-white/10 border-slate-200 transition-all active:scale-95 hover:bg-slate-100 dark:hover:bg-white/10 shadow-sm"
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
                 >
-                  <Clock className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-[10px] font-black uppercase text-slate-700 dark:text-white">{t('backups')}</span>
+                  <div className="p-2 rounded-xl bg-emerald-500/10">
+                    <Clock className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <span className="text-sm font-bold uppercase tracking-widest">{t('backups')}</span>
                 </button>
               </div>
             </div>
@@ -1380,13 +1384,13 @@ export default function App() {
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('appearance') || 'Appearance'}</p>
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="w-full flex items-center justify-between p-4 bg-slate-100 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 transition-all active:scale-95"
+                className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 transition-all active:scale-95 hover:bg-slate-100 dark:hover:bg-white/10"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <div className="p-2 bg-amber-500/10 rounded-xl">
-                    {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+                    {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-amber-500" />}
                   </div>
-                  <span className="text-sm font-bold dark:text-white text-slate-800">{theme === 'dark' ? t('lightMode') : t('darkMode')}</span>
+                  <span className="text-sm font-bold uppercase tracking-widest dark:text-white/80 text-slate-700">{theme === 'dark' ? t('lightMode') : t('darkMode')}</span>
                 </div>
                 <div className="w-10 h-5 bg-slate-300 dark:bg-slate-700 rounded-full relative">
                   <div className={cn(
@@ -1458,7 +1462,7 @@ export default function App() {
           </div>
 
           {/* Footer Area */}
-          <div className="p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02] pb-safe">
+          <div className="p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-white dark:bg-slate-900 pb-safe z-10 relative">
             {user ? (
               <button 
                 onClick={() => signOut(auth)}
