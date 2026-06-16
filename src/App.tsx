@@ -1539,28 +1539,28 @@ export default function App() {
       {/* Removed redundant Mobile Bottom Navigation from here */}
 
       {/* Sticky Mobile Summary Bar - Compact version */}
-      <div className="md:hidden sticky top-[76px] z-30 px-3 py-2 animate-fade-in">
-        <div className="dark:bg-slate-900/90 bg-white/90 backdrop-blur-md border dark:border-white/10 border-slate-200 rounded-2xl flex justify-between items-center px-4 py-2.5 shadow-lg shadow-black/10">
-          <div className="flex gap-4">
+      <div className="md:hidden sticky top-[76px] z-30 px-4 py-3 animate-fade-in pointer-events-none">
+        <div className="mx-auto max-w-sm pointer-events-auto dark:bg-slate-900/80 bg-white/80 backdrop-blur-xl border dark:border-white/20 border-slate-300/50 rounded-full flex justify-between items-center px-5 py-2.5 shadow-xl shadow-indigo-500/10">
+          <div className="flex gap-5">
             <div className="flex flex-col">
-              <span className="text-[7px] uppercase font-bold text-indigo-500 dark:text-indigo-400 tracking-tight">{t('assets')}</span>
-              <span className="text-[11px] font-black dark:text-white text-slate-900 leading-none">{formatCurrency(totals.totalAssets)}</span>
+              <span className="text-[8px] uppercase font-black text-indigo-500 dark:text-indigo-400 tracking-widest mb-0.5">{t('assets')}</span>
+              <span className="text-xs font-black dark:text-white text-slate-900 leading-none">{formatCurrency(totals.totalAssets)}</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-[7px] uppercase font-bold text-emerald-500 dark:text-emerald-400 tracking-tight">{t('equity')}</span>
-              <span className="text-[11px] font-black dark:text-white text-slate-900 leading-none">{formatCurrency(totals.totalEquity)}</span>
+              <span className="text-[8px] uppercase font-black text-emerald-500 dark:text-emerald-400 tracking-widest mb-0.5">{t('equity')}</span>
+              <span className="text-xs font-black dark:text-white text-slate-900 leading-none">{formatCurrency(totals.totalEquity)}</span>
             </div>
           </div>
           <div className={cn(
-            "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tight",
-            totals.isBalanced ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+            "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm",
+            totals.isBalanced ? "bg-emerald-500 text-white shadow-emerald-500/30" : "bg-rose-500 text-white shadow-rose-500/30"
           )}>
             {totals.isBalanced ? t('equationBalanced') : t('equationUnbalanced')}
           </div>
         </div>
       </div>
 
-      <main className="mb-6 md:mb-0">
+      <main className="pb-32 md:pb-8 md:mb-0">
       {currentView === 'equation' ? (
         <div className="animate-scale-in space-y-6 sm:space-y-8">
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
@@ -2282,12 +2282,12 @@ export default function App() {
                 </div>
 
                 {/* Mobile Card View - Enhanced Design */}
-                <div className="md:hidden flex flex-col gap-4 responsive-px py-6 bg-slate-50/50 dark:bg-slate-950/20">
+                <div className="md:hidden flex flex-col gap-5 responsive-px py-6 bg-slate-50/50 dark:bg-slate-950/20">
                   {transactions.map((tx) => (
-                    <div key={tx.id} className="mobile-card !mb-0 group overflow-hidden border dark:border-white/5 border-slate-200/50 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
+                    <div key={tx.id} className="mobile-card !mb-0 group overflow-hidden border dark:border-white/10 border-slate-200 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/60 dark:shadow-none p-5 rounded-[2rem]">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-start gap-4">
+                          <div className="relative mt-1">
                             <input 
                               id={`mob-select-tx-${tx.id}`}
                               name={`mob-selectTx-${tx.id}`}
@@ -2299,14 +2299,14 @@ export default function App() {
                             />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] leading-none mb-1.5 inline-block transform -translate-y-[2.5px]" dir="ltr">{tx.date}</span>
-                            <p className="text-[15px] font-black dark:text-white text-slate-900 leading-snug">{tx.description}</p>
+                            <span className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.15em] mb-1.5" dir="ltr">{tx.date}</span>
+                            <p className="text-[16px] font-black dark:text-white text-slate-900 leading-snug">{tx.description}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
                           <button 
                             onClick={() => handleEditTransaction(tx)} 
-                            className="p-2.5 dark:text-indigo-400 text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white rounded-xl transition-all active:scale-90"
+                            className="p-3 dark:text-indigo-400 text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white rounded-2xl transition-all active:scale-90"
                             title={t('editTransaction')}
                           >
                             <Edit2 className="w-4 h-4" />
@@ -2314,16 +2314,24 @@ export default function App() {
                         </div>
                       </div>
                       
-                      <div className="space-y-2 py-3 border-t dark:border-white/5 border-slate-100">
+                      <div className="flex flex-wrap gap-2 py-4 border-t dark:border-white/10 border-slate-100">
                         {tx.impacts.map((imp, i) => (
-                          <div key={i} className="flex justify-between items-center bg-slate-50 dark:bg-white/[0.02] p-2.5 rounded-xl border border-slate-100 dark:border-white/5">
-                            <span className="text-[11px] font-bold dark:text-slate-400 text-slate-600 flex items-center gap-2.5">
-                              <div className={cn("w-2 h-2 rounded-full shadow-sm", imp.amount > 0 ? "bg-emerald-500" : "bg-rose-500")}></div>
+                          <div key={i} className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm",
+                            imp.amount > 0 
+                              ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20" 
+                              : "bg-rose-50 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20"
+                          )}>
+                            <span className={cn(
+                              "text-[11px] font-bold",
+                              imp.amount > 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
+                            )}>
                               {t(ACCOUNTS.find(a => a.id === imp.accountId)?.name || '')}
                             </span>
+                            <div className={cn("w-1 h-1 rounded-full", imp.amount > 0 ? "bg-emerald-400" : "bg-rose-400")}></div>
                             <span className={cn(
-                              "font-black font-mono text-[13px]",
-                              imp.amount > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                              "font-black font-mono text-[12px]",
+                              imp.amount > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
                             )} dir="ltr">
                               {formatCurrency(imp.amount)}
                             </span>
@@ -2331,22 +2339,22 @@ export default function App() {
                         ))}
                       </div>
 
-                      <div className="flex items-center gap-2 mt-2 pt-2">
+                      <div className="flex items-center gap-2 mt-1">
                         {tx.attachmentUrl && (
                           <button 
                             onClick={() => {
                               setPreviewUrl(tx.attachmentUrl || null);
                               setIsDocPreviewOpen(true);
                             }}
-                            className="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-white/5 border dark:border-white/10 border-slate-200 text-[10px] font-black uppercase tracking-widest dark:text-indigo-400 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all active:scale-95"
+                            className="flex-1 py-3 flex items-center justify-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border dark:border-white/10 border-slate-200 text-[10px] font-black uppercase tracking-widest dark:text-indigo-400 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all active:scale-95 shadow-sm"
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-4 h-4" />
                             {t('viewAttachment') || 'View Attachment'}
                           </button>
                         )}
                         <button 
                           onClick={() => handleDeleteTransaction(tx.id)} 
-                          className="p-2.5 dark:text-rose-400 text-rose-600 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-xl transition-all active:scale-90 border border-rose-500/20"
+                          className="p-3 dark:text-rose-400 text-rose-600 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-2xl transition-all active:scale-90 border border-rose-500/20 shadow-sm"
                           title={t('deleteTransaction')}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -3014,7 +3022,7 @@ export default function App() {
     )}
 
     {/* Mobile Bottom Navigation - OUTSIDE animated wrapper to ensure true fixed positioning */}
-    <nav className="md:hidden fixed bottom-6 left-6 right-6 z-[200] glass-card !rounded-[2.5rem] !p-1 border dark:border-white/20 border-slate-300 dark:bg-slate-900/90 bg-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)]">
+    <nav className="md:hidden fixed bottom-6 left-6 right-6 z-[200] glass-card !rounded-[2.5rem] !p-1 border dark:border-white/20 border-slate-300 dark:bg-slate-900/90 bg-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] pb-safe">
       <div className="flex justify-around items-center h-14 relative">
         {navItems.slice(0, 2).map((item) => {
           const Icon = item.icon;
