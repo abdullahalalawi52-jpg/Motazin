@@ -179,14 +179,14 @@ export default function App() {
     }
     return [];
   });
-  
+
   // History State for Undo/Redo
   const [history, setHistory] = useState<Transaction[][]>(() => {
     const saved = localStorage.getItem('motazin_transactions');
     if (saved) {
       try {
         return [JSON.parse(saved)];
-      } catch (e) {}
+      } catch (e) { }
     }
     return [[]];
   });
@@ -203,7 +203,7 @@ export default function App() {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return {
       cars: 20000,
@@ -212,7 +212,7 @@ export default function App() {
     };
   });
   const [isEditingBudgets, setIsEditingBudgets] = useState(false);
-  
+
   // PDF Scanner State
   const [isPdfScannerOpen, setIsPdfScannerOpen] = useState(false);
   const [isDepreciationModalOpen, setIsDepreciationModalOpen] = useState(false);
@@ -229,7 +229,7 @@ export default function App() {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -298,7 +298,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
-    
+
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -328,7 +328,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, 'users', user.uid, 'transactions'), orderBy('createdAt', 'asc'));
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const txs: Transaction[] = [];
       snapshot.forEach((doc) => {
@@ -345,7 +345,7 @@ export default function App() {
         });
       });
       setTransactions(txs);
-      
+
       // Initialize history on first load
       if (history.length === 1 && history[0].length === 0) {
         setHistory([txs]);
@@ -367,9 +367,9 @@ export default function App() {
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
     }
-    
+
     setTransactions(newTransactions);
-    
+
     // Always save to local storage
     localStorage.setItem('motazin_transactions', JSON.stringify(newTransactions));
 
@@ -378,15 +378,15 @@ export default function App() {
     try {
       const txRef = collection(db, 'users', user.uid, 'transactions');
       const newIds = new Set(newTransactions.map(t => t.id));
-      
+
       const allOps: { type: 'delete' | 'set'; ref: any; data?: any }[] = [
-        ...transactions.filter(tx => !newIds.has(tx.id)).map(tx => ({ 
-          type: 'delete' as const, 
-          ref: doc(txRef, tx.id) 
+        ...transactions.filter(tx => !newIds.has(tx.id)).map(tx => ({
+          type: 'delete' as const,
+          ref: doc(txRef, tx.id)
         })),
-        ...newTransactions.map(tx => ({ 
-          type: 'set' as const, 
-          ref: doc(txRef, tx.id), 
+        ...newTransactions.map(tx => ({
+          type: 'set' as const,
+          ref: doc(txRef, tx.id),
           data: {
             date: tx.date,
             description: tx.description,
@@ -423,11 +423,11 @@ export default function App() {
   const addCustomAccount = async (name: string, category: Category) => {
     const trimmedName = name.trim();
     if (!trimmedName) return null;
-    
+
     // Check if account name already exists in default or custom accounts
     const nameExists = allAccounts.some(
-      a => a.name.toLowerCase() === trimmedName.toLowerCase() || 
-      t(a.name).toLowerCase() === trimmedName.toLowerCase()
+      a => a.name.toLowerCase() === trimmedName.toLowerCase() ||
+        t(a.name).toLowerCase() === trimmedName.toLowerCase()
     );
     if (nameExists) {
       toast.error(language === 'ar' ? 'هذا الحساب موجود بالفعل!' : 'This account already exists!');
@@ -455,7 +455,7 @@ export default function App() {
         console.error("Error saving custom accounts to Firebase:", error);
       }
     }
-    
+
     toast.success(language === 'ar' ? 'تم إضافة الحساب الجديد بنجاح!' : 'New account added successfully!');
     return newAccount;
   };
@@ -466,19 +466,19 @@ export default function App() {
 
     let hasChanges = false;
     const newTransactions: Transaction[] = [];
-    
+
     const updatedTransactions = transactions.map(tx => {
       if (tx.isRecurring && tx.nextRecurrenceDate) {
         let currentDate = new Date(tx.nextRecurrenceDate);
         const now = new Date();
-        
+
         // Only process if the recurrence date is in the past or today
         if (currentDate <= now) {
           let currentTx = { ...tx };
-          
+
           while (currentDate <= now) {
             hasChanges = true;
-            
+
             // Generate new transaction instance
             const newTx: Transaction = {
               id: Math.random().toString(36).substr(2, 9),
@@ -488,14 +488,14 @@ export default function App() {
               createdAt: new Date().toISOString()
             };
             newTransactions.push(newTx);
-            
+
             // Calculate next date
             if (currentTx.recurrenceInterval === 'daily') currentDate.setDate(currentDate.getDate() + 1);
             else if (currentTx.recurrenceInterval === 'weekly') currentDate.setDate(currentDate.getDate() + 7);
             else if (currentTx.recurrenceInterval === 'monthly') currentDate.setMonth(currentDate.getMonth() + 1);
             else if (currentTx.recurrenceInterval === 'yearly') currentDate.setFullYear(currentDate.getFullYear() + 1);
             else break; // Fallback to prevent infinite loop if recurrenceInterval is invalid
-            
+
             currentTx.nextRecurrenceDate = currentDate.toISOString();
           }
           return currentTx;
@@ -571,7 +571,7 @@ export default function App() {
   }, [totals.accounts, t]);
 
   const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-  
+
   // --- Financial Insights & Trends ---
   const currentAssetIds = ['bank', 'cash', 'ar', 'inventory', 'supplies', 'prepaid_expenses'];
   const currentLiabilityIds = ['ap', 'short_term_loans', 'accrued_expenses', 'unearned_revenues'];
@@ -579,11 +579,11 @@ export default function App() {
   const insights = useMemo(() => {
     const totalCurrentAssets = currentAssetIds.reduce((sum, id) => sum + (totals.accounts[id] || 0), 0);
     const totalCurrentLiabilities = currentLiabilityIds.reduce((sum, id) => sum + (totals.accounts[id] || 0), 0);
-    
+
     const currentRatio = totalCurrentLiabilities !== 0 ? totalCurrentAssets / totalCurrentLiabilities : 0;
     const debtToEquity = totals.totalEquity !== 0 ? totals.totalLiabilities / totals.totalEquity : 0;
     const netProfit = (totals.accounts['revenue'] || 0) + (totals.accounts['expenses'] || 0); // Expenses are negative
-    
+
     return {
       currentRatio,
       debtToEquity,
@@ -593,7 +593,7 @@ export default function App() {
 
   const profitTrendData = useMemo(() => {
     const monthlyData: Record<string, number> = {};
-    
+
     // Sort transactions by date
     const sortedTxs = [...transactions].sort((a, b) => {
       const parseDate = (d: string) => {
@@ -613,14 +613,14 @@ export default function App() {
       const month = parseInt(parts[1]);
       const year = parts[2] ? (parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2])) : new Date().getFullYear();
       const key = `${year}-${month.toString().padStart(2, '0')}`;
-      
+
       const impact = tx.impacts.reduce((sum, imp) => {
         if (imp.accountId === 'revenue' || imp.accountId === 'expenses') {
           return sum + imp.amount;
         }
         return sum;
       }, 0);
-      
+
       monthlyData[key] = (monthlyData[key] || 0) + impact;
     });
 
@@ -660,11 +660,11 @@ export default function App() {
 
     const prev = prevTotalsRef.current;
     const current = totals.accounts;
-    
+
     Object.keys(current).forEach(accountId => {
       const budget = budgets[accountId];
       if (!budget || budget <= 0) return;
-      
+
       const oldSpent = Math.abs(prev[accountId] || 0);
       const newSpent = Math.abs(current[accountId] || 0);
       const accountName = allAccounts.find(a => a.id === accountId)?.name || '';
@@ -678,7 +678,7 @@ export default function App() {
         toast.warning(`${t('budgetWarningAlert')} "${t(accountName)}".`);
       }
     });
-    
+
     prevTotalsRef.current = current;
   }, [totals.accounts, budgets]);
 
@@ -718,7 +718,7 @@ export default function App() {
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return alert(t('enterDescription'));
-    
+
     // Filter out zero impacts
     const validImpacts = impacts.filter(i => i.amount !== 0);
     if (validImpacts.length === 0) return alert(t('enterValidAmount'));
@@ -775,7 +775,7 @@ export default function App() {
       };
       updateTransactions([...transactions, newTx]);
     }
-    
+
     // Reset form
     setSelectedFile(null);
     setDate('');
@@ -875,7 +875,7 @@ export default function App() {
   const handleSaveBudgets = async () => {
     setIsEditingBudgets(false);
     localStorage.setItem('motazin_budgets', JSON.stringify(budgets));
-    
+
     if (!user) {
       toast.success(t('budgetSavedSuccess'));
       return;
@@ -895,7 +895,7 @@ export default function App() {
   const handleCurrencyChange = async (newCurrency: string) => {
     setCurrency(newCurrency);
     localStorage.setItem('motazin_currency', newCurrency);
-    
+
     if (!user) return;
     try {
       await setDoc(doc(db, 'users', user.uid), {
@@ -953,17 +953,17 @@ export default function App() {
   const handleExportPDF = async () => {
     const tableElement = document.getElementById('transactions-table');
     if (!tableElement) return;
-    
+
     try {
       // Temporarily remove max-height on original element to calculate correct dimensions
       const originalMaxHeight = tableElement.style.maxHeight;
       const originalOverflow = tableElement.style.overflow;
       tableElement.style.maxHeight = 'none';
       tableElement.style.overflow = 'visible';
-      
+
       const html2canvas = (await import('html2canvas')).default;
       const jsPDF = (await import('jspdf')).default;
-      
+
       const canvas = await html2canvas(tableElement, {
         scale: 2,
         useCORS: true,
@@ -986,14 +986,14 @@ export default function App() {
           }
         }
       });
-      
+
       // Restore original styles
       tableElement.style.maxHeight = originalMaxHeight;
       tableElement.style.overflow = originalOverflow;
-      
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('l', 'px', [canvas.width / 2, canvas.height / 2]);
-      
+
       pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
       pdf.save('transactions.pdf');
     } catch (error) {
@@ -1133,529 +1133,1736 @@ export default function App() {
   return (
     <>
       <div className="relative w-full max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-10 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
-      <Toaster position="top-center" richColors theme={theme === 'system' ? 'system' : theme} dir={dir} />
+        <Toaster position="top-center" richColors theme={theme === 'system' ? 'system' : theme} dir={dir} />
 
-      {/* Header */}
-      {/* Header */}
-      <header className={cn(
-        "sticky top-2 md:top-4 z-40 transition-all duration-500 px-2 md:px-0",
-        isScrolled ? "md:translate-y-0" : "md:translate-y-2"
-      )}>
-        <div className="glass w-full rounded-[2rem] md:rounded-[2.5rem] p-2.5 md:px-4 lg:px-6 md:py-3 shadow-xl md:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.3)] border dark:border-white/10 border-slate-200/50 flex items-center justify-between max-w-[1850px] mx-auto backdrop-blur-xl">
-          <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl border border-white/20 shadow-lg group transition-all hover:scale-105">
-              <Calculator className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
-            </div>
-            <div>
-              <h1 className="text-lg sm:text-2xl font-black dark:text-white text-black tracking-tight leading-tight">{t('appTitle')}</h1>
-              <p className="text-[9px] sm:text-[13px] font-black dark:text-indigo-400 text-indigo-600 uppercase tracking-widest">{t('appSubtitle')}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button 
-              className="md:hidden p-2.5 dark:text-white text-black dark:hover:bg-white/10 hover:bg-slate-200/50 rounded-2xl transition-all"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <XCircle className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-
-            <div className="hidden md:flex items-center gap-1.5 lg:gap-3">
-              {/* Language Switcher */}
-              <div className="relative" ref={langRef}>
-                <button 
-                  onClick={() => setIsLangOpen(!isLangOpen)}
-                  className="flex items-center gap-2 pl-3 lg:pl-9 pr-3 lg:pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 hover:bg-white/10 dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black transition-all shadow-sm group"
-                >
-                  <Globe className="w-4 h-4 text-indigo-400" />
-                  <span className="hidden lg:inline-block">{language === 'ar' ? 'العربية' : language === 'en' ? 'English' : language === 'fr' ? 'Français' : language === 'es' ? 'Español' : language === 'tr' ? 'Türkçe' : language === 'ur' ? 'اردو' : language === 'ja' ? '日本語' : language === 'zh' ? '中文' : language === 'ru' ? 'Русский' : language === 'pt' ? 'Português' : 'English'}</span>
-                </button>
-                
-                {isLangOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-40 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden animate-scale-in origin-top-left py-1">
-                    {[
-                      { id: 'ar', label: 'العربية' },
-                      { id: 'en', label: 'English' },
-                      { id: 'fr', label: 'Français' },
-                      { id: 'es', label: 'Español' },
-                      { id: 'tr', label: 'Türkçe' },
-                      { id: 'ur', label: 'اردو' },
-                      { id: 'ja', label: '日本語' },
-                      { id: 'zh', label: '中文' },
-                      { id: 'ru', label: 'Русский' },
-                      { id: 'pt', label: 'Português' }
-                    ].map((lang) => (
-                      <button
-                        key={lang.id}
-                        onClick={() => {
-                          setLanguage(lang.id as any);
-                          setIsLangOpen(false);
-                        }}
-                        className={cn(
-                          "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-indigo-500/10",
-                          language === lang.id ? "text-indigo-500 bg-indigo-500/5" : "dark:text-white/80 text-slate-700"
-                        )}
-                      >
-                        {lang.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
+        {/* Header */}
+        {/* Header */}
+        <header className={cn(
+          "sticky top-2 md:top-4 z-40 transition-all duration-500 px-2 md:px-0",
+          isScrolled ? "md:translate-y-0" : "md:translate-y-2"
+        )}>
+          <div className="glass w-full rounded-[2rem] md:rounded-[2.5rem] p-2.5 md:px-4 lg:px-6 md:py-3 shadow-xl md:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.3)] border dark:border-white/10 border-slate-200/50 flex items-center justify-between max-w-[1850px] mx-auto backdrop-blur-xl">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl border border-white/20 shadow-lg group transition-all hover:scale-105">
+                <Calculator className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
               </div>
+              <div>
+                <h1 className="text-lg sm:text-2xl font-black dark:text-white text-black tracking-tight leading-tight">{t('appTitle')}</h1>
+                <p className="text-[9px] sm:text-[13px] font-black dark:text-indigo-400 text-indigo-600 uppercase tracking-widest">{t('appSubtitle')}</p>
+              </div>
+            </div>
 
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-2.5 dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 rounded-2xl transition-all group"
+                className="md:hidden p-2.5 dark:text-white text-black dark:hover:bg-white/10 hover:bg-slate-200/50 rounded-2xl transition-all"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
-                {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-400" />}
+                {isMobileMenuOpen ? <XCircle className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
 
-              {/* User Profile Area */}
-              <div className="flex items-center gap-3 dark:bg-white/5 bg-slate-100 px-3 py-1.5 rounded-2xl border dark:border-white/5 border-slate-200">
-                <div className="relative">
-                  {user ? (
-                    <img src={user.photoURL || ''} alt="Profile" className="w-8 h-8 rounded-full ring-2 ring-indigo-500" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                      <UserIcon className="w-4 h-4 text-indigo-400" />
+              <div className="hidden md:flex items-center gap-1.5 lg:gap-3">
+                {/* Language Switcher */}
+                <div className="relative" ref={langRef}>
+                  <button
+                    onClick={() => setIsLangOpen(!isLangOpen)}
+                    className="flex items-center gap-2 pl-3 lg:pl-9 pr-3 lg:pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 hover:bg-white/10 dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black transition-all shadow-sm group"
+                  >
+                    <Globe className="w-4 h-4 text-indigo-400" />
+                    <span className="hidden lg:inline-block">{language === 'ar' ? 'العربية' : language === 'en' ? 'English' : language === 'fr' ? 'Français' : language === 'es' ? 'Español' : language === 'tr' ? 'Türkçe' : language === 'ur' ? 'اردو' : language === 'ja' ? '日本語' : language === 'zh' ? '中文' : language === 'ru' ? 'Русский' : language === 'pt' ? 'Português' : 'English'}</span>
+                  </button>
+
+                  {isLangOpen && (
+                    <div className="absolute top-full left-0 mt-2 w-40 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden animate-scale-in origin-top-left py-1">
+                      {[
+                        { id: 'ar', label: 'العربية' },
+                        { id: 'en', label: 'English' },
+                        { id: 'fr', label: 'Français' },
+                        { id: 'es', label: 'Español' },
+                        { id: 'tr', label: 'Türkçe' },
+                        { id: 'ur', label: 'اردو' },
+                        { id: 'ja', label: '日本語' },
+                        { id: 'zh', label: '中文' },
+                        { id: 'ru', label: 'Русский' },
+                        { id: 'pt', label: 'Português' }
+                      ].map((lang) => (
+                        <button
+                          key={lang.id}
+                          onClick={() => {
+                            setLanguage(lang.id as any);
+                            setIsLangOpen(false);
+                          }}
+                          className={cn(
+                            "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-indigo-500/10",
+                            language === lang.id ? "text-indigo-500 bg-indigo-500/5" : "dark:text-white/80 text-slate-700"
+                          )}
+                        >
+                          {lang.label}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
-                {user ? (
-                  <button onClick={() => signOut(auth)} className="text-rose-400 hover:text-rose-500 transition-colors">
-                    <LogOut className="w-4 h-4" />
+
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="p-2.5 dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 rounded-2xl transition-all group"
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-400" />}
+                </button>
+
+                {/* User Profile Area */}
+                <div className="flex items-center gap-3 dark:bg-white/5 bg-slate-100 px-3 py-1.5 rounded-2xl border dark:border-white/5 border-slate-200">
+                  <div className="relative">
+                    {user ? (
+                      <img src={user.photoURL || ''} alt="Profile" className="w-8 h-8 rounded-full ring-2 ring-indigo-500" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                        <UserIcon className="w-4 h-4 text-indigo-400" />
+                      </div>
+                    )}
+                  </div>
+                  {user ? (
+                    <button onClick={() => signOut(auth)} className="text-rose-400 hover:text-rose-500 transition-colors">
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button onClick={() => signInWithPopup(auth, googleProvider)} className="text-[11px] font-black uppercase text-indigo-400">
+                      {t('login')}
+                    </button>
+                  )}
+                </div>
+
+                {/* Currency Switcher */}
+                <div className="relative" ref={currencyRef}>
+                  <button
+                    onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
+                    className="flex items-center gap-2 pl-3 lg:pl-9 pr-3 lg:pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 border dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black"
+                  >
+                    <Coins className="w-4 h-4 text-emerald-400" />
+                    <span className="hidden lg:inline-block">{CURRENCIES.find(c => c.code === currency)?.symbol}</span>
                   </button>
-                ) : (
-                  <button onClick={() => signInWithPopup(auth, googleProvider)} className="text-[11px] font-black uppercase text-indigo-400">
-                    {t('login')}
-                  </button>
-                )}
+                  {isCurrencyOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-48 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto animate-scale-in origin-top-right">
+                      {CURRENCIES.map((c) => (
+                        <button
+                          key={c.code}
+                          onClick={() => { handleCurrencyChange(c.code); setIsCurrencyOpen(false); }}
+                          className={cn(
+                            "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-emerald-500/10",
+                            currency === c.code ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/5" : "dark:text-white/80 text-slate-700"
+                          )}
+                        >
+                          {c.name} ({c.symbol})
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="h-8 w-px dark:bg-white/5 bg-slate-200 mx-1"></div>
+
+                <div className="flex items-center gap-1 dark:bg-black/20 bg-slate-100 p-1 rounded-xl border dark:border-white/5 border-slate-200 text-black dark:text-white">
+                  <button onClick={handleUndo} disabled={historyIndex === 0} className="p-2 disabled:opacity-20"><Undo2 className="w-4 h-4" /></button>
+                  <button onClick={handleRedo} disabled={historyIndex === history.length - 1} className="p-2 disabled:opacity-20"><Redo2 className="w-4 h-4" /></button>
+                </div>
+                <button onClick={handleClearAll} className="p-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Mobile Menu Overlay */}
+        <div className={cn(
+          "fixed inset-0 z-[250] md:hidden transition-all duration-300",
+          isMobileMenuOpen ? "visible" : "invisible"
+        )}>
+          {/* Backdrop */}
+          <div
+            className={cn(
+              "absolute inset-0 bg-slate-950/60 backdrop-blur-md transition-opacity duration-500",
+              isMobileMenuOpen ? "opacity-100" : "opacity-0"
+            )}
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
+
+          {/* Drawer Content */}
+          <div className={cn(
+            "fixed top-0 bottom-0 w-[85%] max-w-xs dark:bg-slate-900/95 bg-white/95 backdrop-blur-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[260] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col overflow-hidden",
+            language === 'ar'
+              ? (isMobileMenuOpen ? "right-0 rounded-l-[2.5rem]" : "-right-full rounded-l-none")
+              : (isMobileMenuOpen ? "left-0 rounded-r-[2.5rem]" : "-left-full rounded-r-none")
+          )} dir={dir} style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}>
+            {/* Header Area */}
+            <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02]">
+              <h2 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight">{t('menu') || 'Menu'}</h2>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2.5 text-slate-400 hover:text-rose-500 transition-all bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border dark:border-white/10 border-slate-200 shadow-sm"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto no-scrollbar p-6 pb-12 space-y-8">
+              {/* Profile in mobile menu */}
+              <div className="flex items-center gap-4 p-5 bg-gradient-to-br from-indigo-500/10 to-indigo-700/5 rounded-2xl border border-indigo-500/20 shadow-inner">
+                <div className="relative">
+                  {user ? (
+                    <img src={user.photoURL || ''} alt="Profile" className="w-14 h-14 rounded-full border-2 border-indigo-500 shadow-lg" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-indigo-500/20 flex items-center justify-center border-2 border-indigo-500 shadow-lg">
+                      <UserIcon className="w-7 h-7 text-indigo-400" />
+                    </div>
+                  )}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 dark:border-slate-900 border-white rounded-full"></div>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-base font-black dark:text-white text-slate-900 truncate">{user ? user.displayName : t('guestUser')}</p>
+                  <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.2em]">{user ? 'PRO ACCOUNT' : 'OFFLINE MODE'}</p>
+                </div>
               </div>
 
-              {/* Currency Switcher */}
-              <div className="relative" ref={currencyRef}>
-                <button 
-                  onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
-                  className="flex items-center gap-2 pl-3 lg:pl-9 pr-3 lg:pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 border dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black"
-                >
-                  <Coins className="w-4 h-4 text-emerald-400" />
-                  <span className="hidden lg:inline-block">{CURRENCIES.find(c => c.code === currency)?.symbol}</span>
-                </button>
-                {isCurrencyOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-48 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto animate-scale-in origin-top-right">
-                    {CURRENCIES.map((c) => (
+              {/* Navigation Menu Mobile */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('navigation') || 'Navigation'}</p>
+                <div className="space-y-2">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentView === item.id;
+                    return (
                       <button
-                        key={c.code}
-                        onClick={() => { handleCurrencyChange(c.code); setIsCurrencyOpen(false); }}
+                        key={item.id}
+                        onClick={() => {
+                          setCurrentView(item.id as any);
+                          setIsMobileMenuOpen(false);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
                         className={cn(
-                          "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-emerald-500/10",
-                          currency === c.code ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/5" : "dark:text-white/80 text-slate-700"
+                          "w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border",
+                          isActive
+                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                            : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
                         )}
                       >
-                        {c.name} ({c.symbol})
+                        <div className={cn("p-2 rounded-xl", isActive ? "bg-white/20" : "bg-indigo-500/10")}>
+                          <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-indigo-500")} />
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-widest">{item.label}</span>
                       </button>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="h-8 w-px dark:bg-white/5 bg-slate-200 mx-1"></div>
-
-              <div className="flex items-center gap-1 dark:bg-black/20 bg-slate-100 p-1 rounded-xl border dark:border-white/5 border-slate-200 text-black dark:text-white">
-                <button onClick={handleUndo} disabled={historyIndex === 0} className="p-2 disabled:opacity-20"><Undo2 className="w-4 h-4" /></button>
-                <button onClick={handleRedo} disabled={historyIndex === history.length - 1} className="p-2 disabled:opacity-20"><Redo2 className="w-4 h-4" /></button>
-              </div>
-              <button onClick={handleClearAll} className="p-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all"><Trash2 className="w-4 h-4" /></button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile Menu Overlay */}
-      <div className={cn(
-        "fixed inset-0 z-[250] md:hidden transition-all duration-300",
-        isMobileMenuOpen ? "visible" : "invisible"
-      )}>
-        {/* Backdrop */}
-        <div 
-          className={cn(
-            "absolute inset-0 bg-slate-950/60 backdrop-blur-md transition-opacity duration-500",
-            isMobileMenuOpen ? "opacity-100" : "opacity-0"
-          )}
-          onClick={() => setIsMobileMenuOpen(false)}
-        ></div>
-        
-        {/* Drawer Content */}
-        <div className={cn(
-          "fixed top-0 bottom-0 w-[85%] max-w-xs dark:bg-slate-900/95 bg-white/95 backdrop-blur-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[260] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col overflow-hidden",
-          language === 'ar' 
-            ? (isMobileMenuOpen ? "right-0 rounded-l-[2.5rem]" : "-right-full rounded-l-none") 
-            : (isMobileMenuOpen ? "left-0 rounded-r-[2.5rem]" : "-left-full rounded-r-none")
-        )} dir={dir} style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}>
-          {/* Header Area */}
-          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02]">
-            <h2 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight">{t('menu') || 'Menu'}</h2>
-            <button 
-              onClick={() => setIsMobileMenuOpen(false)} 
-              className="p-2.5 text-slate-400 hover:text-rose-500 transition-all bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border dark:border-white/10 border-slate-200 shadow-sm"
-            >
-              <XCircle className="w-5 h-5" />
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto no-scrollbar p-6 pb-12 space-y-8">
-            {/* Profile in mobile menu */}
-            <div className="flex items-center gap-4 p-5 bg-gradient-to-br from-indigo-500/10 to-indigo-700/5 rounded-2xl border border-indigo-500/20 shadow-inner">
-              <div className="relative">
-                {user ? (
-                  <img src={user.photoURL || ''} alt="Profile" className="w-14 h-14 rounded-full border-2 border-indigo-500 shadow-lg" />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-indigo-500/20 flex items-center justify-center border-2 border-indigo-500 shadow-lg">
-                    <UserIcon className="w-7 h-7 text-indigo-400" />
-                  </div>
-                )}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 dark:border-slate-900 border-white rounded-full"></div>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-base font-black dark:text-white text-slate-900 truncate">{user ? user.displayName : t('guestUser')}</p>
-                <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.2em]">{user ? 'PRO ACCOUNT' : 'OFFLINE MODE'}</p>
-              </div>
-            </div>
-
-            {/* Navigation Menu Mobile */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('navigation') || 'Navigation'}</p>
+              {/* Quick Actions Mobile */}
               <div className="space-y-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentView === item.id;
-                  return (
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('quickActions') || 'Quick Actions'}</p>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => { setIsPdfScannerOpen(true); setIsMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
+                  >
+                    <div className="p-2 rounded-xl bg-indigo-500/10">
+                      <FileSearch className="w-5 h-5 text-indigo-500" />
+                    </div>
+                    <span className="text-sm font-bold uppercase tracking-widest">{t('scanPDF')}</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsSnapshotsModalOpen(true); setIsMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
+                  >
+                    <div className="p-2 rounded-xl bg-emerald-500/10">
+                      <Clock className="w-5 h-5 text-emerald-500" />
+                    </div>
+                    <span className="text-sm font-bold uppercase tracking-widest">{t('backups')}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Theme Toggle Mobile */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('appearance') || 'Appearance'}</p>
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 transition-all active:scale-95 hover:bg-slate-100 dark:hover:bg-white/10"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-amber-500/10 rounded-xl">
+                      {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-amber-500" />}
+                    </div>
+                    <span className="text-sm font-bold uppercase tracking-widest dark:text-white/80 text-slate-700">{theme === 'dark' ? t('lightMode') : t('darkMode')}</span>
+                  </div>
+                  <div className="w-10 h-5 bg-slate-300 dark:bg-slate-700 rounded-full relative">
+                    <div className={cn(
+                      "absolute top-1 w-3 h-3 rounded-full transition-all duration-300",
+                      theme === 'dark' ? "right-1 bg-indigo-400" : "left-1 bg-white"
+                    )}></div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Language Selector Mobile */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('language') || 'Language'}</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'ar', label: 'عربي' },
+                    { id: 'en', label: 'EN' },
+                    { id: 'fr', label: 'FR' },
+                    { id: 'es', label: 'ES' },
+                    { id: 'tr', label: 'TR' },
+                    { id: 'ur', label: 'UR' },
+                    { id: 'ja', label: 'JA' },
+                    { id: 'zh', label: 'ZH' },
+                    { id: 'ru', label: 'RU' },
+                    { id: 'pt', label: 'PT' }
+                  ].map((lang) => (
                     <button
-                      key={item.id}
+                      key={lang.id}
                       onClick={() => {
-                        setCurrentView(item.id as any);
+                        setLanguage(lang.id as any);
                         setIsMobileMenuOpen(false);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       className={cn(
-                        "w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border",
-                        isActive
+                        "px-2 py-2.5 rounded-xl text-[10px] font-black border transition-all",
+                        language === lang.id
                           ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                          : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
+                          : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/60 text-slate-600"
                       )}
                     >
-                      <div className={cn("p-2 rounded-xl", isActive ? "bg-white/20" : "bg-indigo-500/10")}>
-                        <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-indigo-500")} />
-                      </div>
-                      <span className="text-sm font-bold uppercase tracking-widest">{item.label}</span>
+                      {lang.label}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Quick Actions Mobile */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('quickActions') || 'Quick Actions'}</p>
+              {/* Currency Selector Mobile */}
               <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('currency') || 'Currency'}</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {CURRENCIES.slice(0, 9).map((c) => (
+                    <button
+                      key={c.code}
+                      onClick={() => {
+                        handleCurrencyChange(c.code);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "px-1 py-2.5 rounded-xl text-[10px] font-black border transition-all",
+                        currency === c.code
+                          ? "bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                          : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/60 text-slate-600"
+                      )}
+                    >
+                      {c.symbol}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Area */}
+            <div className="p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02] pb-safe">
+              {user ? (
                 <button
-                  onClick={() => { setIsPdfScannerOpen(true); setIsMobileMenuOpen(false); }}
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
+                  onClick={() => signOut(auth)}
+                  className="w-full flex items-center justify-between p-4 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-2xl font-black transition-all active:scale-95 group border border-rose-500/20"
                 >
-                  <div className="p-2 rounded-xl bg-indigo-500/10">
-                    <FileSearch className="w-5 h-5 text-indigo-500" />
+                  <div className="flex items-center gap-3">
+                    <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-sm uppercase tracking-widest">{t('logout')}</span>
                   </div>
-                  <span className="text-sm font-bold uppercase tracking-widest">{t('scanPDF')}</span>
+                  <ChevronRight className={cn("w-4 h-4 transition-transform", language === 'ar' ? "rotate-180" : "")} />
                 </button>
+              ) : (
                 <button
-                  onClick={() => { setIsSnapshotsModalOpen(true); setIsMobileMenuOpen(false); }}
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
+                  onClick={() => signInWithPopup(auth, googleProvider)}
+                  className="w-full flex items-center justify-center gap-3 p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/20 transition-all active:scale-95 uppercase tracking-widest text-xs"
                 >
-                  <div className="p-2 rounded-xl bg-emerald-500/10">
-                    <Clock className="w-5 h-5 text-emerald-500" />
-                  </div>
-                  <span className="text-sm font-bold uppercase tracking-widest">{t('backups')}</span>
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                  </svg>
+                  {t('login') || 'Sign in with Google'}
                 </button>
-              </div>
+              )}
             </div>
-
-            {/* Theme Toggle Mobile */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('appearance') || 'Appearance'}</p>
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 transition-all active:scale-95 hover:bg-slate-100 dark:hover:bg-white/10"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="p-2 bg-amber-500/10 rounded-xl">
-                    {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-amber-500" />}
-                  </div>
-                  <span className="text-sm font-bold uppercase tracking-widest dark:text-white/80 text-slate-700">{theme === 'dark' ? t('lightMode') : t('darkMode')}</span>
-                </div>
-                <div className="w-10 h-5 bg-slate-300 dark:bg-slate-700 rounded-full relative">
-                  <div className={cn(
-                    "absolute top-1 w-3 h-3 rounded-full transition-all duration-300",
-                    theme === 'dark' ? "right-1 bg-indigo-400" : "left-1 bg-white"
-                  )}></div>
-                </div>
-              </button>
-            </div>
-
-            {/* Language Selector Mobile */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('language') || 'Language'}</p>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'ar', label: 'عربي' },
-                  { id: 'en', label: 'EN' },
-                  { id: 'fr', label: 'FR' },
-                  { id: 'es', label: 'ES' },
-                  { id: 'tr', label: 'TR' },
-                  { id: 'ur', label: 'UR' },
-                  { id: 'ja', label: 'JA' },
-                  { id: 'zh', label: 'ZH' },
-                  { id: 'ru', label: 'RU' },
-                  { id: 'pt', label: 'PT' }
-                ].map((lang) => (
-                  <button
-                    key={lang.id}
-                    onClick={() => {
-                      setLanguage(lang.id as any);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      "px-2 py-2.5 rounded-xl text-[10px] font-black border transition-all",
-                      language === lang.id 
-                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
-                        : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/60 text-slate-600"
-                    )}
-                  >
-                    {lang.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Currency Selector Mobile */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('currency') || 'Currency'}</p>
-              <div className="grid grid-cols-3 gap-2">
-                {CURRENCIES.slice(0, 9).map((c) => (
-                  <button
-                    key={c.code}
-                    onClick={() => {
-                      handleCurrencyChange(c.code);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      "px-1 py-2.5 rounded-xl text-[10px] font-black border transition-all",
-                      currency === c.code 
-                        ? "bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/20" 
-                        : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/60 text-slate-600"
-                    )}
-                  >
-                    {c.symbol}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Footer Area */}
-          <div className="p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02] pb-safe">
-            {user ? (
-              <button 
-                onClick={() => signOut(auth)}
-                className="w-full flex items-center justify-between p-4 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-2xl font-black transition-all active:scale-95 group border border-rose-500/20"
-              >
-                <div className="flex items-center gap-3">
-                  <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                  <span className="text-sm uppercase tracking-widest">{t('logout')}</span>
-                </div>
-                <ChevronRight className={cn("w-4 h-4 transition-transform", language === 'ar' ? "rotate-180" : "")} />
-              </button>
-            ) : (
-              <button 
-                onClick={() => signInWithPopup(auth, googleProvider)}
-                className="w-full flex items-center justify-center gap-3 p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/20 transition-all active:scale-95 uppercase tracking-widest text-xs"
-              >
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                {t('login') || 'Sign in with Google'}
-              </button>
-            )}
           </div>
         </div>
-      </div>
 
 
-      {/* Desktop Navigation Tabs */}
-      <div className={cn(
-        "sticky z-30 transition-all duration-500 ease-in-out px-4 hidden md:flex",
-        isScrolled ? "top-[1.5rem]" : "top-[100px]",
-        "justify-center w-full mb-8"
-      )}>
+        {/* Desktop Navigation Tabs */}
         <div className={cn(
-          "glass p-1.5 rounded-[2rem] border transition-all duration-500 shadow-2xl flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full",
-          isScrolled 
-            ? "dark:bg-slate-900/90 bg-white/90 dark:border-white/20 border-slate-300 scale-95 shadow-indigo-500/10" 
-            : "dark:bg-slate-800/60 bg-white/60 dark:border-white/10 border-slate-200"
+          "sticky z-30 transition-all duration-500 ease-in-out px-4 hidden md:flex",
+          isScrolled ? "top-[1.5rem]" : "top-[100px]",
+          "justify-center w-full mb-8"
         )}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            const activeColor = item.color === 'emerald' ? 'bg-emerald-600' : 'bg-indigo-600';
-            const iconColor = item.color === 'emerald' ? 'text-emerald-400' : 'text-indigo-400';
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setCurrentView(item.id as any);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={cn(
-                  "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
-                  isActive 
-                    ? "text-white" 
-                    : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
-                )}
-              >
-                {isActive && (
-                  <div className={cn(
-                    "absolute inset-0 rounded-full z-0 animate-in fade-in zoom-in duration-300",
-                    activeColor,
-                    item.color === 'emerald' ? "shadow-[0_0_15px_rgba(16,185,129,0.5)]" : "shadow-[0_0_15px_rgba(99,102,241,0.5)]"
-                  )} />
-                )}
-                <Icon className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", isActive ? "text-white" : iconColor)} />
-                <span className="relative z-10">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Removed redundant Mobile Bottom Navigation from here */}
-
-      {/* Sticky Mobile Summary Bar - Compact version */}
-      <div className="md:hidden sticky top-[76px] z-30 px-4 py-3 animate-fade-in pointer-events-none">
-        <div className="mx-auto max-w-sm pointer-events-auto dark:bg-slate-900/80 bg-white/80 backdrop-blur-xl border dark:border-white/20 border-slate-300/50 rounded-full flex justify-between items-center px-5 py-2.5 shadow-xl shadow-indigo-500/10">
-          <div className="flex gap-5">
-            <div className="flex flex-col">
-              <span className="text-[8px] uppercase font-black text-indigo-500 dark:text-indigo-400 tracking-widest mb-0.5">{t('assets')}</span>
-              <span className="text-xs font-black dark:text-white text-slate-900 leading-none">{formatCurrency(totals.totalAssets)}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[8px] uppercase font-black text-emerald-500 dark:text-emerald-400 tracking-widest mb-0.5">{t('equity')}</span>
-              <span className="text-xs font-black dark:text-white text-slate-900 leading-none">{formatCurrency(totals.totalEquity)}</span>
-            </div>
-          </div>
           <div className={cn(
-            "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm",
-            totals.isBalanced ? "bg-emerald-500 text-white shadow-emerald-500/30" : "bg-rose-500 text-white shadow-rose-500/30"
+            "glass p-1.5 rounded-[2rem] border transition-all duration-500 shadow-2xl flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full",
+            isScrolled
+              ? "dark:bg-slate-900/90 bg-white/90 dark:border-white/20 border-slate-300 scale-95 shadow-indigo-500/10"
+              : "dark:bg-slate-800/60 bg-white/60 dark:border-white/10 border-slate-200"
           )}>
-            {totals.isBalanced ? t('equationBalanced') : t('equationUnbalanced')}
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              const activeColor = item.color === 'emerald' ? 'bg-emerald-600' : 'bg-indigo-600';
+              const iconColor = item.color === 'emerald' ? 'text-emerald-400' : 'text-indigo-400';
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setCurrentView(item.id as any);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={cn(
+                    "px-5 py-2.5 rounded-full text-[12px] font-bold transition-all uppercase tracking-widest flex items-center gap-2 whitespace-nowrap group/tab relative",
+                    isActive
+                      ? "text-white"
+                      : "dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900"
+                  )}
+                >
+                  {isActive && (
+                    <div className={cn(
+                      "absolute inset-0 rounded-full z-0 animate-in fade-in zoom-in duration-300",
+                      activeColor,
+                      item.color === 'emerald' ? "shadow-[0_0_15px_rgba(16,185,129,0.5)]" : "shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+                    )} />
+                  )}
+                  <Icon className={cn("w-4 h-4 relative z-10 transition-transform group-hover/tab:scale-110", isActive ? "text-white" : iconColor)} />
+                  <span className="relative z-10">{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
+
+        {/* Removed redundant Mobile Bottom Navigation from here */}
+
+        {/* Sticky Mobile Summary Bar - Compact version */}
+        <div className="md:hidden sticky top-[76px] z-30 px-4 py-3 animate-fade-in pointer-events-none">
+          <div className="mx-auto max-w-sm pointer-events-auto dark:bg-slate-900/80 bg-white/80 backdrop-blur-xl border dark:border-white/20 border-slate-300/50 rounded-full flex justify-between items-center px-5 py-2.5 shadow-xl shadow-indigo-500/10">
+            <div className="flex gap-5">
+              <div className="flex flex-col">
+                <span className="text-[8px] uppercase font-black text-indigo-500 dark:text-indigo-400 tracking-widest mb-0.5">{t('assets')}</span>
+                <span className="text-xs font-black dark:text-white text-slate-900 leading-none">{formatCurrency(totals.totalAssets)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[8px] uppercase font-black text-emerald-500 dark:text-emerald-400 tracking-widest mb-0.5">{t('equity')}</span>
+                <span className="text-xs font-black dark:text-white text-slate-900 leading-none">{formatCurrency(totals.totalEquity)}</span>
+              </div>
+            </div>
+            <div className={cn(
+              "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm",
+              totals.isBalanced ? "bg-emerald-500 text-white shadow-emerald-500/30" : "bg-rose-500 text-white shadow-rose-500/30"
+            )}>
+              {totals.isBalanced ? t('equationBalanced') : t('equationUnbalanced')}
+            </div>
+          </div>
+        </div>
+
+        <main className="pb-32 md:pb-8 md:mb-0">
+          {currentView === 'equation' ? (
+            <div className="animate-scale-in space-y-6 sm:space-y-8">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
+
+                {/* Left Column: Form & Status Dashboard - Hidden on mobile to avoid redundancy */}
+                <div className="hidden md:block xl:col-span-4 space-y-6 animate-fade-in [animation-delay:400ms]">
+                  <div className="glass-card p-6 border-t-4 border-indigo-500 shadow-2xl">
+                    <h2 className="text-xl font-bold text-theme-primary mb-6 flex items-center gap-3">
+                      <div className="p-2 bg-indigo-500/20 rounded-xl">
+                        {editingTransactionId ? (
+                          <Edit2 className="w-5 h-5 text-indigo-400" />
+                        ) : (
+                          <Plus className="w-5 h-5 text-indigo-400" />
+                        )}
+                      </div>
+                      {editingTransactionId ? t('editTransaction') : t('addNewTransaction')}
+                    </h2>
+
+                    <form onSubmit={handleAddTransaction} className="space-y-6">
+                      {/* Date & Description Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="col-span-1">
+                          <label htmlFor="dt-tx-date" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('date')}</label>
+                          <input
+                            id="dt-tx-date"
+                            name="dt-date"
+                            type="text"
+                            value={date}
+                            onChange={e => setDate(e.target.value)}
+                            placeholder={t('exampleDate')}
+                            className="w-full glass-input px-4 py-3 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label htmlFor="dt-tx-desc" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('description')}</label>
+                          <input
+                            id="dt-tx-desc"
+                            name="dt-description"
+                            type="text"
+                            required
+                            value={description}
+                            onChange={e => setDescription(e.target.value)}
+                            placeholder={t('exampleDesc')}
+                            className="w-full glass-input px-4 py-3 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Document Attachment Section */}
+                      <div className="space-y-2">
+                        <label htmlFor="dt-tx-file" className="block text-[11px] font-bold dark:text-slate-400 text-black uppercase tracking-widest ml-1">{t('attachDocument')}</label>
+                        <div className="flex items-center gap-3">
+                          <label htmlFor="dt-tx-file" className="flex-1 flex items-center justify-center gap-3 px-4 py-4 bg-slate-900/40 border-2 border-white/5 border-dashed rounded-2xl hover:bg-slate-800/60 hover:border-indigo-500/30 cursor-pointer transition-all group overflow-hidden relative">
+                            <div className="absolute inset-0 bg-indigo-500/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                            <Paperclip className="w-5 h-5 text-indigo-400 group-hover:rotate-12 transition-transform" />
+                            <span className="text-xs text-slate-300 font-bold truncate max-w-[180px] relative z-10">
+                              {selectedFile ? selectedFile.name : t('attachDocument')}
+                            </span>
+                            <input id="dt-tx-file" name="dt-attachment" type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                          </label>
+                          {selectedFile && (
+                            <button type="button" onClick={() => setSelectedFile(null)} className="p-4 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl transition-all border border-rose-500/20 group">
+                              <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Recurring Transaction Logic */}
+                      <div className="flex flex-wrap items-center gap-4 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
+                        <label htmlFor="dt-tx-recurring" className="flex items-center gap-3 cursor-pointer group">
+                          <input
+                            id="dt-tx-recurring"
+                            name="dt-isRecurring"
+                            type="checkbox"
+                            checked={isRecurring}
+                            onChange={(e) => setIsRecurring(e.target.checked)}
+                            className="w-5 h-5 rounded-lg border-white/10 bg-slate-900 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                          />
+                          <span className="text-sm font-bold dark:text-white text-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors uppercase tracking-tight">{t('recurringTransaction')}</span>
+                        </label>
+
+                        {isRecurring && (
+                          <div className="flex items-center gap-3 animate-fade-in pl-2 border-l border-white/10">
+                            <label htmlFor="dt-tx-recurrence-interval" className="text-[10px] font-bold dark:text-slate-400 text-black uppercase tracking-widest">{t('repeatsEveryLabel')}</label>
+                            <select
+                              id="dt-tx-recurrence-interval"
+                              name="dt-recurrenceInterval"
+                              value={recurrenceInterval}
+                              onChange={(e) => setRecurrenceInterval(e.target.value as any)}
+                              className="px-4 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900 dark:text-white text-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              <option value="daily">{t('day')}</option>
+                              <option value="weekly">{t('week')}</option>
+                              <option value="monthly">{t('month')}</option>
+                              <option value="yearly">{t('year')}</option>
+                            </select>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Account Impacts Section */}
+                      <div className="space-y-4 pt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-widest ml-1 text-theme-muted">{t('impactOnAccounts')}</span>
+                          <button
+                            type="button"
+                            onClick={handleAddImpact}
+                            className="touch-target text-[10px] font-bold text-indigo-400 hover:text-white flex items-center gap-2 transition-all bg-indigo-500/10 hover:bg-indigo-500 px-4 py-2.5 rounded-xl border border-indigo-500/20 uppercase tracking-tighter"
+                          >
+                            <Plus className="w-4 h-4" /> {t('addAccount')}
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {impacts.map((impact, idx) => (
+                            <div key={idx} className="glass-card p-4 sm:p-5 relative border-l-4 border-indigo-500 group transition-all hover:scale-[1.01] hover:shadow-indigo-500/10 overflow-hidden">
+                              {/* Delete Impact Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImpact(idx)}
+                                disabled={impacts.length <= 2}
+                                className={cn(
+                                  "absolute top-2 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all z-10",
+                                  dir === 'rtl' ? 'left-4' : 'right-4'
+                                )}
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+
+                              <div className="flex flex-col gap-4">
+                                {/* Account Picker */}
+                                <div className="space-y-2">
+                                  <label htmlFor={`dt-account-id-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('accountName')}</label>
+                                  <select
+                                    id={`dt-account-id-${idx}`}
+                                    name={`dt-accountId-${idx}`}
+                                    value={impact.accountId}
+                                    onChange={e => {
+                                      if (e.target.value === 'NEW_CUSTOM_ACCOUNT') {
+                                        setCustomAccountModalIdx(idx);
+                                        setNewCustomAccountName('');
+                                        setNewCustomAccountCategory('asset');
+                                      } else {
+                                        handleImpactChange(idx, 'accountId', e.target.value);
+                                      }
+                                    }}
+                                    className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold cursor-pointer transition-colors"
+                                  >
+                                    {renderAccountOptions()}
+                                  </select>
+                                </div>
+
+                                {/* Value Input Area */}
+                                <div className="space-y-2">
+                                  <label htmlFor={`dt-amount-input-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('impactValue')}</label>
+                                  {(() => {
+                                    const amount = typeof impact.amount === 'number' ? impact.amount : 0;
+                                    const account = allAccounts.find(a => a.id === impact.accountId);
+                                    const isNeg = amount < 0 || Object.is(amount, -0);
+                                    const isCredit = impact.type
+                                      ? impact.type === 'credit'
+                                      : (account
+                                        ? (account.category === 'asset' ? isNeg : !isNeg)
+                                        : isNeg);
+                                    return (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {/* Segmented Debit/Credit Control */}
+                                        <div className="flex dark:bg-slate-950 bg-slate-100 p-1 rounded-2xl border dark:border-white/5 border-slate-200 w-full shadow-inner">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              handleImpactChange(idx, 'type', 'debit');
+                                            }}
+                                            className={cn(
+                                              "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
+                                              !isCredit ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
+                                            )}
+                                          >
+                                            {t('debit')}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              handleImpactChange(idx, 'type', 'credit');
+                                            }}
+                                            className={cn(
+                                              "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
+                                              isCredit ? "bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
+                                            )}
+                                          >
+                                            {t('credit')}
+                                          </button>
+                                        </div>
+
+                                        <div className="relative group/input">
+                                          <input
+                                            id={`dt-amount-input-${idx}`}
+                                            name={`dt-amount-${idx}`}
+                                            type="number"
+                                            step="any"
+                                            value={amount !== 0 ? amount : ''}
+                                            onChange={e => {
+                                              const val = parseFloat(e.target.value) || 0;
+                                              handleImpactChange(idx, 'amount', val);
+                                            }}
+                                            placeholder="0.00"
+                                            className={cn(
+                                              "w-full pl-4 pr-12 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-lg focus:ring-2 focus:ring-indigo-500 outline-none text-right font-mono transition-all dark:bg-slate-950/80 bg-white shadow-lg",
+                                              isCredit ? "dark:text-rose-400 text-rose-600 focus:border-rose-500/50" : "dark:text-emerald-400 text-emerald-600 focus:border-emerald-500/50"
+                                            )}
+                                            dir="ltr"
+                                          />
+                                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold pointer-events-none dark:opacity-50 opacity-40">
+                                            {currency}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-4 pt-4">
+                        <button
+                          type="submit"
+                          disabled={isUploading}
+                          className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition-all shadow-2xl shadow-indigo-600/30 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group"
+                        >
+                          {isUploading ? (
+                            <><div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> {t('uploading')}</>
+                          ) : (
+                            <>
+                              {editingTransactionId ? <Save className="w-6 h-6 group-hover:scale-110 transition-transform" /> : <CheckCircle2 className="w-6 h-6 group-hover:scale-110 transition-transform" />}
+                              <span className="uppercase tracking-widest">{editingTransactionId ? t('saveChanges') : t('addTransaction')}</span>
+                            </>
+                          )}
+                        </button>
+                        {editingTransactionId && (
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            className="px-8 bg-slate-200 dark:bg-slate-800/60 hover:bg-slate-300 dark:hover:bg-slate-700 dark:text-white text-slate-700 font-bold py-4 rounded-2xl transition-all border border-slate-300 dark:border-white/10 uppercase tracking-widest text-xs"
+                          >
+                            {t('cancel')}
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Balance Equation Status Visualization */}
+                  <div className={cn(
+                    "rounded-[2.5rem] shadow-2xl border-2 p-8 transition-all duration-700 backdrop-blur-3xl overflow-hidden relative group/card",
+                    totals.isBalanced
+                      ? "dark:bg-emerald-950/20 bg-emerald-50 border-emerald-500/30 dark:shadow-[0_0_30px_rgba(16,185,129,0.12)] shadow-[0_0_20px_rgba(16,185,129,0.06)]"
+                      : "dark:bg-rose-950/20 bg-rose-50 border-rose-500/30 dark:shadow-[0_0_30px_rgba(244,63,94,0.12)] shadow-[0_0_20px_rgba(244,63,94,0.06)]"
+                  )}>
+                    {/* Background Glow */}
+                    <div className={cn(
+                      "absolute -top-24 -right-24 w-64 h-64 blur-[100px] opacity-20 rounded-full transition-all duration-1000 group-hover/card:scale-125",
+                      totals.isBalanced ? "bg-emerald-500" : "bg-rose-500"
+                    )}></div>
+
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
+                      <div className={cn(
+                        "p-5 rounded-[2rem] shadow-2xl transition-all duration-500",
+                        totals.isBalanced ? "bg-emerald-500/20 text-emerald-400 group-hover/card:scale-105" : "bg-rose-500/20 text-rose-400 animate-pulse-slow"
+                      )}>
+                        {totals.isBalanced ? <CheckCircle2 className="w-12 h-12" /> : <AlertCircle className="w-12 h-12" />}
+                      </div>
+
+                      <div className="flex-1 text-center md:text-left">
+                        <h3 className={cn(
+                          "text-2xl font-bold mb-2 tracking-tight",
+                          totals.isBalanced ? "text-emerald-400" : "text-rose-400"
+                        )}>
+                          {totals.isBalanced ? t('equationBalanced') : t('equationUnbalanced')}
+                        </h3>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                          <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm">
+                            <span className="text-[10px] uppercase font-bold block mb-2 tracking-widest text-theme-muted">{t('totalAssets')}</span>
+                            <span className="text-xl font-bold dark:text-white text-slate-900" dir="ltr">{formatCurrency(totals.totalAssets)}</span>
+                          </div>
+                          <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm">
+                            <span className="text-[10px] uppercase font-bold block mb-2 tracking-widest text-theme-muted">{t('totalLiabilitiesEquity')}</span>
+                            <span className="text-xl font-bold dark:text-white text-slate-900" dir="ltr">{formatCurrency(totals.totalLiabilities + totals.totalEquity)}</span>
+                          </div>
+                        </div>
+
+                        {!totals.isBalanced && (
+                          <div className="mt-6 p-5 dark:bg-rose-500/10 bg-white rounded-3xl border dark:border-rose-500/20 border-rose-200 flex flex-col sm:flex-row justify-between items-center gap-2 group hover:dark:bg-rose-500/20 hover:bg-rose-50 transition-all shadow-sm">
+                            <span className="text-xs font-bold dark:text-rose-300 text-rose-500 uppercase tracking-widest">{t('difference')}</span>
+                            <span className="text-2xl font-bold text-rose-400 drop-shadow-lg" dir="ltr">{formatCurrency(Math.abs(totals.totalAssets - (totals.totalLiabilities + totals.totalEquity)))}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Budget Status Card */}
+                  <div className="glass-card p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold text-theme-primary flex items-center gap-2">
+                        <Target className="w-5 h-5 text-indigo-600" />
+                        {t('budgetAlerts')}
+                      </h2>
+                      <button
+                        onClick={() => isEditingBudgets ? handleSaveBudgets() : setIsEditingBudgets(true)}
+                        className="dark:text-white text-slate-500 hover:text-indigo-600 transition-colors p-1"
+                        title={isEditingBudgets ? t('save') : t('editBudgets')}
+                      >
+                        {isEditingBudgets ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    <div className="space-y-6">
+                      {(['asset', 'liability', 'equity'] as Category[]).map(category => {
+                        const categoryAccounts = activeAccounts.filter(a => a.category === category);
+                        if (categoryAccounts.length === 0) return null;
+
+                        const catAllocated = categoryAccounts.reduce((sum, a) => sum + (budgets[a.id] || 0), 0);
+                        const catSpent = category === 'asset' ? totals.totalAssets : category === 'liability' ? totals.totalLiabilities : totals.totalEquity;
+                        const absCatSpent = Math.abs(catSpent);
+                        const catPercentage = catAllocated > 0 ? (absCatSpent / catAllocated) * 100 : 0;
+                        const catIsOverBudget = catAllocated > 0 && absCatSpent > catAllocated;
+                        const catIsApproachingBudget = catAllocated > 0 && catPercentage >= 85 && !catIsOverBudget;
+
+                        return (
+                          <div key={category} className={cn(
+                            "p-5 rounded-3xl border transition-colors duration-300",
+                            catIsOverBudget ? "bg-rose-50 border-rose-200" : catIsApproachingBudget ? "bg-amber-50 border-amber-200" : "bg-slate-800/20 border-white/5"
+                          )}>
+                            <div className="flex justify-between items-center mb-2">
+                              <h3 className={cn(
+                                "text-[15px] font-bold flex items-center gap-1.5",
+                                catIsOverBudget ? "text-rose-800" : catIsApproachingBudget ? "text-amber-800" : "dark:text-white text-slate-900"
+                              )}>
+                                {t(category)}
+                                {catIsOverBudget && <AlertCircle className="w-4 h-4 text-rose-500" />}
+                                {catIsApproachingBudget && <AlertCircle className="w-4 h-4 text-amber-500" />}
+                              </h3>
+                              <span className={cn(
+                                "text-sm font-medium font-bold",
+                                catIsOverBudget ? "text-rose-700" : catIsApproachingBudget ? "text-amber-700" : "dark:text-white text-slate-900"
+                              )} dir="ltr">
+                                {formatCurrency(absCatSpent)} {catAllocated > 0 && `/ ${formatCurrency(catAllocated)}`}
+                              </span>
+                            </div>
+
+                            {/* Category Progress Bar */}
+                            {catAllocated > 0 && !isEditingBudgets && (
+                              <div className="w-full bg-slate-200/50 rounded-full h-2.5 overflow-hidden flex mb-4">
+                                <div
+                                  className={cn(
+                                    "h-full transition-all duration-500",
+                                    catIsOverBudget ? "bg-rose-500 animate-pulse" : catIsApproachingBudget ? "bg-amber-500" : "bg-indigo-500"
+                                  )}
+                                  style={{ width: `${Math.min(catPercentage, 100)}%` }}
+                                />
+                              </div>
+                            )}
+
+                            {/* Individual Accounts */}
+                            <div className={cn(
+                              "space-y-3 mt-3 pt-3 border-t",
+                              catIsOverBudget ? "border-rose-200/60" : catIsApproachingBudget ? "border-amber-200/60" : "border-white/10/60"
+                            )}>
+                              {categoryAccounts.map(account => {
+                                const allocated = budgets[account.id] || 0;
+                                const spent = Math.abs(totals.accounts[account.id] || 0);
+                                const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
+                                const isOverBudget = allocated > 0 && spent > allocated;
+                                const isApproachingBudget = allocated > 0 && percentage >= 85 && !isOverBudget;
+
+                                return (
+                                  <div key={account.id} className="space-y-1.5">
+                                    <div className="flex justify-between items-center text-[15px]">
+                                      <span className={cn(
+                                        "font-medium text-sm font-medium flex items-center gap-1",
+                                        isOverBudget ? "text-rose-700" : isApproachingBudget ? "text-amber-700" : "dark:text-white text-slate-900"
+                                      )}>
+                                        {t(account.name)}
+                                        {isOverBudget && <AlertCircle className="w-3 h-3 text-rose-500" />}
+                                        {isApproachingBudget && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                                      </span>
+                                      {isEditingBudgets ? (
+                                        <input
+                                          id={`budget-${account.id}`}
+                                          name={`budget-${account.id}`}
+                                          type="number"
+                                          value={allocated || ''}
+                                          onChange={(e) => setBudgets({ ...budgets, [account.id]: parseFloat(e.target.value) || 0 })}
+                                          className="w-24 px-2 py-1 border border-white/20 rounded text-left text-sm font-medium focus:ring-1 focus:ring-indigo-500 outline-none"
+                                          dir="ltr"
+                                          placeholder="0"
+                                          aria-label={`${t('budgetAlerts')} - ${t(account.name)}`}
+                                        />
+                                      ) : (
+                                        <span className="dark:text-white text-slate-900 text-[11px]" dir="ltr">
+                                          <span className={cn("font-bold", isOverBudget ? 'text-rose-600' : isApproachingBudget ? 'text-amber-600' : 'dark:text-white text-slate-900')}>
+                                            {formatCurrency(spent)}
+                                          </span>
+                                          {allocated > 0 && ` / ${formatCurrency(allocated)}`}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {!isEditingBudgets && allocated > 0 && (
+                                      <div className="w-full bg-slate-200/60 rounded-full h-1.5 overflow-hidden flex">
+                                        <div
+                                          className={cn(
+                                            "h-full transition-all duration-500",
+                                            isOverBudget ? "bg-rose-500 animate-pulse" : isApproachingBudget ? "bg-amber-500" : "bg-emerald-400"
+                                          )}
+                                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Transactions List */}
+                <div className="xl:col-span-8">
+                  <div className="glass-card overflow-hidden flex flex-col h-full" style={{ borderRadius: '1.5rem' }}>
+                    <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-100/90 flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <div className="flex items-center gap-1 dark:bg-white/5 bg-slate-100 p-1 rounded-xl border dark:border-white/10 border-slate-200">
+                          <button
+                            onClick={handleUndo}
+                            disabled={historyIndex <= 0}
+                            className="p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
+                            title={language === 'ar' ? "تراجع" : "Undo"}
+                          >
+                            <Undo2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleRedo}
+                            disabled={historyIndex >= history.length - 1}
+                            className="p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
+                            title={language === 'ar' ? "إعادة التعديل المتراجع عنه" : "Redo"}
+                          >
+                            <Redo2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => setIsPdfScannerOpen(true)}
+                          className="flex items-center gap-2 px-3 py-2 text-[10px] sm:text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
+                          title={t('importFiles')}
+                        >
+                          <FileSearch className="w-4 h-4" />
+                          <span>{t('scanPDF') || 'Scan PDF'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => setIsDepreciationModalOpen(true)}
+                          className="flex items-center gap-2 px-3 py-2 text-[10px] sm:text-xs font-black dark:bg-amber-500 bg-amber-500 text-white hover:bg-amber-400 rounded-xl transition-all shadow-lg shadow-amber-500/20 uppercase tracking-widest"
+                          title={t('depreciationCalc')}
+                        >
+                          <Calculator className="w-4 h-4" />
+                          <span>{t('depreciationCalc')}</span>
+                        </button>
+                      </div>
+                      {transactions.length > 0 && (
+                        <div className="flex flex-wrap justify-center items-center gap-2">
+                          {selectedTransactions.size > 0 && (
+                            <button
+                              onClick={handleBulkDelete}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-[15px] font-medium text-white bg-rose-600 border border-rose-600 rounded-lg hover:bg-rose-700 transition-colors shadow-sm"
+                              title={t('deleteSelected')}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              {t('deleteSelected')} ({selectedTransactions.size})
+                            </button>
+                          )}
+                          <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-indigo-600/50 hover:bg-indigo-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
+                            title={t('exportCSV')}
+                          >
+                            <FileSpreadsheet className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-indigo-600" />
+                            <span className="sr-only sm:not-sr-only">{t('exportCSV')}</span>
+                          </button>
+                          <button
+                            onClick={handleExportPDF}
+                            className="flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-rose-600/50 hover:bg-rose-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
+                            title={t('exportPDF')}
+                          >
+                            <FileText className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-rose-600" />
+                            <span className="sr-only sm:not-sr-only">PDF</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {transactions.length === 0 ? (
+                      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-transparent">
+                        <div className="p-6 bg-slate-200/50 dark:bg-white/5 rounded-full mb-6 border border-slate-300 dark:border-white/10">
+                          <Calculator className="w-12 h-12 text-slate-400 dark:text-white/20" />
+                        </div>
+                        <p className="text-lg font-black text-slate-800 dark:text-white mb-2">{t('noTransactions')}</p>
+                        <p className="text-sm font-bold text-slate-400 dark:text-slate-500 max-w-xs">{t('addTransactionPrompt')}</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Desktop Table View */}
+                        <div id="transactions-table" className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-white">
+                          <table className="w-full text-[15px] text-right border-collapse">
+                            <thead className="sticky top-0 z-20 dark:text-white text-slate-800 shadow-sm ring-1 dark:ring-white/10 ring-slate-200/50">
+                              {/* Category Headers */}
+                              <tr className="border-b dark:border-white/10 border-slate-200 ring-1 dark:ring-white/5 ring-slate-100/50">
+                                <th className="p-4 border-l dark:border-white/5 border-slate-200/50 w-10 dark:bg-slate-900/40 bg-slate-100/80 text-center">
+                                  <input
+                                    id="select-all-transactions"
+                                    name="selectAll"
+                                    type="checkbox"
+                                    checked={transactions.length > 0 && selectedTransactions.size === transactions.length}
+                                    onChange={handleSelectAll}
+                                    className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                    aria-label={t('selectAll') || 'Select All'}
+                                  />
+                                </th>
+                                <th className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest w-24 dark:bg-slate-900/40 bg-slate-100/80 text-center">{t('date')}</th>
+                                <th className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest min-w-[200px] dark:bg-slate-900/40 bg-slate-100/80">{t('description')}</th>
+
+                                {assets.length > 0 && (
+                                  <th colSpan={assets.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-indigo-500/10 dark:text-indigo-300 text-indigo-950">
+                                    {t('assets')}
+                                  </th>
+                                )}
+
+                                {liabilities.length > 0 && (
+                                  <th colSpan={liabilities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-amber-500/10 dark:text-amber-300 text-amber-950">
+                                    {t('liabilities')}
+                                  </th>
+                                )}
+
+                                {equities.length > 0 && (
+                                  <th colSpan={equities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-emerald-500/10 dark:text-emerald-300 text-emerald-950">
+                                    {t('equity')}
+                                  </th>
+                                )}
+                                <th className="p-3 w-10 dark:bg-slate-900/40 bg-slate-100/80"></th>
+                              </tr>
+                              {/* Account Headers */}
+                              <tr className="border-b dark:border-white/5 border-slate-200/30">
+                                <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
+                                <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
+                                <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
+
+                                {assets.map(a => (
+                                  <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-indigo-400 text-indigo-900 bg-indigo-500/5">{t(a.name)}</th>
+                                ))}
+
+                                {liabilities.map(a => (
+                                  <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-amber-400 text-amber-900 bg-amber-500/5">{t(a.name)}</th>
+                                ))}
+
+                                {equities.map(a => (
+                                  <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-emerald-400 text-emerald-900 bg-emerald-500/5">{t(a.name)}</th>
+                                ))}
+                                <th className="dark:bg-slate-900/20 bg-slate-50/50"></th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y dark:divide-white/5 divide-slate-200/60">
+                              {transactions.map((tx) => (
+                                <tr key={tx.id} className="dark:even:bg-white/5 even:bg-slate-100/20 dark:hover:bg-slate-700/50 hover:bg-slate-100/80 transition-colors group">
+                                  <td className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center">
+                                    <input
+                                      id={`select-tx-${tx.id}`}
+                                      name={`selectTx-${tx.id}`}
+                                      type="checkbox"
+                                      checked={selectedTransactions.has(tx.id)}
+                                      onChange={() => handleSelectTransaction(tx.id)}
+                                      className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                      aria-label={`${t('select')} ${tx.description}`}
+                                    />
+                                  </td>
+                                  <td className="p-3 border-l dark:border-white/5 border-slate-200/30 whitespace-nowrap dark:text-white text-slate-800 text-center"><span dir="ltr" className="inline-block transform -translate-y-[3px]">{tx.date}</span></td>
+                                  <td className="p-3 border-l dark:border-white/5 border-slate-200/30 dark:text-white text-slate-850">
+                                    <div className="flex items-center gap-2">
+                                      {tx.description}
+                                      {tx.isRecurring && (
+                                        <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700" title={`${t('repeatsEveryLabel')} ${t(tx.recurrenceInterval || 'monthly')}`}>
+                                          {t('recurring')}
+                                        </span>
+                                      )}
+                                      {tx.attachmentUrl && (
+                                        <button
+                                          onClick={() => {
+                                            setPreviewUrl(tx.attachmentUrl || null);
+                                            setIsDocPreviewOpen(true);
+                                          }}
+                                          className="p-1 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all"
+                                          title={t('viewDocument')}
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  {assets.map(a => {
+                                    const amt = getImpactAmount(tx, a.id);
+                                    return (
+                                      <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-indigo-500/5 transition-colors" dir="ltr">
+                                        {amt !== 0 ? (
+                                          <span className={cn(
+                                            "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                                            amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
+                                          )}>
+                                            {formatCurrency(amt)}
+                                          </span>
+                                        ) : (
+                                          <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+
+                                  {liabilities.map(a => {
+                                    const amt = getImpactAmount(tx, a.id);
+                                    return (
+                                      <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-amber-500/5 transition-colors" dir="ltr">
+                                        {amt !== 0 ? (
+                                          <span className={cn(
+                                            "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                                            amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
+                                          )}>
+                                            {formatCurrency(amt)}
+                                          </span>
+                                        ) : (
+                                          <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+
+                                  {equities.map(a => {
+                                    const amt = getImpactAmount(tx, a.id);
+                                    return (
+                                      <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-emerald-500/5 transition-colors" dir="ltr">
+                                        {amt !== 0 ? (
+                                          <span className={cn(
+                                            "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                                            amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
+                                          )}>
+                                            {formatCurrency(amt)}
+                                          </span>
+                                        ) : (
+                                          <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                      <button
+                                        onClick={() => handleEditTransaction(tx)}
+                                        className="p-1.5 dark:text-white text-slate-600 hover:text-indigo-600 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
+                                        title={t('editTransaction')}
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteTransaction(tx.id)}
+                                        className="p-1.5 dark:text-white text-slate-600 hover:text-rose-500 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
+                                        title={t('deleteTransaction')}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            {/* Totals Row */}
+                            <tfoot className="sticky bottom-0 z-20 bg-slate-900 border-t-2 dark:border-white/10 border-slate-800 font-bold shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+                              <tr>
+                                <td colSpan={3} className="p-4 border-l dark:border-white/5 border-slate-800 text-left text-white/90 bg-slate-900/60 uppercase tracking-widest text-[11px]">
+                                  {t('grandTotal')}
+                                </td>
+
+                                {assets.map(a => (
+                                  <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-indigo-400 text-white font-mono bg-indigo-500/5" dir="ltr">
+                                    {formatCurrency(totals.accounts[a.id])}
+                                  </td>
+                                ))}
+
+                                {liabilities.map(a => (
+                                  <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-amber-400 text-white font-mono bg-amber-500/5" dir="ltr">
+                                    {formatCurrency(totals.accounts[a.id])}
+                                  </td>
+                                ))}
+
+                                {equities.map(a => (
+                                  <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-emerald-400 text-white font-mono bg-emerald-500/5" dir="ltr">
+                                    {formatCurrency(totals.accounts[a.id])}
+                                  </td>
+                                ))}
+                                <td className="bg-slate-900/60"></td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+
+                        {/* Mobile Card View - Enhanced Design */}
+                        <div className="md:hidden flex flex-col gap-5 responsive-px py-6 bg-slate-50/50 dark:bg-slate-950/20">
+                          {transactions.map((tx) => (
+                            <div key={tx.id} className="mobile-card !mb-0 group overflow-hidden border dark:border-white/10 border-slate-200 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/60 dark:shadow-none p-5 rounded-[2rem]">
+                              <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-start gap-4">
+                                  <div className="relative mt-1">
+                                    <input
+                                      id={`mob-select-tx-${tx.id}`}
+                                      name={`mob-selectTx-${tx.id}`}
+                                      type="checkbox"
+                                      checked={selectedTransactions.has(tx.id)}
+                                      onChange={() => handleSelectTransaction(tx.id)}
+                                      className="rounded-lg border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-6 h-6 transition-all"
+                                      aria-label={`${t('select')} ${tx.description}`}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.15em] mb-1.5" dir="ltr">{tx.date}</span>
+                                    <p className="text-[16px] font-black dark:text-white text-slate-900 leading-snug">{tx.description}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => handleEditTransaction(tx)}
+                                    className="p-3 dark:text-indigo-400 text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white rounded-2xl transition-all active:scale-90"
+                                    title={t('editTransaction')}
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2 py-4 border-t dark:border-white/10 border-slate-100">
+                                {tx.impacts.map((imp, i) => (
+                                  <div key={i} className={cn(
+                                    "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm",
+                                    imp.amount > 0
+                                      ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20"
+                                      : "bg-rose-50 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20"
+                                  )}>
+                                    <span className={cn(
+                                      "text-[11px] font-bold",
+                                      imp.amount > 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
+                                    )}>
+                                      {t(ACCOUNTS.find(a => a.id === imp.accountId)?.name || '')}
+                                    </span>
+                                    <div className={cn("w-1 h-1 rounded-full", imp.amount > 0 ? "bg-emerald-400" : "bg-rose-400")}></div>
+                                    <span className={cn(
+                                      "font-black font-mono text-[12px]",
+                                      imp.amount > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
+                                    )} dir="ltr">
+                                      {formatCurrency(imp.amount)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-1">
+                                {tx.attachmentUrl && (
+                                  <button
+                                    onClick={() => {
+                                      setPreviewUrl(tx.attachmentUrl || null);
+                                      setIsDocPreviewOpen(true);
+                                    }}
+                                    className="flex-1 py-3 flex items-center justify-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border dark:border-white/10 border-slate-200 text-[10px] font-black uppercase tracking-widest dark:text-indigo-400 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all active:scale-95 shadow-sm"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                    {t('viewAttachment') || 'View Attachment'}
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteTransaction(tx.id)}
+                                  className="p-3 dark:text-rose-400 text-rose-600 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-2xl transition-all active:scale-90 border border-rose-500/20 shadow-sm"
+                                  title={t('deleteTransaction')}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Final Equation Summary */}
+                    {transactions.length > 0 && (
+                      <div className="dark:bg-slate-900/60 bg-slate-50/90 backdrop-blur-md border-t dark:border-white/10 border-slate-200 dark:text-white text-slate-800 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 font-mono text-lg animate-fade-in">
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('assets')}</span>
+                          <span className="dark:text-indigo-300 text-indigo-600 font-bold">{formatCurrency(totals.totalAssets)}</span>
+                        </div>
+                        <span className="dark:text-white text-slate-400">=</span>
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('liabilities')}</span>
+                          <span className="dark:text-amber-300 text-amber-600 font-bold">{formatCurrency(totals.totalLiabilities)}</span>
+                        </div>
+                        <span className="dark:text-white text-slate-400">+</span>
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('equity')}</span>
+                          <span className="dark:text-emerald-300 text-emerald-600 font-bold">{formatCurrency(totals.totalEquity)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Charts Section */}
+              {mounted && transactions.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" style={{ minWidth: 0 }}>
+                  {/* Asset Distribution Pie Chart */}
+                  <div className="glass-card p-6" style={{ minWidth: 0 }}>
+                    <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-theme-primary">
+                      <Target className="w-5 h-5 text-indigo-600" />
+                      {t('assetDistribution')}
+                    </h2>
+                    <div className="h-[300px] md:h-[350px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
+                      {assetChartData.length > 0 ? (
+                        <ResponsiveContainer id="asset-distribution-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
+                          <PieChart>
+                            <Pie
+                              data={assetChartData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={100}
+                              paddingAngle={5}
+                              dataKey="value"
+                            >
+                              {assetChartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(value: number) => new Intl.NumberFormat('ar-SA', { style: 'currency', currency }).format(value)}
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            />
+                            <Legend verticalAlign="bottom" height={36} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center dark:text-white text-black font-bold italic">
+                          {t('noAssets')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Income vs Expenses Bar Chart */}
+                  <div className="glass-card p-6" style={{ minWidth: 0 }}>
+                    <h2 className="text-lg font-semibold dark:text-white text-slate-800 mb-6 flex items-center gap-2">
+                      <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
+                      {t('incomeExpenses')}
+                    </h2>
+                    <div className="h-[300px] md:h-[350px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
+                      {incomeExpenseData.some(d => d.amount > 0) ? (
+                        <ResponsiveContainer id="income-expense-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
+                          <BarChart data={incomeExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900, dy: -5 }} />
+                            <YAxis
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }}
+                              tickFormatter={(value) => new Intl.NumberFormat('ar-SA', { notation: "compact", compactDisplay: "short" }).format(value)}
+                            />
+                            <Tooltip
+                              formatter={(value: number) => new Intl.NumberFormat('ar-SA', { style: 'currency', currency }).format(value)}
+                              cursor={{ fill: '#f1f5f9' }}
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            />
+                            <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                              {incomeExpenseData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.name === t('revenue') ? '#10b981' : '#ef4444'} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center dark:text-white text-black font-bold italic">
+                          {t('noIncomeExpenses')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Financial Insights Section */}
+              {transactions.length > 0 && (
+                <div className="space-y-6 animate-fade-in [animation-delay:200ms]">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-indigo-600/20 rounded-lg">
+                      <ArrowRightLeft className="w-5 h-5 text-indigo-400" />
+                    </div>
+                    <h2 className="text-xl font-bold dark:text-white text-slate-800">{t('financialInsights')}</h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Current Ratio Card */}
+                    <div className="glass-card p-6 border-l-4 border-indigo-400">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-slate-600 dark:text-slate-400 text-sm font-bold">{t('currentRatio')}</span>
+                        <div className={cn(
+                          "px-2 py-1 rounded text-[10px] font-bold uppercase",
+                          insights.currentRatio >= 1.5 ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+                        )}>
+                          {insights.currentRatio >= 1.5 ? t('healthyLiquidity') : t('lowLiquidity')}
+                        </div>
+                      </div>
+                      <div className="text-3xl font-bold dark:text-white text-slate-900 mb-1">{insights.currentRatio.toFixed(2)}</div>
+                      <p className="text-xs text-slate-500">{t('currentRatioDesc')}</p>
+                    </div>
+
+                    {/* Debt-to-Equity Card */}
+                    <div className="glass-card p-6 border-l-4 border-amber-400">
+                      <span className="text-slate-600 dark:text-slate-400 text-sm font-bold block mb-2">{t('debtToEquity')}</span>
+                      <div className="text-3xl font-bold dark:text-white text-slate-900 mb-1">{insights.debtToEquity.toFixed(2)}</div>
+                      <p className="text-xs text-slate-500">{t('debtToEquityDesc')}</p>
+                    </div>
+
+                    {/* Net Profit Card */}
+                    <div className="glass-card p-6 border-l-4 border-emerald-400">
+                      <span className="text-slate-600 dark:text-slate-400 text-sm font-bold block mb-2">{t('netProfit')}</span>
+                      <div className={cn(
+                        "text-3xl font-bold mb-1",
+                        insights.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"
+                      )}>
+                        {formatCurrency(insights.netProfit)}
+                      </div>
+                      <p className="text-xs text-slate-500">Total revenue minus expenses</p>
+                    </div>
+                  </div>
+
+                  {/* Profit Trend Chart */}
+                  <div className="glass-card p-6" style={{ minWidth: 0 }}>
+                    <h3 className="text-lg font-semibold dark:text-white text-slate-800 mb-6">{t('monthlyProfitTrend')}</h3>
+                    <div className="h-[300px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
+                      {profitTrendData.length > 0 ? (
+                        <ResponsiveContainer id="profit-trend-line-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
+                          <LineChart data={profitTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900, dy: -5 }} />
+                            <YAxis
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }}
+                              tickFormatter={(value) => new Intl.NumberFormat('en-US', { notation: "compact" }).format(value)}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
+                                borderRadius: '12px',
+                                border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)',
+                                color: theme === 'dark' ? '#fff' : '#1e293b'
+                              }}
+                              itemStyle={{ color: '#818cf8' }}
+                              formatter={(value: number) => formatCurrency(value)}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="profit"
+                              stroke="#818cf8"
+                              strokeWidth={3}
+                              dot={{ fill: '#818cf8', strokeWidth: 2, r: 4 }}
+                              activeDot={{ r: 6, strokeWidth: 0 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-slate-500">{t('noIncomeExpenses')}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          ) : currentView === 'income' ? (
+            <IncomeStatementView
+              formatCurrency={formatCurrency}
+              transactions={transactions}
+            />
+          ) : currentView === 'cashflow' ? (
+            <CashFlowView
+              formatCurrency={formatCurrency}
+              transactions={transactions}
+            />
+          ) : currentView === 'aiAdvisor' ? (
+            <AIAdvisorView
+              geminiApiKey={geminiApiKey}
+              transactions={transactions}
+              totals={totals}
+              currency={currency}
+              formatCurrency={formatCurrency}
+            />
+          ) : currentView === 'imageGenerator' ? (
+            <ImageGeneratorView
+              geminiApiKey={geminiApiKey}
+            />
+          ) : currentView === 'about' ? (
+            <AboutUsView />
+          ) : (
+            <ContactUsView />
+          )}
+        </main>
       </div>
 
-      <main className="pb-32 md:pb-8 md:mb-0">
-      {currentView === 'equation' ? (
-        <div className="animate-scale-in space-y-6 sm:space-y-8">
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
-        
-        {/* Left Column: Form & Status Dashboard - Hidden on mobile to avoid redundancy */}
-        <div className="hidden md:block xl:col-span-4 space-y-6 animate-fade-in [animation-delay:400ms]">
-          <div className="glass-card p-6 border-t-4 border-indigo-500 shadow-2xl">
-            <h2 className="text-xl font-bold text-theme-primary mb-6 flex items-center gap-3">
-              <div className="p-2 bg-indigo-500/20 rounded-xl">
-                {editingTransactionId ? (
-                  <Edit2 className="w-5 h-5 text-indigo-400" />
-                ) : (
-                  <Plus className="w-5 h-5 text-indigo-400" />
-                )}
+      <SnapshotsModal
+        isOpen={isSnapshotsModalOpen}
+        onClose={() => setIsSnapshotsModalOpen(false)}
+        currentTransactions={transactions}
+        currentBudgets={budgets}
+        onLoadSnapshot={(loadedTransactions, loadedBudgets) => {
+          updateTransactions(loadedTransactions);
+          setBudgets(loadedBudgets);
+          localStorage.setItem('motazin_budgets', JSON.stringify(loadedBudgets));
+          toast.success(language === 'ar' ? 'تم استعادة النسخة بنجاح!' : 'Backup loaded successfully!');
+        }}
+      />
+
+      {isPdfScannerOpen && (
+        <PdfScanner
+          geminiApiKey={geminiApiKey}
+          onClose={() => setIsPdfScannerOpen(false)}
+          onImport={(rows) => {
+            const newTransactions = rows.map(r => {
+              const accountId = r.accountId || 'bank';
+              const account = allAccounts.find(a => a.id === accountId);
+              const category = account?.category || 'asset';
+
+              let impacts: Omit<Impact, 'id'>[] = [];
+              if (category === 'asset') {
+                impacts = [
+                  { accountId: accountId, amount: r.amount },
+                  { accountId: 'capital', amount: r.amount }
+                ];
+              } else if (category === 'liability') {
+                impacts = [
+                  { accountId: accountId, amount: r.amount },
+                  { accountId: 'capital', amount: -r.amount }
+                ];
+              } else {
+                impacts = [
+                  { accountId: accountId, amount: r.amount },
+                  { accountId: 'bank', amount: -r.amount }
+                ];
+              }
+
+              return {
+                id: r.id,
+                date: r.date,
+                description: r.description,
+                impacts: impacts.map(i => ({ ...i, id: Math.random().toString(36).substr(2, 9) })),
+                createdAt: new Date().toISOString()
+              };
+            });
+            updateTransactions([...transactions, ...newTransactions]);
+            setIsPdfScannerOpen(false);
+            toast.success(language === 'ar' ? 'تم استيراد البيانات بنجاح!' : 'Data imported successfully!');
+          }}
+        />
+      )}
+
+      <DepreciationModal
+        isOpen={isDepreciationModalOpen}
+        onClose={() => setIsDepreciationModalOpen(false)}
+        assets={allAccounts.filter(a => a.category === 'asset' && !['cash', 'bank', 'ar', 'inventory', 'supplies', 'prepaid_expenses'].includes(a.id))}
+        onApply={(accountId, amount, description) => {
+          const txId = Math.random().toString(36).substr(2, 9);
+          const newTx: Transaction = {
+            id: txId,
+            date: new Date().toLocaleDateString('en-GB'),
+            description: description,
+            impacts: [
+              { id: Math.random().toString(36).substr(2, 9), accountId: 'expenses', amount: amount },
+              { id: Math.random().toString(36).substr(2, 9), accountId: accountId, amount: -amount }
+            ],
+            createdAt: new Date().toISOString()
+          };
+          updateTransactions([...transactions, newTx]);
+          setIsDepreciationModalOpen(false);
+          toast.success(language === 'ar' ? 'تم إضافة قيد الإهلاك بنجاح!' : 'Depreciation entry added successfully!');
+        }}
+      />
+
+      <DocPreviewModal
+        isOpen={isDocPreviewOpen}
+        url={previewUrl}
+        onClose={() => setIsDocPreviewOpen(false)}
+      />
+
+      {customAccountModalIdx !== null && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div
+            className="absolute inset-0"
+            onClick={() => setCustomAccountModalIdx(null)}
+          />
+          <div
+            className={cn(
+              "relative w-full max-w-md bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col p-6 transition-all rounded-[2rem]",
+              "animate-in zoom-in-95 duration-200"
+            )}
+            dir={dir}
+          >
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              {language === 'ar' ? 'إضافة حساب جديد' : 'Add New Account'}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-widest block mb-2 text-theme-muted">
+                  {language === 'ar' ? 'اسم الحساب' : 'Account Name'}
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={newCustomAccountName}
+                  onChange={e => setNewCustomAccountName(e.target.value)}
+                  className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold transition-colors"
+                  placeholder={language === 'ar' ? 'مثال: أراضي زراعية، قرض بنكي...' : 'e.g. Land, Bank Loan...'}
+                />
               </div>
-              {editingTransactionId ? t('editTransaction') : t('addNewTransaction')}
-            </h2>
-            
-            <form onSubmit={handleAddTransaction} className="space-y-6">
-              {/* Date & Description Grid */}
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-widest block mb-2 text-theme-muted">
+                  {language === 'ar' ? 'نوع الحساب' : 'Account Type'}
+                </label>
+                <div className="flex dark:bg-slate-950 bg-slate-100 p-1 rounded-2xl border dark:border-white/5 border-slate-200 w-full shadow-inner">
+                  {(['asset', 'liability', 'equity'] as const).map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setNewCustomAccountCategory(cat)}
+                      className={cn(
+                        "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
+                        newCustomAccountCategory === cat
+                          ? cat === 'asset'
+                            ? "bg-indigo-500 text-white shadow-xl shadow-indigo-500/30 scale-[1.02]"
+                            : cat === 'liability'
+                              ? "bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-[1.02]"
+                              : "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]"
+                          : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
+                      )}
+                    >
+                      {t(cat)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setCustomAccountModalIdx(null)}
+                className="px-5 py-3 rounded-2xl border border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold transition-colors"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const newAcc = await addCustomAccount(newCustomAccountName, newCustomAccountCategory);
+                  if (newAcc) {
+                    handleImpactChange(customAccountModalIdx, 'accountId', newAcc.id);
+                    setCustomAccountModalIdx(null);
+                  }
+                }}
+                className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors"
+              >
+                {language === 'ar' ? 'إضافة الحساب' : 'Add Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation moved outside animated wrapper - see below */}
+
+      {/* Transaction Form Modal / Bottom Sheet */}
+      {isTransactionFormOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div
+            className="absolute inset-0"
+            onClick={() => {
+              setIsTransactionFormOpen(false);
+              handleCancelEdit();
+            }}
+          />
+          <form
+            onSubmit={(e) => {
+              handleAddTransaction(e);
+              setIsTransactionFormOpen(false);
+            }}
+            className={cn(
+              "relative w-full max-w-2xl bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col transition-all",
+              "rounded-t-[2.5rem] md:rounded-[2rem] h-fit max-h-[92vh] md:max-h-[85vh] overflow-hidden",
+              "animate-in slide-in-from-bottom duration-500 md:zoom-in-95"
+            )}
+          >
+            {/* Handle for bottom sheet */}
+            <div className="md:hidden w-12 h-1.5 bg-slate-300 dark:bg-white/20 rounded-full mx-auto mt-3 mb-1 flex-none" />
+
+            <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-200 flex-none bg-white dark:bg-slate-900 z-10">
+              <div>
+                <h3 className="text-xl font-bold dark:text-white text-slate-900 flex items-center gap-3">
+                  <div className="p-2 bg-indigo-500/20 rounded-xl">
+                    <Plus className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  {editingTransactionId ? t('editTransaction') : t('addNewTransaction')}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTransactionFormOpen(false);
+                  handleCancelEdit();
+                }}
+                className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div
+              ref={modalScrollRef}
+              className="p-6 overflow-y-auto custom-scrollbar no-scrollbar flex-1 max-h-[calc(92vh-180px)] md:max-h-[calc(85vh-180px)] space-y-6 pb-6 bg-slate-50/50 dark:bg-slate-950/20"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="col-span-1">
-                  <label htmlFor="dt-tx-date" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('date')}</label>
-                  <input 
-                    id="dt-tx-date"
-                    name="dt-date"
-                    type="text" 
+                  <label htmlFor="mob-tx-date" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('date')}</label>
+                  <input
+                    id="mob-tx-date"
+                    name="mob-date"
+                    type="text"
                     value={date}
                     onChange={e => setDate(e.target.value)}
                     placeholder={t('exampleDate')}
-                    className="w-full glass-input px-4 py-3 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none"
+                    className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label htmlFor="dt-tx-desc" className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('description')}</label>
-                  <input 
-                    id="dt-tx-desc"
-                    name="dt-description"
-                    type="text" 
+                  <label htmlFor="mob-tx-description" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('description')}</label>
+                  <input
+                    id="mob-tx-description"
+                    name="mob-description"
+                    type="text"
                     required
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                     placeholder={t('exampleDesc')}
-                    className="w-full glass-input px-4 py-3 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none"
+                    className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
                   />
                 </div>
               </div>
 
-              {/* Document Attachment Section */}
-              <div className="space-y-2">
-                <label htmlFor="dt-tx-file" className="block text-[11px] font-bold dark:text-slate-400 text-black uppercase tracking-widest ml-1">{t('attachDocument')}</label>
-                <div className="flex items-center gap-3">
-                  <label htmlFor="dt-tx-file" className="flex-1 flex items-center justify-center gap-3 px-4 py-4 bg-slate-900/40 border-2 border-white/5 border-dashed rounded-2xl hover:bg-slate-800/60 hover:border-indigo-500/30 cursor-pointer transition-all group overflow-hidden relative">
-                    <div className="absolute inset-0 bg-indigo-500/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
-                    <Paperclip className="w-5 h-5 text-indigo-400 group-hover:rotate-12 transition-transform" />
-                    <span className="text-xs text-slate-300 font-bold truncate max-w-[180px] relative z-10">
-                      {selectedFile ? selectedFile.name : t('attachDocument')}
-                    </span>
-                    <input id="dt-tx-file" name="dt-attachment" type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
-                  </label>
-                  {selectedFile && (
-                    <button type="button" onClick={() => setSelectedFile(null)} className="p-4 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl transition-all border border-rose-500/20 group">
-                      <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Recurring Transaction Logic */}
-              <div className="flex flex-wrap items-center gap-4 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
-                <label htmlFor="dt-tx-recurring" className="flex items-center gap-3 cursor-pointer group">
+              {/* Recurring Transaction Logic Mobile */}
+              <div className="flex flex-col gap-4 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
+                <label htmlFor="mob-tx-recurring" className="flex items-center gap-3 cursor-pointer group">
                   <input
-                    id="dt-tx-recurring"
-                    name="dt-isRecurring"
+                    id="mob-tx-recurring"
+                    name="mob-isRecurring"
                     type="checkbox"
                     checked={isRecurring}
                     onChange={(e) => setIsRecurring(e.target.checked)}
-                    className="w-5 h-5 rounded-lg border-white/10 bg-slate-900 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                    className="w-6 h-6 rounded-lg border-slate-300 dark:border-white/20 bg-white dark:bg-slate-900 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
                   />
-                  <span className="text-sm font-bold dark:text-white text-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors uppercase tracking-tight">{t('recurringTransaction')}</span>
+                  <span className="text-sm font-black dark:text-white text-slate-700 uppercase tracking-tight">{t('recurringTransaction')}</span>
                 </label>
-                
+
                 {isRecurring && (
-                  <div className="flex items-center gap-3 animate-fade-in pl-2 border-l border-white/10">
-                    <label htmlFor="dt-tx-recurrence-interval" className="text-[10px] font-bold dark:text-slate-400 text-black uppercase tracking-widest">{t('repeatsEveryLabel')}</label>
+                  <div className="flex items-center gap-3 animate-fade-in pt-3 border-t border-indigo-500/10">
+                    <label htmlFor="mob-tx-recurrence-interval" className="text-[10px] font-black dark:text-slate-400 text-slate-500 uppercase tracking-widest">{t('repeatsEveryLabel')}</label>
                     <select
-                      id="dt-tx-recurrence-interval"
-                      name="dt-recurrenceInterval"
+                      id="mob-tx-recurrence-interval"
+                      name="mob-recurrenceInterval"
                       value={recurrenceInterval}
                       onChange={(e) => setRecurrenceInterval(e.target.value as any)}
-                      className="px-4 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900 dark:text-white text-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                      className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-black focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900 dark:text-white text-slate-800"
                     >
                       <option value="daily">{t('day')}</option>
                       <option value="weekly">{t('week')}</option>
@@ -1666,42 +2873,37 @@ export default function App() {
                 )}
               </div>
 
-              {/* Account Impacts Section */}
               <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-widest ml-1 text-theme-muted">{t('impactOnAccounts')}</span>
-                  <button 
-                    type="button" 
+                  <span className="text-[10px] font-black uppercase tracking-widest ml-1 dark:text-slate-400 text-slate-500">{t('impactOnAccounts')}</span>
+                  <button
+                    type="button"
                     onClick={handleAddImpact}
-                    className="touch-target text-[10px] font-bold text-indigo-400 hover:text-white flex items-center gap-2 transition-all bg-indigo-500/10 hover:bg-indigo-500 px-4 py-2.5 rounded-xl border border-indigo-500/20 uppercase tracking-tighter"
+                    className="text-[10px] font-black text-white flex items-center gap-2 transition-all bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
                   >
-                    <Plus className="w-4 h-4" /> {t('addAccount')}
+                    <Plus className="w-3.5 h-3.5" /> {t('addAccount')}
                   </button>
                 </div>
-                
+
                 <div className="space-y-4">
                   {impacts.map((impact, idx) => (
-                    <div key={idx} className="glass-card p-4 sm:p-5 relative border-l-4 border-indigo-500 group transition-all hover:scale-[1.01] hover:shadow-indigo-500/10 overflow-hidden">
-                      {/* Delete Impact Button */}
-                      <button 
+                    <div key={idx} className="glass-card p-4 relative border-l-4 border-indigo-500 shadow-sm hover:shadow-md transition-shadow">
+                      <button
                         type="button"
                         onClick={() => handleRemoveImpact(idx)}
                         disabled={impacts.length <= 2}
-                        className={cn(
-                          "absolute top-2 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all z-10",
-                          dir === 'rtl' ? 'left-4' : 'right-4'
-                        )}
+                        className="absolute top-2 left-2 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all disabled:opacity-30 disabled:pointer-events-none z-10"
+                        title={t('delete') || 'Delete'}
                       >
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
 
-                      <div className="flex flex-col gap-4">
-                        {/* Account Picker */}
-                        <div className="space-y-2">
-                          <label htmlFor={`dt-account-id-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('accountName')}</label>
-                          <select 
-                            id={`dt-account-id-${idx}`}
-                            name={`dt-accountId-${idx}`}
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end pl-8 sm:pl-0">
+                        <div className="col-span-1 sm:col-span-5 space-y-1.5">
+                          <label htmlFor={`mob-tx-account-${idx}`} className="text-[9px] font-black uppercase tracking-widest block ml-1 dark:text-slate-400 text-slate-500">{t('accountName')}</label>
+                          <select
+                            id={`mob-tx-account-${idx}`}
+                            name={`mob-accountId-${idx}`}
                             value={impact.accountId}
                             onChange={e => {
                               if (e.target.value === 'NEW_CUSTOM_ACCOUNT') {
@@ -1712,76 +2914,84 @@ export default function App() {
                                 handleImpactChange(idx, 'accountId', e.target.value);
                               }
                             }}
-                            className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold cursor-pointer transition-colors"
+                            className="w-full px-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs font-bold shadow-inner appearance-none outline-none focus:border-indigo-500/50"
                           >
                             {renderAccountOptions()}
                           </select>
                         </div>
-                        
-                        {/* Value Input Area */}
-                        <div className="space-y-2">
-                          <label htmlFor={`dt-amount-input-${idx}`} className="text-[9px] uppercase font-bold tracking-widest block ml-1 text-theme-muted">{t('impactValue')}</label>
+                        <div className="col-span-1 sm:col-span-4 space-y-1.5">
+                          <label className="text-[9px] font-black uppercase tracking-widest block ml-1 dark:text-slate-400 text-slate-500">{t('impactValue')}</label>
                           {(() => {
                             const amount = typeof impact.amount === 'number' ? impact.amount : 0;
                             const account = allAccounts.find(a => a.id === impact.accountId);
                             const isNeg = amount < 0 || Object.is(amount, -0);
-                            const isCredit = impact.type 
-                              ? impact.type === 'credit' 
-                              : (account 
+                            const isCredit = impact.type
+                              ? impact.type === 'credit'
+                              : (account
                                 ? (account.category === 'asset' ? isNeg : !isNeg)
                                 : isNeg);
                             return (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {/* Segmented Debit/Credit Control */}
-                                <div className="flex dark:bg-slate-950 bg-slate-100 p-1 rounded-2xl border dark:border-white/5 border-slate-200 w-full shadow-inner">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      handleImpactChange(idx, 'type', 'debit');
-                                    }}
-                                    className={cn(
-                                      "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
-                                      !isCredit ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
-                                    )}
-                                  >
-                                    {t('debit')}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      handleImpactChange(idx, 'type', 'credit');
-                                    }}
-                                    className={cn(
-                                      "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
-                                      isCredit ? "bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-[1.02]" : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
-                                    )}
-                                  >
-                                    {t('credit')}
-                                  </button>
-                                </div>
-
-                                <div className="relative group/input">
-                                  <input 
-                                    id={`dt-amount-input-${idx}`}
-                                    name={`dt-amount-${idx}`}
-                                    type="number"
-                                    step="any"
-                                    value={amount !== 0 ? amount : ''}
-                                    onChange={e => {
-                                      const val = parseFloat(e.target.value) || 0;
-                                      handleImpactChange(idx, 'amount', val);
-                                    }}
-                                    placeholder="0.00"
-                                    className={cn(
-                                      "w-full pl-4 pr-12 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-lg focus:ring-2 focus:ring-indigo-500 outline-none text-right font-mono transition-all dark:bg-slate-950/80 bg-white shadow-lg",
-                                      isCredit ? "dark:text-rose-400 text-rose-600 focus:border-rose-500/50" : "dark:text-emerald-400 text-emerald-600 focus:border-emerald-500/50"
-                                    )}
-                                    dir="ltr"
-                                  />
-                                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold pointer-events-none dark:opacity-50 opacity-40">
-                                    {currency}
-                                  </span>
-                                </div>
+                              <div className="flex dark:bg-slate-950 bg-slate-100 p-0.5 rounded-xl border dark:border-white/10 border-slate-200 shadow-inner">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleImpactChange(idx, 'type', 'debit');
+                                  }}
+                                  className={cn(
+                                    "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
+                                    !isCredit ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                                  )}
+                                >
+                                  {t('debit')}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleImpactChange(idx, 'type', 'credit');
+                                  }}
+                                  className={cn(
+                                    "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
+                                    isCredit ? "bg-rose-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                                  )}
+                                >
+                                  {t('credit')}
+                                </button>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        <div className="col-span-1 sm:col-span-3 space-y-1.5">
+                          {(() => {
+                            const amount = typeof impact.amount === 'number' ? impact.amount : 0;
+                            const account = allAccounts.find(a => a.id === impact.accountId);
+                            const isNeg = amount < 0 || Object.is(amount, -0);
+                            const isCredit = impact.type
+                              ? impact.type === 'credit'
+                              : (account
+                                ? (account.category === 'asset' ? isNeg : !isNeg)
+                                : isNeg);
+                            return (
+                              <div className="relative">
+                                <input
+                                  id={`mob-tx-amount-${idx}`}
+                                  name={`mob-amount-${idx}`}
+                                  type="number"
+                                  step="any"
+                                  value={amount !== 0 ? amount : ''}
+                                  onChange={e => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    handleImpactChange(idx, 'amount', val);
+                                  }}
+                                  className={cn(
+                                    "w-full pl-12 pr-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-sm font-mono text-right font-bold transition-all outline-none focus:border-indigo-500/50",
+                                    isCredit ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"
+                                  )}
+                                  placeholder="0.00"
+                                  dir="ltr"
+                                />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black dark:text-white/30 text-slate-400 pointer-events-none uppercase tracking-widest">
+                                  {currency}
+                                </span>
                               </div>
                             );
                           })()}
@@ -1791,1302 +3001,92 @@ export default function App() {
                   ))}
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-4 pt-4">
-                <button 
-                  type="submit"
-                  disabled={isUploading}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition-all shadow-2xl shadow-indigo-600/30 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group"
-                >
-                  {isUploading ? (
-                    <><div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> {t('uploading')}</>
-                  ) : (
-                    <>
-                      {editingTransactionId ? <Save className="w-6 h-6 group-hover:scale-110 transition-transform" /> : <CheckCircle2 className="w-6 h-6 group-hover:scale-110 transition-transform" />}
-                      <span className="uppercase tracking-widest">{editingTransactionId ? t('saveChanges') : t('addTransaction')}</span>
-                    </>
-                  )}
-                </button>
-                {editingTransactionId && (
-                  <button 
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="px-8 bg-slate-200 dark:bg-slate-800/60 hover:bg-slate-300 dark:hover:bg-slate-700 dark:text-white text-slate-700 font-bold py-4 rounded-2xl transition-all border border-slate-300 dark:border-white/10 uppercase tracking-widest text-xs"
-                  >
-                    {t('cancel')}
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-
-          {/* Balance Equation Status Visualization */}
-          <div className={cn(
-            "rounded-[2.5rem] shadow-2xl border-2 p-8 transition-all duration-700 backdrop-blur-3xl overflow-hidden relative group/card",
-            totals.isBalanced 
-              ? "dark:bg-emerald-950/20 bg-emerald-50 border-emerald-500/30 dark:shadow-[0_0_30px_rgba(16,185,129,0.12)] shadow-[0_0_20px_rgba(16,185,129,0.06)]" 
-              : "dark:bg-rose-950/20 bg-rose-50 border-rose-500/30 dark:shadow-[0_0_30px_rgba(244,63,94,0.12)] shadow-[0_0_20px_rgba(244,63,94,0.06)]"
-          )}>
-            {/* Background Glow */}
-            <div className={cn(
-              "absolute -top-24 -right-24 w-64 h-64 blur-[100px] opacity-20 rounded-full transition-all duration-1000 group-hover/card:scale-125",
-              totals.isBalanced ? "bg-emerald-500" : "bg-rose-500"
-            )}></div>
-
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
-              <div className={cn(
-                "p-5 rounded-[2rem] shadow-2xl transition-all duration-500",
-                totals.isBalanced ? "bg-emerald-500/20 text-emerald-400 group-hover/card:scale-105" : "bg-rose-500/20 text-rose-400 animate-pulse-slow"
-              )}>
-                {totals.isBalanced ? <CheckCircle2 className="w-12 h-12" /> : <AlertCircle className="w-12 h-12" />}
-              </div>
-              
-              <div className="flex-1 text-center md:text-left">
-                <h3 className={cn(
-                  "text-2xl font-bold mb-2 tracking-tight",
-                  totals.isBalanced ? "text-emerald-400" : "text-rose-400"
-                )}>
-                  {totals.isBalanced ? t('equationBalanced') : t('equationUnbalanced')}
-                </h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-                  <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm">
-                    <span className="text-[10px] uppercase font-bold block mb-2 tracking-widest text-theme-muted">{t('totalAssets')}</span>
-                    <span className="text-xl font-bold dark:text-white text-slate-900" dir="ltr">{formatCurrency(totals.totalAssets)}</span>
-                  </div>
-                  <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm">
-                    <span className="text-[10px] uppercase font-bold block mb-2 tracking-widest text-theme-muted">{t('totalLiabilitiesEquity')}</span>
-                    <span className="text-xl font-bold dark:text-white text-slate-900" dir="ltr">{formatCurrency(totals.totalLiabilities + totals.totalEquity)}</span>
-                  </div>
-                </div>
-                
-                {!totals.isBalanced && (
-                  <div className="mt-6 p-5 dark:bg-rose-500/10 bg-white rounded-3xl border dark:border-rose-500/20 border-rose-200 flex flex-col sm:flex-row justify-between items-center gap-2 group hover:dark:bg-rose-500/20 hover:bg-rose-50 transition-all shadow-sm">
-                    <span className="text-xs font-bold dark:text-rose-300 text-rose-500 uppercase tracking-widest">{t('difference')}</span>
-                    <span className="text-2xl font-bold text-rose-400 drop-shadow-lg" dir="ltr">{formatCurrency(Math.abs(totals.totalAssets - (totals.totalLiabilities + totals.totalEquity)))}</span>
-                  </div>
-                )}
-              </div>
             </div>
-          </div>
-          {/* Budget Status Card */}
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-theme-primary flex items-center gap-2">
-                <Target className="w-5 h-5 text-indigo-600" />
-                {t('budgetAlerts')}
-              </h2>
+
+            <div className="p-6 bg-white dark:bg-slate-900 border-t dark:border-white/10 border-slate-200 flex gap-4 flex-none z-10 shadow-[0_-10px_30px_rgba(0,0,0,0.04)]">
               <button
-                onClick={() => isEditingBudgets ? handleSaveBudgets() : setIsEditingBudgets(true)}
-                className="dark:text-white text-slate-500 hover:text-indigo-600 transition-colors p-1"
-                title={isEditingBudgets ? t('save') : t('editBudgets')}
+                type="submit"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 uppercase tracking-widest text-xs"
               >
-                {isEditingBudgets ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+                {editingTransactionId ? t('saveChanges') : t('addTransaction')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTransactionFormOpen(false);
+                  handleCancelEdit();
+                }}
+                className="px-8 bg-slate-100 dark:bg-slate-800 active:scale-95 text-slate-600 dark:text-white font-black py-4 rounded-2xl transition-all border dark:border-white/10 border-slate-200 uppercase tracking-widest text-[10px]"
+              >
+                {t('cancel')}
               </button>
             </div>
-            
-            <div className="space-y-6">
-              {(['asset', 'liability', 'equity'] as Category[]).map(category => {
-                const categoryAccounts = activeAccounts.filter(a => a.category === category);
-                if (categoryAccounts.length === 0) return null;
-
-                const catAllocated = categoryAccounts.reduce((sum, a) => sum + (budgets[a.id] || 0), 0);
-                const catSpent = category === 'asset' ? totals.totalAssets : category === 'liability' ? totals.totalLiabilities : totals.totalEquity;
-                const absCatSpent = Math.abs(catSpent);
-                const catPercentage = catAllocated > 0 ? (absCatSpent / catAllocated) * 100 : 0;
-                const catIsOverBudget = catAllocated > 0 && absCatSpent > catAllocated;
-                const catIsApproachingBudget = catAllocated > 0 && catPercentage >= 85 && !catIsOverBudget;
-
-                return (
-                  <div key={category} className={cn(
-                    "p-5 rounded-3xl border transition-colors duration-300",
-                    catIsOverBudget ? "bg-rose-50 border-rose-200" : catIsApproachingBudget ? "bg-amber-50 border-amber-200" : "bg-slate-800/20 border-white/5"
-                  )}>
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className={cn(
-                        "text-[15px] font-bold flex items-center gap-1.5",
-                        catIsOverBudget ? "text-rose-800" : catIsApproachingBudget ? "text-amber-800" : "dark:text-white text-slate-900"
-                      )}>
-                        {t(category)}
-                        {catIsOverBudget && <AlertCircle className="w-4 h-4 text-rose-500" />}
-                        {catIsApproachingBudget && <AlertCircle className="w-4 h-4 text-amber-500" />}
-                      </h3>
-                      <span className={cn(
-                        "text-sm font-medium font-bold",
-                        catIsOverBudget ? "text-rose-700" : catIsApproachingBudget ? "text-amber-700" : "dark:text-white text-slate-900"
-                      )} dir="ltr">
-                        {formatCurrency(absCatSpent)} {catAllocated > 0 && `/ ${formatCurrency(catAllocated)}`}
-                      </span>
-                    </div>
-                    
-                    {/* Category Progress Bar */}
-                    {catAllocated > 0 && !isEditingBudgets && (
-                      <div className="w-full bg-slate-200/50 rounded-full h-2.5 overflow-hidden flex mb-4">
-                        <div
-                          className={cn(
-                            "h-full transition-all duration-500",
-                            catIsOverBudget ? "bg-rose-500 animate-pulse" : catIsApproachingBudget ? "bg-amber-500" : "bg-indigo-500"
-                          )}
-                          style={{ width: `${Math.min(catPercentage, 100)}%` }}
-                        />
-                      </div>
-                    )}
-
-                    {/* Individual Accounts */}
-                    <div className={cn(
-                      "space-y-3 mt-3 pt-3 border-t",
-                      catIsOverBudget ? "border-rose-200/60" : catIsApproachingBudget ? "border-amber-200/60" : "border-white/10/60"
-                    )}>
-                      {categoryAccounts.map(account => {
-                        const allocated = budgets[account.id] || 0;
-                        const spent = Math.abs(totals.accounts[account.id] || 0);
-                        const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
-                        const isOverBudget = allocated > 0 && spent > allocated;
-                        const isApproachingBudget = allocated > 0 && percentage >= 85 && !isOverBudget;
-
-                        return (
-                          <div key={account.id} className="space-y-1.5">
-                            <div className="flex justify-between items-center text-[15px]">
-                              <span className={cn(
-                                "font-medium text-sm font-medium flex items-center gap-1",
-                                isOverBudget ? "text-rose-700" : isApproachingBudget ? "text-amber-700" : "dark:text-white text-slate-900"
-                              )}>
-                                {t(account.name)}
-                                {isOverBudget && <AlertCircle className="w-3 h-3 text-rose-500" />}
-                                {isApproachingBudget && <AlertCircle className="w-3 h-3 text-amber-500" />}
-                              </span>
-                              {isEditingBudgets ? (
-                                <input
-                                  id={`budget-${account.id}`}
-                                  name={`budget-${account.id}`}
-                                  type="number"
-                                  value={allocated || ''}
-                                  onChange={(e) => setBudgets({ ...budgets, [account.id]: parseFloat(e.target.value) || 0 })}
-                                  className="w-24 px-2 py-1 border border-white/20 rounded text-left text-sm font-medium focus:ring-1 focus:ring-indigo-500 outline-none"
-                                  dir="ltr"
-                                  placeholder="0"
-                                  aria-label={`${t('budgetAlerts')} - ${t(account.name)}`}
-                                />
-                              ) : (
-                                <span className="dark:text-white text-slate-900 text-[11px]" dir="ltr">
-                                  <span className={cn("font-bold", isOverBudget ? 'text-rose-600' : isApproachingBudget ? 'text-amber-600' : 'dark:text-white text-slate-900')}>
-                                    {formatCurrency(spent)}
-                                  </span>
-                                  {allocated > 0 && ` / ${formatCurrency(allocated)}`}
-                                </span>
-                              )}
-                            </div>
-                            {!isEditingBudgets && allocated > 0 && (
-                              <div className="w-full bg-slate-200/60 rounded-full h-1.5 overflow-hidden flex">
-                                <div
-                                  className={cn(
-                                    "h-full transition-all duration-500",
-                                    isOverBudget ? "bg-rose-500 animate-pulse" : isApproachingBudget ? "bg-amber-500" : "bg-emerald-400"
-                                  )}
-                                  style={{ width: `${Math.min(percentage, 100)}%` }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Transactions List */}
-        <div className="xl:col-span-8">
-          <div className="glass-card overflow-hidden flex flex-col h-full" style={{ borderRadius: '1.5rem' }}>
-            <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-100/90 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-1 dark:bg-white/5 bg-slate-100 p-1 rounded-xl border dark:border-white/10 border-slate-200">
-                  <button 
-                    onClick={handleUndo}
-                    disabled={historyIndex <= 0}
-                    className="p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
-                    title={language === 'ar' ? "تراجع" : "Undo"}
-                  >
-                    <Undo2 className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={handleRedo}
-                    disabled={historyIndex >= history.length - 1}
-                    className="p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
-                    title={language === 'ar' ? "إعادة التعديل المتراجع عنه" : "Redo"}
-                  >
-                    <Redo2 className="w-4 h-4" />
-                  </button>
-                </div>
-                
-                <button 
-                  onClick={() => setIsPdfScannerOpen(true)}
-                  className="flex items-center gap-2 px-3 py-2 text-[10px] sm:text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
-                  title={t('importFiles')}
-                >
-                  <FileSearch className="w-4 h-4" />
-                  <span>{t('scanPDF') || 'Scan PDF'}</span>
-                </button>
-                
-                <button 
-                  onClick={() => setIsDepreciationModalOpen(true)}
-                  className="flex items-center gap-2 px-3 py-2 text-[10px] sm:text-xs font-black dark:bg-amber-500 bg-amber-500 text-white hover:bg-amber-400 rounded-xl transition-all shadow-lg shadow-amber-500/20 uppercase tracking-widest"
-                  title={t('depreciationCalc')}
-                >
-                  <Calculator className="w-4 h-4" />
-                  <span>{t('depreciationCalc')}</span>
-                </button>
-              </div>
-              {transactions.length > 0 && (
-                <div className="flex flex-wrap justify-center items-center gap-2">
-                  {selectedTransactions.size > 0 && (
-                    <button
-                      onClick={handleBulkDelete}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[15px] font-medium text-white bg-rose-600 border border-rose-600 rounded-lg hover:bg-rose-700 transition-colors shadow-sm"
-                      title={t('deleteSelected')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      {t('deleteSelected')} ({selectedTransactions.size})
-                    </button>
-                  )}
-                  <button
-                    onClick={handleExportCSV}
-                    className="flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-indigo-600/50 hover:bg-indigo-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
-                    title={t('exportCSV')}
-                  >
-                    <FileSpreadsheet className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-indigo-600" />
-                    <span className="sr-only sm:not-sr-only">{t('exportCSV')}</span>
-                  </button>
-                  <button
-                    onClick={handleExportPDF}
-                    className="flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-rose-600/50 hover:bg-rose-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
-                    title={t('exportPDF')}
-                  >
-                    <FileText className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-rose-600" />
-                    <span className="sr-only sm:not-sr-only">PDF</span>
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            {transactions.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-transparent">
-                <div className="p-6 bg-slate-200/50 dark:bg-white/5 rounded-full mb-6 border border-slate-300 dark:border-white/10">
-                  <Calculator className="w-12 h-12 text-slate-400 dark:text-white/20" />
-                </div>
-                <p className="text-lg font-black text-slate-800 dark:text-white mb-2">{t('noTransactions')}</p>
-                <p className="text-sm font-bold text-slate-400 dark:text-slate-500 max-w-xs">{t('addTransactionPrompt')}</p>
-              </div>
-            ) : (
-              <>
-                {/* Desktop Table View */}
-                <div id="transactions-table" className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-white">
-                  <table className="w-full text-[15px] text-right border-collapse">
-                    <thead className="sticky top-0 z-20 dark:text-white text-slate-800 shadow-sm ring-1 dark:ring-white/10 ring-slate-200/50">
-                      {/* Category Headers */}
-                      <tr className="border-b dark:border-white/10 border-slate-200 ring-1 dark:ring-white/5 ring-slate-100/50">
-                        <th className="p-4 border-l dark:border-white/5 border-slate-200/50 w-10 dark:bg-slate-900/40 bg-slate-100/80 text-center">
-                          <input 
-                            id="select-all-transactions"
-                            name="selectAll"
-                            type="checkbox" 
-                            checked={transactions.length > 0 && selectedTransactions.size === transactions.length}
-                            onChange={handleSelectAll}
-                            className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                            aria-label={t('selectAll') || 'Select All'}
-                          />
-                        </th>
-                        <th className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest w-24 dark:bg-slate-900/40 bg-slate-100/80 text-center">{t('date')}</th>
-                        <th className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest min-w-[200px] dark:bg-slate-900/40 bg-slate-100/80">{t('description')}</th>
-                        
-                        {assets.length > 0 && (
-                          <th colSpan={assets.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-indigo-500/10 dark:text-indigo-300 text-indigo-950">
-                            {t('assets')}
-                          </th>
-                        )}
-                        
-                        {liabilities.length > 0 && (
-                          <th colSpan={liabilities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-amber-500/10 dark:text-amber-300 text-amber-950">
-                            {t('liabilities')}
-                          </th>
-                        )}
-                        
-                        {equities.length > 0 && (
-                          <th colSpan={equities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-emerald-500/10 dark:text-emerald-300 text-emerald-950">
-                            {t('equity')}
-                          </th>
-                        )}
-                        <th className="p-3 w-10 dark:bg-slate-900/40 bg-slate-100/80"></th>
-                      </tr>
-                      {/* Account Headers */}
-                      <tr className="border-b dark:border-white/5 border-slate-200/30">
-                        <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
-                        <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
-                        <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
-                        
-                        {assets.map(a => (
-                          <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-indigo-400 text-indigo-900 bg-indigo-500/5">{t(a.name)}</th>
-                        ))}
-                        
-                        {liabilities.map(a => (
-                          <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-amber-400 text-amber-900 bg-amber-500/5">{t(a.name)}</th>
-                        ))}
-                        
-                        {equities.map(a => (
-                          <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-emerald-400 text-emerald-900 bg-emerald-500/5">{t(a.name)}</th>
-                        ))}
-                        <th className="dark:bg-slate-900/20 bg-slate-50/50"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y dark:divide-white/5 divide-slate-200/60">
-                      {transactions.map((tx) => (
-                        <tr key={tx.id} className="dark:even:bg-white/5 even:bg-slate-100/20 dark:hover:bg-slate-700/50 hover:bg-slate-100/80 transition-colors group">
-                          <td className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center">
-                            <input 
-                              id={`select-tx-${tx.id}`}
-                              name={`selectTx-${tx.id}`}
-                              type="checkbox" 
-                              checked={selectedTransactions.has(tx.id)}
-                              onChange={() => handleSelectTransaction(tx.id)}
-                              className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                              aria-label={`${t('select')} ${tx.description}`}
-                            />
-                          </td>
-                          <td className="p-3 border-l dark:border-white/5 border-slate-200/30 whitespace-nowrap dark:text-white text-slate-800 text-center"><span dir="ltr" className="inline-block transform -translate-y-[3px]">{tx.date}</span></td>
-                          <td className="p-3 border-l dark:border-white/5 border-slate-200/30 dark:text-white text-slate-850">
-                            <div className="flex items-center gap-2">
-                              {tx.description}
-                              {tx.isRecurring && (
-                                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700" title={`${t('repeatsEveryLabel')} ${t(tx.recurrenceInterval || 'monthly')}`}>
-                                  {t('recurring')}
-                                </span>
-                              )}
-                              {tx.attachmentUrl && (
-                                <button 
-                                  onClick={() => {
-                                    setPreviewUrl(tx.attachmentUrl || null);
-                                    setIsDocPreviewOpen(true);
-                                  }}
-                                  className="p-1 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all"
-                                  title={t('viewDocument')}
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                          
-                          {assets.map(a => {
-                            const amt = getImpactAmount(tx, a.id);
-                            return (
-                              <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-indigo-500/5 transition-colors" dir="ltr">
-                                {amt !== 0 ? (
-                                  <span className={cn(
-                                    "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
-                                    amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
-                                  )}>
-                                    {formatCurrency(amt)}
-                                  </span>
-                                ) : (
-                                  <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                          
-                          {liabilities.map(a => {
-                            const amt = getImpactAmount(tx, a.id);
-                            return (
-                              <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-amber-500/5 transition-colors" dir="ltr">
-                                {amt !== 0 ? (
-                                  <span className={cn(
-                                    "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
-                                    amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
-                                  )}>
-                                    {formatCurrency(amt)}
-                                  </span>
-                                ) : (
-                                  <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                          
-                          {equities.map(a => {
-                            const amt = getImpactAmount(tx, a.id);
-                            return (
-                              <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-emerald-500/5 transition-colors" dir="ltr">
-                                {amt !== 0 ? (
-                                  <span className={cn(
-                                    "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
-                                    amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
-                                  )}>
-                                    {formatCurrency(amt)}
-                                  </span>
-                                ) : (
-                                  <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                          
-                          <td className="p-2 text-center">
-                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                              <button 
-                                onClick={() => handleEditTransaction(tx)}
-                                className="p-1.5 dark:text-white text-slate-600 hover:text-indigo-600 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
-                                title={t('editTransaction')}
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteTransaction(tx.id)}
-                                className="p-1.5 dark:text-white text-slate-600 hover:text-rose-500 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
-                                title={t('deleteTransaction')}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    {/* Totals Row */}
-                    <tfoot className="sticky bottom-0 z-20 bg-slate-900 border-t-2 dark:border-white/10 border-slate-800 font-bold shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
-                      <tr>
-                        <td colSpan={3} className="p-4 border-l dark:border-white/5 border-slate-800 text-left text-white/90 bg-slate-900/60 uppercase tracking-widest text-[11px]">
-                          {t('grandTotal')}
-                        </td>
-                        
-                        {assets.map(a => (
-                          <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-indigo-400 text-white font-mono bg-indigo-500/5" dir="ltr">
-                            {formatCurrency(totals.accounts[a.id])}
-                          </td>
-                        ))}
-                        
-                        {liabilities.map(a => (
-                          <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-amber-400 text-white font-mono bg-amber-500/5" dir="ltr">
-                            {formatCurrency(totals.accounts[a.id])}
-                          </td>
-                        ))}
-                        
-                        {equities.map(a => (
-                          <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-emerald-400 text-white font-mono bg-emerald-500/5" dir="ltr">
-                            {formatCurrency(totals.accounts[a.id])}
-                          </td>
-                        ))}
-                        <td className="bg-slate-900/60"></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                {/* Mobile Card View - Enhanced Design */}
-                <div className="md:hidden flex flex-col gap-5 responsive-px py-6 bg-slate-50/50 dark:bg-slate-950/20">
-                  {transactions.map((tx) => (
-                    <div key={tx.id} className="mobile-card !mb-0 group overflow-hidden border dark:border-white/10 border-slate-200 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/60 dark:shadow-none p-5 rounded-[2rem]">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-start gap-4">
-                          <div className="relative mt-1">
-                            <input 
-                              id={`mob-select-tx-${tx.id}`}
-                              name={`mob-selectTx-${tx.id}`}
-                              type="checkbox" 
-                              checked={selectedTransactions.has(tx.id)}
-                              onChange={() => handleSelectTransaction(tx.id)}
-                              className="rounded-lg border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-6 h-6 transition-all"
-                              aria-label={`${t('select')} ${tx.description}`}
-                            />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.15em] mb-1.5" dir="ltr">{tx.date}</span>
-                            <p className="text-[16px] font-black dark:text-white text-slate-900 leading-snug">{tx.description}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button 
-                            onClick={() => handleEditTransaction(tx)} 
-                            className="p-3 dark:text-indigo-400 text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white rounded-2xl transition-all active:scale-90"
-                            title={t('editTransaction')}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 py-4 border-t dark:border-white/10 border-slate-100">
-                        {tx.impacts.map((imp, i) => (
-                          <div key={i} className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm",
-                            imp.amount > 0 
-                              ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20" 
-                              : "bg-rose-50 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20"
-                          )}>
-                            <span className={cn(
-                              "text-[11px] font-bold",
-                              imp.amount > 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
-                            )}>
-                              {t(ACCOUNTS.find(a => a.id === imp.accountId)?.name || '')}
-                            </span>
-                            <div className={cn("w-1 h-1 rounded-full", imp.amount > 0 ? "bg-emerald-400" : "bg-rose-400")}></div>
-                            <span className={cn(
-                              "font-black font-mono text-[12px]",
-                              imp.amount > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
-                            )} dir="ltr">
-                              {formatCurrency(imp.amount)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-1">
-                        {tx.attachmentUrl && (
-                          <button 
-                            onClick={() => {
-                              setPreviewUrl(tx.attachmentUrl || null);
-                              setIsDocPreviewOpen(true);
-                            }}
-                            className="flex-1 py-3 flex items-center justify-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border dark:border-white/10 border-slate-200 text-[10px] font-black uppercase tracking-widest dark:text-indigo-400 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all active:scale-95 shadow-sm"
-                          >
-                            <Eye className="w-4 h-4" />
-                            {t('viewAttachment') || 'View Attachment'}
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => handleDeleteTransaction(tx.id)} 
-                          className="p-3 dark:text-rose-400 text-rose-600 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-2xl transition-all active:scale-90 border border-rose-500/20 shadow-sm"
-                          title={t('deleteTransaction')}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-            
-            {/* Final Equation Summary */}
-            {transactions.length > 0 && (
-              <div className="dark:bg-slate-900/60 bg-slate-50/90 backdrop-blur-md border-t dark:border-white/10 border-slate-200 dark:text-white text-slate-800 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 font-mono text-lg animate-fade-in">
-                <div className="flex flex-col items-center">
-                  <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('assets')}</span>
-                  <span className="dark:text-indigo-300 text-indigo-600 font-bold">{formatCurrency(totals.totalAssets)}</span>
-                </div>
-                <span className="dark:text-white text-slate-400">=</span>
-                <div className="flex flex-col items-center">
-                  <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('liabilities')}</span>
-                  <span className="dark:text-amber-300 text-amber-600 font-bold">{formatCurrency(totals.totalLiabilities)}</span>
-                </div>
-                <span className="dark:text-white text-slate-400">+</span>
-                <div className="flex flex-col items-center">
-                  <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('equity')}</span>
-                  <span className="dark:text-emerald-300 text-emerald-600 font-bold">{formatCurrency(totals.totalEquity)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Section */}
-      {mounted && transactions.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" style={{ minWidth: 0 }}>
-          {/* Asset Distribution Pie Chart */}
-          <div className="glass-card p-6" style={{ minWidth: 0 }}>
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-theme-primary">
-              <Target className="w-5 h-5 text-indigo-600" />
-              {t('assetDistribution')}
-            </h2>
-            <div className="h-[300px] md:h-[350px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
-              {assetChartData.length > 0 ? (
-                <ResponsiveContainer id="asset-distribution-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
-                  <PieChart>
-                    <Pie
-                      data={assetChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {assetChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => new Intl.NumberFormat('ar-SA', { style: 'currency', currency }).format(value)}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                    <Legend verticalAlign="bottom" height={36} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center dark:text-white text-black font-bold italic">
-                  {t('noAssets')}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Income vs Expenses Bar Chart */}
-          <div className="glass-card p-6" style={{ minWidth: 0 }}>
-            <h2 className="text-lg font-semibold dark:text-white text-slate-800 mb-6 flex items-center gap-2">
-              <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
-              {t('incomeExpenses')}
-            </h2>
-            <div className="h-[300px] md:h-[350px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
-              {incomeExpenseData.some(d => d.amount > 0) ? (
-                <ResponsiveContainer id="income-expense-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
-                  <BarChart data={incomeExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900, dy: -5 }} />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }}
-                      tickFormatter={(value) => new Intl.NumberFormat('ar-SA', { notation: "compact", compactDisplay: "short" }).format(value)}
-                    />
-                    <Tooltip 
-                      formatter={(value: number) => new Intl.NumberFormat('ar-SA', { style: 'currency', currency }).format(value)}
-                      cursor={{ fill: '#f1f5f9' }}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                    <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                      {incomeExpenseData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.name === t('revenue') ? '#10b981' : '#ef4444'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center dark:text-white text-black font-bold italic">
-                  {t('noIncomeExpenses')}
-                </div>
-              )}
-            </div>
-          </div>
+          </form>
         </div>
       )}
 
-      {/* Financial Insights Section */}
-      {transactions.length > 0 && (
-        <div className="space-y-6 animate-fade-in [animation-delay:200ms]">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-600/20 rounded-lg">
-              <ArrowRightLeft className="w-5 h-5 text-indigo-400" />
-            </div>
-            <h2 className="text-xl font-bold dark:text-white text-slate-800">{t('financialInsights')}</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Current Ratio Card */}
-            <div className="glass-card p-6 border-l-4 border-indigo-400">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-slate-600 dark:text-slate-400 text-sm font-bold">{t('currentRatio')}</span>
-                <div className={cn(
-                  "px-2 py-1 rounded text-[10px] font-bold uppercase",
-                  insights.currentRatio >= 1.5 ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
-                )}>
-                  {insights.currentRatio >= 1.5 ? t('healthyLiquidity') : t('lowLiquidity')}
-                </div>
-              </div>
-              <div className="text-3xl font-bold dark:text-white text-slate-900 mb-1">{insights.currentRatio.toFixed(2)}</div>
-              <p className="text-xs text-slate-500">{t('currentRatioDesc')}</p>
-            </div>
+      {/* Mobile Bottom Navigation - OUTSIDE animated wrapper to ensure true fixed positioning */}
+      <nav className="md:hidden fixed bottom-6 left-6 right-6 z-[90] glass-card !rounded-[2.5rem] !p-1 border dark:border-white/20 border-slate-300 dark:bg-slate-900/90 bg-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] pb-safe">
+        <div className="flex justify-around items-center h-14 relative">
+          {navItems.slice(0, 2).map((item) => {
+            const Icon = item.icon;
+            const isActive = currentView === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => { setCurrentView(item.id as any); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className={cn("flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all relative", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400")}
+              >
+                <Icon className={cn("w-5 h-5", isActive ? "scale-110" : "scale-100")} />
+                <span className="text-[7px] font-black uppercase mt-1">
+                  {item.id === 'equation' ? t('dashboard') :
+                    item.id === 'income' ? (language === 'ar' ? 'الدخل' : 'Income') :
+                      item.id === 'cashflow' ? (language === 'ar' ? 'التدفقات' : 'Cash') :
+                        item.label.split(' ')[0]}
+                </span>
+              </button>
+            );
+          })}
 
-            {/* Debt-to-Equity Card */}
-            <div className="glass-card p-6 border-l-4 border-amber-400">
-              <span className="text-slate-600 dark:text-slate-400 text-sm font-bold block mb-2">{t('debtToEquity')}</span>
-              <div className="text-3xl font-bold dark:text-white text-slate-900 mb-1">{insights.debtToEquity.toFixed(2)}</div>
-              <p className="text-xs text-slate-500">{t('debtToEquityDesc')}</p>
-            </div>
-
-            {/* Net Profit Card */}
-            <div className="glass-card p-6 border-l-4 border-emerald-400">
-              <span className="text-slate-600 dark:text-slate-400 text-sm font-bold block mb-2">{t('netProfit')}</span>
-              <div className={cn(
-                "text-3xl font-bold mb-1",
-                insights.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"
-              )}>
-                {formatCurrency(insights.netProfit)}
-              </div>
-              <p className="text-xs text-slate-500">Total revenue minus expenses</p>
-            </div>
-          </div>
-
-          {/* Profit Trend Chart */}
-          <div className="glass-card p-6" style={{ minWidth: 0 }}>
-            <h3 className="text-lg font-semibold dark:text-white text-slate-800 mb-6">{t('monthlyProfitTrend')}</h3>
-            <div className="h-[300px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
-              {profitTrendData.length > 0 ? (
-                <ResponsiveContainer id="profit-trend-line-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
-                  <LineChart data={profitTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900, dy: -5 }} />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900 }}
-                      tickFormatter={(value) => new Intl.NumberFormat('en-US', { notation: "compact" }).format(value)}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff', 
-                        borderRadius: '12px', 
-                        border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)', 
-                        color: theme === 'dark' ? '#fff' : '#1e293b' 
-                      }}
-                      itemStyle={{ color: '#818cf8' }}
-                      formatter={(value: number) => formatCurrency(value)}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="profit" 
-                      stroke="#818cf8" 
-                      strokeWidth={3} 
-                      dot={{ fill: '#818cf8', strokeWidth: 2, r: 4 }} 
-                      activeDot={{ r: 6, strokeWidth: 0 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-slate-500">{t('noIncomeExpenses')}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-        </div>
-      ) : currentView === 'income' ? (
-        <IncomeStatementView 
-          formatCurrency={formatCurrency}
-          transactions={transactions}
-        />
-      ) : currentView === 'cashflow' ? (
-        <CashFlowView 
-          formatCurrency={formatCurrency}
-          transactions={transactions}
-        />
-      ) : currentView === 'aiAdvisor' ? (
-        <AIAdvisorView 
-          geminiApiKey={geminiApiKey}
-          transactions={transactions}
-          totals={totals}
-          currency={currency}
-          formatCurrency={formatCurrency}
-        />
-      ) : currentView === 'imageGenerator' ? (
-        <ImageGeneratorView 
-          geminiApiKey={geminiApiKey}
-        />
-      ) : currentView === 'about' ? (
-        <AboutUsView />
-      ) : (
-        <ContactUsView />
-      )}
-      </main>
-    </div>
-    
-    <SnapshotsModal
-      isOpen={isSnapshotsModalOpen}
-      onClose={() => setIsSnapshotsModalOpen(false)}
-      currentTransactions={transactions}
-      currentBudgets={budgets}
-      onLoadSnapshot={(loadedTransactions, loadedBudgets) => {
-        updateTransactions(loadedTransactions);
-        setBudgets(loadedBudgets);
-        localStorage.setItem('motazin_budgets', JSON.stringify(loadedBudgets));
-        toast.success(language === 'ar' ? 'تم استعادة النسخة بنجاح!' : 'Backup loaded successfully!');
-      }}
-    />
-
-    {isPdfScannerOpen && (
-      <PdfScanner 
-        geminiApiKey={geminiApiKey}
-        onClose={() => setIsPdfScannerOpen(false)}
-        onImport={(rows) => {
-          const newTransactions = rows.map(r => {
-            const accountId = r.accountId || 'bank'; 
-            const account = allAccounts.find(a => a.id === accountId);
-            const category = account?.category || 'asset';
-
-            let impacts: Omit<Impact, 'id'>[] = [];
-            if (category === 'asset') {
-              impacts = [
-                { accountId: accountId, amount: r.amount },
-                { accountId: 'capital', amount: r.amount } 
-              ];
-            } else if (category === 'liability') {
-              impacts = [
-                { accountId: accountId, amount: r.amount },
-                { accountId: 'capital', amount: -r.amount }
-              ];
-            } else {
-              impacts = [
-                { accountId: accountId, amount: r.amount },
-                { accountId: 'bank', amount: -r.amount }
-              ];
-            }
-
-            return {
-              id: r.id,
-              date: r.date,
-              description: r.description,
-              impacts: impacts.map(i => ({ ...i, id: Math.random().toString(36).substr(2, 9) })),
-              createdAt: new Date().toISOString()
-            };
-          });
-          updateTransactions([...transactions, ...newTransactions]);
-          setIsPdfScannerOpen(false);
-          toast.success(language === 'ar' ? 'تم استيراد البيانات بنجاح!' : 'Data imported successfully!');
-        }}
-      />
-    )}
-
-    <DepreciationModal 
-      isOpen={isDepreciationModalOpen}
-      onClose={() => setIsDepreciationModalOpen(false)}
-      assets={allAccounts.filter(a => a.category === 'asset' && !['cash', 'bank', 'ar', 'inventory', 'supplies', 'prepaid_expenses'].includes(a.id))}
-      onApply={(accountId, amount, description) => {
-        const txId = Math.random().toString(36).substr(2, 9);
-        const newTx: Transaction = {
-          id: txId,
-          date: new Date().toLocaleDateString('en-GB'),
-          description: description,
-          impacts: [
-            { id: Math.random().toString(36).substr(2, 9), accountId: 'expenses', amount: amount },
-            { id: Math.random().toString(36).substr(2, 9), accountId: accountId, amount: -amount }
-          ],
-          createdAt: new Date().toISOString()
-        };
-        updateTransactions([...transactions, newTx]);
-        setIsDepreciationModalOpen(false);
-        toast.success(language === 'ar' ? 'تم إضافة قيد الإهلاك بنجاح!' : 'Depreciation entry added successfully!');
-      }}
-    />
-
-    <DocPreviewModal 
-      isOpen={isDocPreviewOpen} 
-      url={previewUrl} 
-      onClose={() => setIsDocPreviewOpen(false)} 
-    />
-
-    {customAccountModalIdx !== null && (
-      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
-        <div 
-          className="absolute inset-0" 
-          onClick={() => setCustomAccountModalIdx(null)} 
-        />
-        <div 
-          className={cn(
-            "relative w-full max-w-md bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col p-6 transition-all rounded-[2rem]",
-            "animate-in zoom-in-95 duration-200"
-          )}
-          dir={dir}
-        >
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-            {language === 'ar' ? 'إضافة حساب جديد' : 'Add New Account'}
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-widest block mb-2 text-theme-muted">
-                {language === 'ar' ? 'اسم الحساب' : 'Account Name'}
-              </label>
-              <input
-                type="text"
-                autoFocus
-                value={newCustomAccountName}
-                onChange={e => setNewCustomAccountName(e.target.value)}
-                className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold transition-colors"
-                placeholder={language === 'ar' ? 'مثال: أراضي زراعية، قرض بنكي...' : 'e.g. Land, Bank Loan...'}
-              />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-widest block mb-2 text-theme-muted">
-                {language === 'ar' ? 'نوع الحساب' : 'Account Type'}
-              </label>
-              <div className="flex dark:bg-slate-950 bg-slate-100 p-1 rounded-2xl border dark:border-white/5 border-slate-200 w-full shadow-inner">
-                {(['asset', 'liability', 'equity'] as const).map(cat => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setNewCustomAccountCategory(cat)}
-                    className={cn(
-                      "flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest",
-                      newCustomAccountCategory === cat
-                        ? cat === 'asset'
-                          ? "bg-indigo-500 text-white shadow-xl shadow-indigo-500/30 scale-[1.02]"
-                          : cat === 'liability'
-                          ? "bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-[1.02]"
-                          : "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]"
-                        : "dark:text-slate-500 text-slate-400 dark:hover:text-white hover:text-indigo-600"
-                    )}
-                  >
-                    {t(cat)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
+          {/* Integrated Center Action Button */}
+          <div className="relative -top-8 animate-float">
+            <div className="absolute inset-0 bg-indigo-500 rounded-full blur-md opacity-40 animate-pulse-slow -z-10 scale-105" />
             <button
-              type="button"
-              onClick={() => setCustomAccountModalIdx(null)}
-              className="px-5 py-3 rounded-2xl border border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold transition-colors"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                const newAcc = await addCustomAccount(newCustomAccountName, newCustomAccountCategory);
-                if (newAcc) {
-                  handleImpactChange(customAccountModalIdx, 'accountId', newAcc.id);
-                  setCustomAccountModalIdx(null);
-                }
-              }}
-              className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors"
-            >
-              {language === 'ar' ? 'إضافة الحساب' : 'Add Account'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {/* Mobile Bottom Navigation moved outside animated wrapper - see below */}
-
-    {/* Transaction Form Modal / Bottom Sheet */}
-    {isTransactionFormOpen && (
-      <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-        <div 
-          className="absolute inset-0" 
-          onClick={() => {
-            setIsTransactionFormOpen(false);
-            handleCancelEdit();
-          }} 
-        />
-        <form 
-          onSubmit={(e) => {
-            handleAddTransaction(e);
-            setIsTransactionFormOpen(false);
-          }}
-          className={cn(
-            "relative w-full max-w-2xl bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col transition-all",
-            "rounded-t-[2.5rem] md:rounded-[2rem] h-fit max-h-[92vh] md:max-h-[85vh] overflow-hidden",
-            "animate-in slide-in-from-bottom duration-500 md:zoom-in-95"
-          )}
-        >
-          {/* Handle for bottom sheet */}
-          <div className="md:hidden w-12 h-1.5 bg-slate-300 dark:bg-white/20 rounded-full mx-auto mt-3 mb-1 flex-none" />
-          
-          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-200 flex-none bg-white dark:bg-slate-900 z-10">
-            <div>
-              <h3 className="text-xl font-bold dark:text-white text-slate-900 flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/20 rounded-xl">
-                  <Plus className="w-5 h-5 text-indigo-400" />
-                </div>
-                {editingTransactionId ? t('editTransaction') : t('addNewTransaction')}
-              </h3>
-            </div>
-            <button 
-              type="button"
               onClick={() => {
-                setIsTransactionFormOpen(false);
+                setEditingTransactionId(null);
                 handleCancelEdit();
+                setIsTransactionFormOpen(true);
               }}
-              className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all"
+              className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-full shadow-[0_15px_30px_-5px_rgba(99,102,241,0.35)] flex items-center justify-center border-4 dark:border-slate-900 border-white active:scale-90 transition-all group relative z-10"
+              aria-label={t('addTransaction')}
             >
-              <XCircle className="w-6 h-6" />
+              <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform" />
             </button>
           </div>
 
-          <div 
-            ref={modalScrollRef} 
-            className="p-6 overflow-y-auto custom-scrollbar no-scrollbar flex-1 max-h-[calc(92vh-180px)] md:max-h-[calc(85vh-180px)] space-y-6 pb-6 bg-slate-50/50 dark:bg-slate-950/20"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="col-span-1">
-                <label htmlFor="mob-tx-date" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('date')}</label>
-                <input 
-                  id="mob-tx-date"
-                  name="mob-date"
-                  type="text" 
-                  value={date}
-                  onChange={e => setDate(e.target.value)}
-                  placeholder={t('exampleDate')}
-                  className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
-                />
-              </div>
-              <div className="col-span-2">
-                <label htmlFor="mob-tx-description" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('description')}</label>
-                <input 
-                  id="mob-tx-description"
-                  name="mob-description"
-                  type="text" 
-                  required
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder={t('exampleDesc')}
-                  className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
-                />
-              </div>
-            </div>
-
-            {/* Recurring Transaction Logic Mobile */}
-            <div className="flex flex-col gap-4 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
-              <label htmlFor="mob-tx-recurring" className="flex items-center gap-3 cursor-pointer group">
-                <input
-                  id="mob-tx-recurring"
-                  name="mob-isRecurring"
-                  type="checkbox"
-                  checked={isRecurring}
-                  onChange={(e) => setIsRecurring(e.target.checked)}
-                  className="w-6 h-6 rounded-lg border-slate-300 dark:border-white/20 bg-white dark:bg-slate-900 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
-                />
-                <span className="text-sm font-black dark:text-white text-slate-700 uppercase tracking-tight">{t('recurringTransaction')}</span>
-              </label>
-              
-              {isRecurring && (
-                <div className="flex items-center gap-3 animate-fade-in pt-3 border-t border-indigo-500/10">
-                  <label htmlFor="mob-tx-recurrence-interval" className="text-[10px] font-black dark:text-slate-400 text-slate-500 uppercase tracking-widest">{t('repeatsEveryLabel')}</label>
-                  <select
-                    id="mob-tx-recurrence-interval"
-                    name="mob-recurrenceInterval"
-                    value={recurrenceInterval}
-                    onChange={(e) => setRecurrenceInterval(e.target.value as any)}
-                    className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-black focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900 dark:text-white text-slate-800"
-                  >
-                    <option value="daily">{t('day')}</option>
-                    <option value="weekly">{t('week')}</option>
-                    <option value="monthly">{t('month')}</option>
-                    <option value="yearly">{t('year')}</option>
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest ml-1 dark:text-slate-400 text-slate-500">{t('impactOnAccounts')}</span>
-                <button 
-                  type="button" 
-                  onClick={handleAddImpact}
-                  className="text-[10px] font-black text-white flex items-center gap-2 transition-all bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
-                >
-                  <Plus className="w-3.5 h-3.5" /> {t('addAccount')}
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {impacts.map((impact, idx) => (
-                  <div key={idx} className="glass-card p-4 relative border-l-4 border-indigo-500 shadow-sm hover:shadow-md transition-shadow">
-                    <button 
-                      type="button"
-                      onClick={() => handleRemoveImpact(idx)}
-                      disabled={impacts.length <= 2}
-                      className="absolute top-2 left-2 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all disabled:opacity-30 disabled:pointer-events-none z-10"
-                      title={t('delete') || 'Delete'}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end pl-8 sm:pl-0">
-                      <div className="col-span-1 sm:col-span-5 space-y-1.5">
-                        <label htmlFor={`mob-tx-account-${idx}`} className="text-[9px] font-black uppercase tracking-widest block ml-1 dark:text-slate-400 text-slate-500">{t('accountName')}</label>
-                        <select 
-                          id={`mob-tx-account-${idx}`}
-                          name={`mob-accountId-${idx}`}
-                          value={impact.accountId}
-                          onChange={e => {
-                            if (e.target.value === 'NEW_CUSTOM_ACCOUNT') {
-                              setCustomAccountModalIdx(idx);
-                              setNewCustomAccountName('');
-                              setNewCustomAccountCategory('asset');
-                            } else {
-                              handleImpactChange(idx, 'accountId', e.target.value);
-                            }
-                          }}
-                          className="w-full px-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs font-bold shadow-inner appearance-none outline-none focus:border-indigo-500/50"
-                        >
-                          {renderAccountOptions()}
-                        </select>
-                      </div>
-                      <div className="col-span-1 sm:col-span-4 space-y-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest block ml-1 dark:text-slate-400 text-slate-500">{t('impactValue')}</label>
-                        {(() => {
-                          const amount = typeof impact.amount === 'number' ? impact.amount : 0;
-                          const account = allAccounts.find(a => a.id === impact.accountId);
-                          const isNeg = amount < 0 || Object.is(amount, -0);
-                          const isCredit = impact.type 
-                            ? impact.type === 'credit' 
-                            : (account 
-                              ? (account.category === 'asset' ? isNeg : !isNeg)
-                              : isNeg);
-                          return (
-                            <div className="flex dark:bg-slate-950 bg-slate-100 p-0.5 rounded-xl border dark:border-white/10 border-slate-200 shadow-inner">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleImpactChange(idx, 'type', 'debit');
-                                }}
-                                className={cn(
-                                  "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
-                                  !isCredit ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                                )}
-                              >
-                                {t('debit')}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleImpactChange(idx, 'type', 'credit');
-                                }}
-                                className={cn(
-                                  "flex-1 py-2 rounded-lg text-[9px] font-black transition-all uppercase tracking-widest",
-                                  isCredit ? "bg-rose-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                                )}
-                              >
-                                {t('credit')}
-                              </button>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      <div className="col-span-1 sm:col-span-3 space-y-1.5">
-                        {(() => {
-                          const amount = typeof impact.amount === 'number' ? impact.amount : 0;
-                          const account = allAccounts.find(a => a.id === impact.accountId);
-                          const isNeg = amount < 0 || Object.is(amount, -0);
-                          const isCredit = impact.type 
-                            ? impact.type === 'credit' 
-                            : (account 
-                              ? (account.category === 'asset' ? isNeg : !isNeg)
-                              : isNeg);
-                          return (
-                            <div className="relative">
-                              <input 
-                                id={`mob-tx-amount-${idx}`}
-                                name={`mob-amount-${idx}`}
-                                type="number"
-                                step="any"
-                                value={amount !== 0 ? amount : ''}
-                                onChange={e => {
-                                  const val = parseFloat(e.target.value) || 0;
-                                  handleImpactChange(idx, 'amount', val);
-                                }}
-                                className={cn(
-                                  "w-full pl-12 pr-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-sm font-mono text-right font-bold transition-all outline-none focus:border-indigo-500/50",
-                                  isCredit ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"
-                                )}
-                                placeholder="0.00"
-                                dir="ltr"
-                              />
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black dark:text-white/30 text-slate-400 pointer-events-none uppercase tracking-widest">
-                                {currency}
-                              </span>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 bg-white dark:bg-slate-900 border-t dark:border-white/10 border-slate-200 flex gap-4 flex-none z-10 shadow-[0_-10px_30px_rgba(0,0,0,0.04)]">
-            <button 
-              type="submit"
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 uppercase tracking-widest text-xs"
-            >
-              {editingTransactionId ? t('saveChanges') : t('addTransaction')}
-            </button>
-            <button 
-              type="button"
-              onClick={() => {
-                setIsTransactionFormOpen(false);
-                handleCancelEdit();
-              }}
-              className="px-8 bg-slate-100 dark:bg-slate-800 active:scale-95 text-slate-600 dark:text-white font-black py-4 rounded-2xl transition-all border dark:border-white/10 border-slate-200 uppercase tracking-widest text-[10px]"
-            >
-              {t('cancel')}
-            </button>
-          </div>
-        </form>
-      </div>
-    )}
-
-    {/* Mobile Bottom Navigation - OUTSIDE animated wrapper to ensure true fixed positioning */}
-    <nav className="md:hidden fixed bottom-6 left-6 right-6 z-[90] glass-card !rounded-[2.5rem] !p-1 border dark:border-white/20 border-slate-300 dark:bg-slate-900/90 bg-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] pb-safe">
-      <div className="flex justify-around items-center h-14 relative">
-        {navItems.slice(0, 2).map((item) => {
-          const Icon = item.icon;
-          const isActive = currentView === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => { setCurrentView(item.id as any); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className={cn("flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all relative", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400")}
-            >
-              <Icon className={cn("w-5 h-5", isActive ? "scale-110" : "scale-100")} />
-              <span className="text-[7px] font-black uppercase mt-1">
-                {item.id === 'equation' ? t('dashboard') : 
-                 item.id === 'income' ? (language === 'ar' ? 'الدخل' : 'Income') :
-                 item.id === 'cashflow' ? (language === 'ar' ? 'التدفقات' : 'Cash') :
-                 item.label.split(' ')[0]}
-              </span>
-            </button>
-          );
-        })}
-
-        {/* Integrated Center Action Button */}
-        <div className="relative -top-8 animate-float">
-          <div className="absolute inset-0 bg-indigo-500 rounded-full blur-md opacity-40 animate-pulse-slow -z-10 scale-105" />
-          <button 
-            onClick={() => {
-              setEditingTransactionId(null);
-              handleCancelEdit();
-              setIsTransactionFormOpen(true);
-            }}
-            className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-full shadow-[0_15px_30px_-5px_rgba(99,102,241,0.35)] flex items-center justify-center border-4 dark:border-slate-900 border-white active:scale-90 transition-all group relative z-10"
-            aria-label={t('addTransaction')}
-          >
-            <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform" />
-          </button>
+          {navItems.slice(2, 4).map((item) => {
+            const Icon = item.icon;
+            const isActive = currentView === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => { setCurrentView(item.id as any); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className={cn("flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all relative", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400")}
+              >
+                <Icon className={cn("w-5 h-5", isActive ? "scale-110" : "scale-100")} />
+                <span className="text-[7px] font-black uppercase mt-1">
+                  {item.id === 'about' ? (language === 'ar' ? 'عنا' : 'About') :
+                    item.id === 'contact' ? (language === 'ar' ? 'تواصل' : 'Contact') :
+                      item.label.split(' ')[0]}
+                </span>
+              </button>
+            );
+          })}
         </div>
-
-        {navItems.slice(2, 4).map((item) => {
-          const Icon = item.icon;
-          const isActive = currentView === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => { setCurrentView(item.id as any); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className={cn("flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all relative", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400")}
-            >
-              <Icon className={cn("w-5 h-5", isActive ? "scale-110" : "scale-100")} />
-              <span className="text-[7px] font-black uppercase mt-1">
-                {item.id === 'about' ? (language === 'ar' ? 'عنا' : 'About') : 
-                 item.id === 'contact' ? (language === 'ar' ? 'تواصل' : 'Contact') : 
-                 item.label.split(' ')[0]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
-    {showConfetti && <Confetti />}
-  </>
-);
+      </nav>
+      {showConfetti && <Confetti />}
+    </>
+  );
 }
 
 // --- Component: AboutUsView ---
@@ -3187,7 +3187,7 @@ function ContactUsView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSending(true);
-    
+
     try {
       // Save to Firebase
       await addDoc(collection(db, 'messages'), {
@@ -3369,7 +3369,7 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
   const { t, dir, language } = useLanguage();
 
   const cashAccountIds = ['cash', 'bank'];
-  
+
   // Categorization lists
   const investingAccounts = ['fixed_assets', 'land', 'buildings', 'equipment', 'cars', 'furniture', 'intangible_assets', 'investments'];
   const financingAccounts = ['capital', 'drawings', 'short_term_loans', 'long_term_loans', 'mortgages_payable'];
@@ -3386,7 +3386,7 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
     if (cashImpact === 0) return;
 
     const otherImpacts = tx.impacts.filter(i => !cashAccountIds.includes(i.accountId));
-    
+
     let category: 'operating' | 'investing' | 'financing' = 'operating';
 
     if (otherImpacts.some(i => investingAccounts.includes(i.accountId))) {
@@ -3468,7 +3468,7 @@ function CashFlowView({ transactions, formatCurrency }: { transactions: Transact
       </div>
 
       <div className="flex justify-end gap-4 pt-4">
-        <button 
+        <button
           onClick={async () => {
             const element = document.getElementById('cash-flow-report');
             if (!element) return;
@@ -3584,7 +3584,7 @@ function IncomeStatementView({ transactions, formatCurrency }: { transactions: T
       </div>
 
       <div className="flex justify-end gap-4 pt-4">
-        <button 
+        <button
           onClick={async () => {
             const element = document.getElementById('income-statement-report');
             if (!element) return;
@@ -3641,9 +3641,9 @@ const DocPreviewModal: React.FC<{ isOpen: boolean, url: string | null, onClose: 
           </button>
         </div>
         <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-950">
-          <img 
-            src={url} 
-            alt="Document" 
+          <img
+            src={url}
+            alt="Document"
             className="max-w-full h-auto rounded-lg shadow-lg border border-white/5"
             onLoad={(e) => (e.currentTarget.style.opacity = '1')}
           />
@@ -3722,7 +3722,7 @@ function AIAdvisorView({ geminiApiKey, transactions, totals, currency, formatCur
 
     const userText = input.trim();
     setInput('');
-    
+
     // Add user message to state
     const newMessages = [...messages, { sender: 'user' as const, text: userText }];
     setMessages(newMessages);
@@ -3730,7 +3730,7 @@ function AIAdvisorView({ geminiApiKey, transactions, totals, currency, formatCur
 
     try {
       const contents: any[] = [];
-      
+
       let systemInstruction;
       if (attachContext) {
         let contextText = `أنت مستشار مالي ذكي. استخدم هذا السياق المالي للإجابة عن أسئلة المستخدم بدقة ومهنية ومودة باللغة العربية أو الإنجليزية حسب لغة المستخدم.\n\n`;
@@ -3751,7 +3751,7 @@ function AIAdvisorView({ geminiApiKey, transactions, totals, currency, formatCur
 
       // Map previous messages (skipping the welcome message)
       const chatHistory = newMessages.slice(1);
-      
+
       chatHistory.forEach((msg) => {
         contents.push({
           role: msg.sender === 'user' ? 'user' : 'model',
@@ -3794,7 +3794,7 @@ function AIAdvisorView({ geminiApiKey, transactions, totals, currency, formatCur
           <h2 className="text-xl font-bold dark:text-white text-slate-900">{t('aiAdvisorTitle')}</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('aiAdvisorSubtitle')}</p>
         </div>
-        <button 
+        <button
           onClick={handleClearChat}
           className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-xl text-xs font-bold transition-all"
         >
@@ -3804,12 +3804,12 @@ function AIAdvisorView({ geminiApiKey, transactions, totals, currency, formatCur
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar flex flex-col">
         {messages.map((msg, idx) => (
-          <div 
-            key={idx} 
+          <div
+            key={idx}
             className={cn(
               "flex flex-col max-w-[80%] rounded-[2rem] p-5 shadow-sm animate-in slide-in-from-bottom-2 mb-2",
-              msg.sender === 'user' 
-                ? "bg-indigo-600 text-white rounded-br-none self-end ml-auto" 
+              msg.sender === 'user'
+                ? "bg-indigo-600 text-white rounded-br-none self-end ml-auto"
                 : "bg-slate-100 dark:bg-slate-800 dark:text-slate-100 text-slate-800 rounded-bl-none self-start mr-auto border dark:border-white/5 border-slate-200"
             )}
           >
@@ -3828,8 +3828,8 @@ function AIAdvisorView({ geminiApiKey, transactions, totals, currency, formatCur
       <form onSubmit={handleSend} className="p-4 border-t dark:border-white/10 border-slate-200 bg-slate-900/10 backdrop-blur-sm space-y-3 flex-none">
         {transactions.length > 0 && (
           <label className="flex items-center gap-2 cursor-pointer select-none py-1.5 px-3 bg-indigo-500/5 hover:bg-indigo-500/10 rounded-xl border border-indigo-500/10 w-fit text-xs font-bold text-indigo-500 dark:text-indigo-400 transition-colors">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={attachContext}
               onChange={e => setAttachContext(e.target.checked)}
               className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-white/10"
@@ -3838,15 +3838,15 @@ function AIAdvisorView({ geminiApiKey, transactions, totals, currency, formatCur
           </label>
         )}
         <div className="flex gap-3">
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
             disabled={isSending}
             placeholder={t('chatInputPlaceholder')}
             className="flex-1 px-5 py-4 border dark:border-white/10 border-slate-200 dark:bg-slate-950 bg-white dark:text-white text-slate-900 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
           />
-          <button 
+          <button
             type="submit"
             disabled={isSending || !input.trim()}
             className="px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center font-bold text-sm uppercase tracking-widest disabled:opacity-40 disabled:pointer-events-none"
@@ -3904,7 +3904,7 @@ function ImageGeneratorView({ geminiApiKey }: ImageGeneratorViewProps) {
 
       const data = await response.json();
       const imageBytes = data.generatedImages?.[0]?.image?.imageBytes;
-      
+
       if (!imageBytes) {
         throw new Error('No image bytes returned');
       }
@@ -3931,7 +3931,7 @@ function ImageGeneratorView({ geminiApiKey }: ImageGeneratorViewProps) {
 
         <div className="space-y-2">
           <label htmlFor="img-prompt" className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('prompt')}</label>
-          <textarea 
+          <textarea
             id="img-prompt"
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
@@ -3944,7 +3944,7 @@ function ImageGeneratorView({ geminiApiKey }: ImageGeneratorViewProps) {
 
         <div className="space-y-2">
           <label htmlFor="img-aspect" className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('aspectRatio')}</label>
-          <select 
+          <select
             id="img-aspect"
             value={aspectRatio}
             onChange={e => setAspectRatio(e.target.value)}
@@ -3959,7 +3959,7 @@ function ImageGeneratorView({ geminiApiKey }: ImageGeneratorViewProps) {
           </select>
         </div>
 
-        <button 
+        <button
           type="submit"
           disabled={isGenerating || !prompt.trim()}
           className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 active:scale-95 uppercase tracking-widest text-xs disabled:opacity-40 disabled:pointer-events-none"
@@ -3979,7 +3979,7 @@ function ImageGeneratorView({ geminiApiKey }: ImageGeneratorViewProps) {
             <div className="relative rounded-2xl overflow-hidden border dark:border-white/10 border-slate-200 shadow-xl max-w-full max-h-[400px]">
               <img src={generatedImgUrl} alt="AI Generated" className="object-contain max-h-[380px] rounded-2xl" />
             </div>
-            <a 
+            <a
               href={generatedImgUrl}
               download="financial-ai-image.jpg"
               className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-600/20 active:scale-95 transition-all uppercase tracking-widest"

@@ -17,7 +17,11 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     chunkSizeWarningLimit: 1500,
+    rolldownOptions: {
+      external: ['@firebase/webchannel-wrapper/bloom-blob'],
+    },
     rollupOptions: {
+      external: ['@firebase/webchannel-wrapper/bloom-blob'],
       output: {
         manualChunks(id: string) {
           if (id.includes('node_modules')) {
