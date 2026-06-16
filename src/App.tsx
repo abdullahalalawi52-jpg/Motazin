@@ -1132,7 +1132,7 @@ export default function App() {
 
   return (
     <>
-      <div className="relative w-full max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-10 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="relative w-full max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-10 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
       <Toaster position="top-center" richColors theme={theme === 'system' ? 'system' : theme} dir={dir} />
 
       {/* Header */}
