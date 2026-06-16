@@ -1458,7 +1458,7 @@ export default function App() {
           </div>
 
           {/* Footer Area */}
-          <div className="p-6 border-t dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02]">
+          <div className="p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02] pb-safe">
             {user ? (
               <button 
                 onClick={() => signOut(auth)}
