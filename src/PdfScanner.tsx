@@ -27,11 +27,12 @@ interface ParsedRow {
 }
 
 interface FileScannerProps {
+  geminiApiKey?: string;
   onImport: (rows: any[]) => void;
   onClose: () => void;
 }
 
-export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) => {
+export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport, onClose }) => {
   const { t, dir, language } = useLanguage();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -163,7 +164,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
     }
     
     setRawText(fullText);
-    extractTransactions(fullText);
+    await extractTransactions(fullText);
   };
 
   const processImage = async (file: File) => {
@@ -228,7 +229,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
       // 4. Recognize from processed canvas
       const { data: { text } } = await worker.recognize(canvas);
       setRawText(text);
-      extractTransactions(text);
+      await extractTransactions(text);
       URL.revokeObjectURL(objectUrl);
     } finally {
       await worker.terminate();
@@ -302,7 +303,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
     setStatus('Reading Word document...');
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
-    extractTransactions(result.value);
+    await extractTransactions(result.value);
   };
 
   const processPowerPoint = async (file: File) => {
@@ -322,10 +323,58 @@ export const FileScanner: React.FC<FileScannerProps> = ({ onImport, onClose }) =
         fullText += slideText + '\n';
       }
     }
-    extractTransactions(fullText);
+    await extractTransactions(fullText);
   };
 
-  const extractTransactions = (text: string) => {
+  const extractTransactions = async (text: string) => {
+    if (geminiApiKey && text.trim().length > 10) {
+      setStatus('Analyzing document using AI for precision...');
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: text }] }],
+            systemInstruction: {
+              parts: [{ text: "You are an expert financial data extractor. Extract all financial transactions from the provided OCR text. Return ONLY a valid JSON array of objects. Each object must have these keys: 'date' (string, DD/MM/YYYY format), 'description' (string, item name or detail), 'amount' (number, positive float). If none found, return []." }]
+            },
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (aiText) {
+            try {
+              const parsed = JSON.parse(aiText);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const results: ParsedRow[] = parsed.map((item: any) => ({
+                  id: Math.random().toString(36).substr(2, 9),
+                  date: item.date || new Date().toLocaleDateString('en-GB'),
+                  description: item.description || 'AI Extracted Item',
+                  amount: Math.abs(Number(item.amount) || 0),
+                  accountId: 'cash',
+                  selected: true
+                })).filter((item: ParsedRow) => item.amount > 0);
+                
+                if (results.length > 0) {
+                  setParsedRows(results);
+                  setStatus('');
+                  return; // AI Succeeded!
+                }
+              }
+            } catch (e) {
+              console.error('Failed to parse Gemini JSON:', e);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Gemini extraction failed, falling back to Regex:', error);
+      }
+      setStatus('AI extraction skipped/failed. Trying Regex fallback...');
+    }
+
     const convertArabicDigits = (str: string) => {
       return str.replace(/[٠١٢٣٤٥٦٧٨٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
     };

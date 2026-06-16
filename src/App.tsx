@@ -2631,6 +2631,7 @@ export default function App() {
 
     {isPdfScannerOpen && (
       <PdfScanner 
+        geminiApiKey={geminiApiKey}
         onClose={() => setIsPdfScannerOpen(false)}
         onImport={(rows) => {
           const newTransactions = rows.map(r => {
@@ -3813,49 +3814,40 @@ function AIAdvisorView({ geminiApiKey, transactions, totals, currency, formatCur
     try {
       const contents: any[] = [];
       
-      let contextPrefix = '';
+      let systemInstruction;
       if (attachContext) {
-        contextPrefix += `[سياق مالي / Financial Context]:\n`;
-        contextPrefix += `Currency: ${currency}\n`;
-        contextPrefix += `Total Assets: ${formatCurrency(totals.totalAssets)}\n`;
-        contextPrefix += `Total Liabilities: ${formatCurrency(totals.totalLiabilities)}\n`;
-        contextPrefix += `Total Equity: ${formatCurrency(totals.totalEquity)}\n`;
-        contextPrefix += `Equation is Balanced: ${totals.isBalanced ? "Yes" : "No"}\n`;
-        contextPrefix += `Transactions Log:\n`;
+        let contextText = `أنت مستشار مالي ذكي. استخدم هذا السياق المالي للإجابة عن أسئلة المستخدم بدقة ومهنية ومودة باللغة العربية أو الإنجليزية حسب لغة المستخدم.\n\n`;
+        contextText += `[سياق مالي / Financial Context]:\n`;
+        contextText += `Currency: ${currency}\n`;
+        contextText += `Total Assets: ${formatCurrency(totals.totalAssets)}\n`;
+        contextText += `Total Liabilities: ${formatCurrency(totals.totalLiabilities)}\n`;
+        contextText += `Total Equity: ${formatCurrency(totals.totalEquity)}\n`;
+        contextText += `Equation is Balanced: ${totals.isBalanced ? "Yes" : "No"}\n`;
+        contextText += `Transactions Log:\n`;
         transactions.forEach((tx, idx) => {
-          contextPrefix += `- ${idx + 1}. Date: ${tx.date}, Desc: ${tx.description}, Impacts: ${JSON.stringify(tx.impacts)}\n`;
+          contextText += `- ${idx + 1}. Date: ${tx.date}, Desc: ${tx.description}, Impacts: ${JSON.stringify(tx.impacts)}\n`;
         });
-        contextPrefix += `\n[تعليمات / Instructions]: استخدم هذا السياق للإجابة عن أسئلة المستخدم المالي بدقة ومهنية ومودة باللغة العربية أو الإنجليزية حسب لغة كلام المستخدم.\n\n`;
+        systemInstruction = { parts: [{ text: contextText }] };
+      } else {
+        systemInstruction = { parts: [{ text: `أنت مستشار مالي ذكي ومساعد خبير. أجب بدقة ومهنية ومودة.` }] };
       }
 
-      // Map previous messages
+      // Map previous messages (skipping the welcome message)
       const chatHistory = newMessages.slice(1);
       
-      chatHistory.forEach((msg, idx) => {
-        let textVal = msg.text;
-        if (idx === 0 && msg.sender === 'user' && attachContext) {
-          textVal = contextPrefix + textVal;
-        }
-        
+      chatHistory.forEach((msg) => {
         contents.push({
           role: msg.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: textVal }]
+          parts: [{ text: msg.text }]
         });
       });
 
-      if (contents.length === 0) {
-        contents.push({
-          role: 'user',
-          parts: [{ text: attachContext ? contextPrefix + userText : userText }]
-        });
-      }
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ contents })
+        body: JSON.stringify({ contents, systemInstruction })
       });
 
       if (!response.ok) {
