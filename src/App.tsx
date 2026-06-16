@@ -1294,7 +1294,7 @@ export default function App() {
         )} dir={dir}>
           {/* Header Area */}
           <div className={cn(
-            "flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl z-10 relative",
+            "flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-white dark:bg-slate-900 z-10 relative",
             language === 'ar' ? "rounded-tl-[2.5rem]" : "rounded-tr-[2.5rem]"
           )}>
             <h2 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight">{t('menu') || 'Menu'}</h2>
@@ -1466,7 +1466,7 @@ export default function App() {
 
           {/* Footer Area */}
           <div className={cn(
-            "p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl pb-safe z-10 relative",
+            "p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-white dark:bg-slate-900 pb-safe z-10 relative",
             language === 'ar' ? "rounded-bl-[2.5rem]" : "rounded-br-[2.5rem]"
           )}>
             {user ? (
