@@ -218,12 +218,10 @@ export default function App() {
   const [isDepreciationModalOpen, setIsDepreciationModalOpen] = useState(false);
   const [isSnapshotsModalOpen, setIsSnapshotsModalOpen] = useState(false);
 
-  // Gemini API & Settings State
+  // Gemini API State
   const [geminiApiKey, setGeminiApiKey] = useState(() => {
-    return localStorage.getItem('motazin_gemini_api_key') || '';
+    return import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('motazin_gemini_api_key') || '';
   });
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [tempApiKey, setTempApiKey] = useState('');
 
   // Custom Accounts State
   const [customAccounts, setCustomAccounts] = useState<Account[]>(() => {
@@ -1212,17 +1210,6 @@ export default function App() {
                 {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-400" />}
               </button>
 
-              <button
-                onClick={() => {
-                  setTempApiKey(geminiApiKey);
-                  setIsSettingsOpen(true);
-                }}
-                className="p-2.5 dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 rounded-2xl transition-all group"
-                title={t('settingsTitle')}
-              >
-                <Settings className="w-5 h-5 text-indigo-400 group-hover:rotate-45 transition-transform" />
-              </button>
-
               {/* User Profile Area */}
               <div className="flex items-center gap-3 dark:bg-white/5 bg-slate-100 px-3 py-1.5 rounded-2xl border dark:border-white/5 border-slate-200">
                 <div className="relative">
@@ -1410,25 +1397,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* AI Settings Mobile */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('settingsTitle')}</p>
-              <button
-                onClick={() => {
-                  setTempApiKey(geminiApiKey);
-                  setIsSettingsOpen(true);
-                  setIsMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center justify-between p-4 bg-slate-100 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 transition-all active:scale-95"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-500/10 rounded-xl">
-                    <Settings className="w-4 h-4 text-indigo-400" />
-                  </div>
-                  <span className="text-sm font-bold dark:text-white text-slate-800">{t('settingsTitle')}</span>
-                </div>
-                <ChevronRight className={cn("w-4 h-4 text-slate-400", language === 'ar' ? "rotate-180" : "")} />
-              </button>
             </div>
 
             {/* Language Selector Mobile */}
@@ -3107,67 +3075,6 @@ export default function App() {
       </div>
     </nav>
     {showConfetti && <Confetti />}
-
-    {isSettingsOpen && (
-      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
-        <div 
-          className="absolute inset-0" 
-          onClick={() => setIsSettingsOpen(false)} 
-        />
-        <div 
-          className="relative w-full max-w-md bg-white dark:bg-slate-900 border dark:border-white/10 border-slate-200 shadow-2xl flex flex-col p-6 transition-all rounded-[2rem]"
-          dir={dir}
-        >
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Settings className="w-5 h-5 text-indigo-500" />
-            {t('settingsTitle')}
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-widest block mb-2 text-theme-muted">
-                {t('apiKeyLabel')}
-              </label>
-              <input
-                type="password"
-                value={tempApiKey}
-                onChange={e => setTempApiKey(e.target.value)}
-                className="w-full px-4 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-950/60 bg-white dark:text-white text-slate-900 font-bold transition-colors"
-                placeholder={t('apiKeyPlaceholder')}
-              />
-            </div>
-            <a 
-              href="https://aistudio.google.com/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-xs text-indigo-500 hover:text-indigo-600 font-semibold block underline"
-            >
-              {t('getApiKeyLink')}
-            </a>
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              type="button"
-              onClick={() => setIsSettingsOpen(false)}
-              className="px-5 py-3 rounded-2xl border border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold transition-colors"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setGeminiApiKey(tempApiKey);
-                localStorage.setItem('motazin_gemini_api_key', tempApiKey);
-                setIsSettingsOpen(false);
-                toast.success(t('apiKeySaved'));
-              }}
-              className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors"
-            >
-              {t('saveSettings')}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
   </>
 );
 }
