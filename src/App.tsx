@@ -1597,10 +1597,10 @@ export default function App() {
       <main className="mb-6 md:mb-0">
       {currentView === 'equation' ? (
         <div className="animate-scale-in space-y-6 sm:space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
         
         {/* Left Column: Form & Status Dashboard - Hidden on mobile to avoid redundancy */}
-        <div className="hidden md:block md:col-span-5 space-y-6 animate-fade-in [animation-delay:400ms]">
+        <div className="hidden md:block xl:col-span-4 space-y-6 animate-fade-in [animation-delay:400ms]">
           <div className="glass-card p-6 border-t-4 border-indigo-500 shadow-2xl">
             <h2 className="text-xl font-bold text-theme-primary mb-6 flex items-center gap-3">
               <div className="p-2 bg-indigo-500/20 rounded-xl">
@@ -2029,8 +2029,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Column: Table */}
-        <div className="md:col-span-7">
+        {/* Right Column: Transactions List */}
+        <div className="xl:col-span-8">
           <div className="glass-card overflow-hidden flex flex-col h-full" style={{ borderRadius: '1.5rem' }}>
             <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
