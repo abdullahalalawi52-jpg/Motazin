@@ -1042,6 +1042,34 @@ ar: 'لوحة القيادة', en: 'Dashboard', fr: 'Tableau de bord', es: 'Tabl
   send: {
     ar: 'إرسال', en: 'Send', fr: 'Envoyer', es: 'Enviar', tr: 'Gönder', ur: 'بھیجیں',
     ja: 'Send', zh: 'Send', ru: 'Send', pt: 'Send'
+  },
+  quickActions: {
+    ar: 'إجراءات سريعة', en: 'Quick Actions', fr: 'Actions Rapides', es: 'Acciones Rápidas', tr: 'Hızlı İşlemler', ur: 'فوری کارروائیاں',
+    ja: 'Quick Actions', zh: 'Quick Actions', ru: 'Quick Actions', pt: 'Quick Actions'
+  },
+  scanPDF: {
+    ar: 'مسح PDF', en: 'Scan PDF', fr: 'Scanner PDF', es: 'Escanear PDF', tr: 'PDF Tara', ur: 'پی ڈی ایف اسکین کریں',
+    ja: 'Scan PDF', zh: 'Scan PDF', ru: 'Scan PDF', pt: 'Scan PDF'
+  },
+  backups: {
+    ar: 'النسخ الاحتياطي', en: 'Backups', fr: 'Sauvegardes', es: 'Copias de Seguridad', tr: 'Yedeklemeler', ur: 'بیک اپس',
+    ja: 'Backups', zh: 'Backups', ru: 'Backups', pt: 'Backups'
+  },
+  appearance: {
+    ar: 'المظهر', en: 'Appearance', fr: 'Apparence', es: 'Apariencia', tr: 'Görünüm', ur: 'ظاہری شکل',
+    ja: 'Appearance', zh: 'Appearance', ru: 'Appearance', pt: 'Appearance'
+  },
+  lightMode: {
+    ar: 'الوضع الفاتح', en: 'Light Mode', fr: 'Mode Clair', es: 'Modo Claro', tr: 'Açık Mod', ur: 'لائٹ موڈ',
+    ja: 'Light Mode', zh: 'Light Mode', ru: 'Light Mode', pt: 'Light Mode'
+  },
+  darkMode: {
+    ar: 'الوضع الداكن', en: 'Dark Mode', fr: 'Mode Sombre', es: 'Modo Oscuro', tr: 'Karanlık Mod', ur: 'ڈارک موڈ',
+    ja: 'Dark Mode', zh: 'Dark Mode', ru: 'Dark Mode', pt: 'Dark Mode'
+  },
+  menu: {
+    ar: 'القائمة', en: 'Menu', fr: 'Menu', es: 'Menú', tr: 'Menü', ur: 'مینو',
+    ja: 'Menu', zh: 'Menu', ru: 'Menu', pt: 'Menu'
   }
 };
 

@@ -1287,7 +1287,7 @@ export default function App() {
         
         {/* Drawer Content */}
         <div className={cn(
-          "fixed top-0 h-full w-[85%] max-w-xs dark:bg-slate-900/95 bg-white/95 backdrop-blur-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[260] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col overflow-hidden",
+          "fixed top-0 bottom-0 w-[85%] max-w-xs dark:bg-slate-900/95 bg-white/95 backdrop-blur-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[260] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col overflow-hidden",
           language === 'ar' 
             ? (isMobileMenuOpen ? "right-0 rounded-l-[2.5rem]" : "-right-full rounded-l-none") 
             : (isMobileMenuOpen ? "left-0 rounded-r-[2.5rem]" : "-left-full rounded-r-none")
