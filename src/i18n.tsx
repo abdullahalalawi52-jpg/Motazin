@@ -1066,10 +1066,6 @@ ar: 'لوحة القيادة', en: 'Dashboard', fr: 'Tableau de bord', es: 'Tabl
   darkMode: {
     ar: 'الوضع الداكن', en: 'Dark Mode', fr: 'Mode Sombre', es: 'Modo Oscuro', tr: 'Karanlık Mod', ur: 'ڈارک موڈ',
     ja: 'Dark Mode', zh: 'Dark Mode', ru: 'Dark Mode', pt: 'Dark Mode'
-  },
-  menu: {
-    ar: 'القائمة', en: 'Menu', fr: 'Menu', es: 'Menú', tr: 'Menü', ur: 'مینو',
-    ja: 'Menu', zh: 'Menu', ru: 'Menu', pt: 'Menu'
   }
 };
 
