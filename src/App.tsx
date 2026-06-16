@@ -1132,7 +1132,7 @@ export default function App() {
 
   return (
     <>
-      <div className="relative w-full max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-10 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 z-10 animate-fade-in">
+      <div className="relative w-full max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-10 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 animate-fade-in">
       <Toaster position="top-center" richColors theme={theme === 'system' ? 'system' : theme} dir={dir} />
 
       {/* Header */}
@@ -3026,7 +3026,7 @@ export default function App() {
     )}
 
     {/* Mobile Bottom Navigation - OUTSIDE animated wrapper to ensure true fixed positioning */}
-    <nav className="md:hidden fixed bottom-6 left-6 right-6 z-[200] glass-card !rounded-[2.5rem] !p-1 border dark:border-white/20 border-slate-300 dark:bg-slate-900/90 bg-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] pb-safe">
+    <nav className="md:hidden fixed bottom-6 left-6 right-6 z-[90] glass-card !rounded-[2.5rem] !p-1 border dark:border-white/20 border-slate-300 dark:bg-slate-900/90 bg-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] pb-safe">
       <div className="flex justify-around items-center h-14 relative">
         {navItems.slice(0, 2).map((item) => {
           const Icon = item.icon;
