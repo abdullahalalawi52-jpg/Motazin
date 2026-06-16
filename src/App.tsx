@@ -1293,11 +1293,11 @@ export default function App() {
             : (isMobileMenuOpen ? "left-0 rounded-r-[2.5rem]" : "-left-full rounded-r-none")
         )} dir={dir}>
           {/* Header Area */}
-          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-white dark:bg-slate-900 z-10 relative">
+          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl z-10 relative">
             <h2 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight">{t('menu') || 'Menu'}</h2>
             <button 
               onClick={() => setIsMobileMenuOpen(false)} 
-              className="p-2.5 text-slate-400 hover:text-rose-500 transition-all bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-white/10 border-slate-200 shadow-sm"
+              className="p-2.5 text-slate-400 hover:text-rose-500 transition-all bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border dark:border-white/10 border-slate-200 shadow-sm"
             >
               <XCircle className="w-5 h-5" />
             </button>
@@ -1462,7 +1462,7 @@ export default function App() {
           </div>
 
           {/* Footer Area */}
-          <div className="p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-white dark:bg-slate-900 pb-safe z-10 relative">
+          <div className="p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl pb-safe z-10 relative">
             {user ? (
               <button 
                 onClick={() => signOut(auth)}
