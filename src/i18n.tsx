@@ -1066,6 +1066,30 @@ ar: 'لوحة القيادة', en: 'Dashboard', fr: 'Tableau de bord', es: 'Tabl
   darkMode: {
     ar: 'الوضع الداكن', en: 'Dark Mode', fr: 'Mode Sombre', es: 'Modo Oscuro', tr: 'Karanlık Mod', ur: 'ڈارک موڈ',
     ja: 'Dark Mode', zh: 'Dark Mode', ru: 'Dark Mode', pt: 'Dark Mode'
+  },
+  errorOccurred: {
+    ar: 'حدث خطأ أثناء الاتصال. يرجى التأكد من صحة مفتاح Gemini API الخاص بك وأنه يملك صلاحيات كافية.',
+    en: 'An error occurred during connection. Please ensure your Gemini API key is correct and has sufficient permissions.',
+    fr: 'Une erreur s\'est produite. Veuillez vérifier votre clé API Gemini.',
+    es: 'Se produjo un error. Verifique su clave API de Gemini.',
+    tr: 'Bir hata oluştu. Lütfen Gemini API anahtarınızı kontrol edin.',
+    ur: 'ایک خرابی پیش آگئی۔ براہ کرم اپنی جیمنی API کی کو چیک کریں۔',
+    ja: 'エラーが発生しました。Gemini APIキーを確認してください。',
+    zh: '发生错误。请检查您的Gemini API密钥。',
+    ru: 'Произошла ошибка. Пожалуйста, проверьте ваш ключ API Gemini.',
+    pt: 'Ocorreu um erro. Verifique sua chave da API Gemini.'
+  },
+  errorGenerate: {
+    ar: 'حدث خطأ أثناء إنشاء الصورة. يرجى المحاولة مرة أخرى.',
+    en: 'An error occurred while generating the image. Please try again.',
+    fr: 'Une erreur s\'est produite lors de la génération de l\'image.',
+    es: 'Se produjo un error al generar la imagen.',
+    tr: 'Görüntü oluşturulurken bir hata oluştu.',
+    ur: 'تصویر بنانے کے دوران ایک خرابی پیش آگئی۔',
+    ja: '画像の生成中にエラーが発生しました。',
+    zh: '生成图像时发生错误。',
+    ru: 'Произошла ошибка при создании изображения.',
+    pt: 'Ocorreu um erro ao gerar a imagem.'
   }
 };
 
