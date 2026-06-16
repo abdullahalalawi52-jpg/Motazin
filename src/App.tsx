@@ -1360,17 +1360,17 @@ export default function App() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => { setIsPdfScannerOpen(true); setIsMobileMenuOpen(false); }}
-                  className="flex flex-col items-center justify-center gap-2 p-4 dark:bg-white/5 bg-slate-100 rounded-2xl border dark:border-white/10 border-slate-200 transition-all active:scale-95 hover:bg-slate-200 dark:hover:bg-white/10"
+                  className="flex flex-col items-center justify-center gap-2 p-4 dark:bg-white/5 bg-slate-50 rounded-2xl border dark:border-white/10 border-slate-200 transition-all active:scale-95 hover:bg-slate-100 dark:hover:bg-white/10 shadow-sm"
                 >
-                  <FileSearch className="w-6 h-6 text-indigo-400" />
-                  <span className="text-[10px] font-black uppercase">{t('scanPDF')}</span>
+                  <FileSearch className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                  <span className="text-[10px] font-black uppercase text-slate-700 dark:text-white">{t('scanPDF')}</span>
                 </button>
                 <button
                   onClick={() => { setIsSnapshotsModalOpen(true); setIsMobileMenuOpen(false); }}
-                  className="flex flex-col items-center justify-center gap-2 p-4 dark:bg-white/5 bg-slate-100 rounded-2xl border dark:border-white/10 border-slate-200 transition-all active:scale-95 hover:bg-slate-200 dark:hover:bg-white/10"
+                  className="flex flex-col items-center justify-center gap-2 p-4 dark:bg-white/5 bg-slate-50 rounded-2xl border dark:border-white/10 border-slate-200 transition-all active:scale-95 hover:bg-slate-100 dark:hover:bg-white/10 shadow-sm"
                 >
-                  <Clock className="w-6 h-6 text-emerald-400" />
-                  <span className="text-[10px] font-black uppercase">{t('backups')}</span>
+                  <Clock className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-[10px] font-black uppercase text-slate-700 dark:text-white">{t('backups')}</span>
                 </button>
               </div>
             </div>
