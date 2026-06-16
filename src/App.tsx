@@ -1273,7 +1273,7 @@ export default function App() {
 
       {/* Mobile Menu Overlay */}
       <div className={cn(
-        "fixed inset-0 z-[100] md:hidden transition-all duration-300",
+        "fixed inset-0 z-[250] md:hidden transition-all duration-300",
         isMobileMenuOpen ? "visible" : "invisible"
       )}>
         {/* Backdrop */}
@@ -1287,7 +1287,7 @@ export default function App() {
         
         {/* Drawer Content */}
         <div className={cn(
-          "fixed top-0 h-full w-[85%] max-w-xs dark:bg-slate-900/95 bg-white/95 backdrop-blur-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[110] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col overflow-hidden",
+          "fixed top-0 h-full w-[85%] max-w-xs dark:bg-slate-900/95 bg-white/95 backdrop-blur-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[260] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col overflow-hidden",
           language === 'ar' 
             ? (isMobileMenuOpen ? "right-0 rounded-l-[2.5rem]" : "-right-full rounded-l-none") 
             : (isMobileMenuOpen ? "left-0 rounded-r-[2.5rem]" : "-left-full rounded-r-none")
@@ -1303,7 +1303,7 @@ export default function App() {
             </button>
           </div>
           
-          <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-8">
+          <div className="flex-1 overflow-y-auto no-scrollbar p-6 pb-12 space-y-8">
             {/* Profile in mobile menu */}
             <div className="flex items-center gap-4 p-5 bg-gradient-to-br from-indigo-500/10 to-indigo-700/5 rounded-2xl border border-indigo-500/20 shadow-inner">
               <div className="relative">
