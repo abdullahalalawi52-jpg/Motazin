@@ -2002,7 +2002,7 @@ export default function App() {
         {/* Right Column: Transactions List */}
         <div className="xl:col-span-8">
           <div className="glass-card overflow-hidden flex flex-col h-full" style={{ borderRadius: '1.5rem' }}>
-            <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-100/90 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <div className="flex items-center gap-1 dark:bg-white/5 bg-slate-100 p-1 rounded-xl border dark:border-white/10 border-slate-200">
                   <button 
@@ -2074,7 +2074,7 @@ export default function App() {
             </div>
             
             {transactions.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-slate-50 dark:bg-transparent">
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-transparent">
                 <div className="p-6 bg-slate-200/50 dark:bg-white/5 rounded-full mb-6 border border-slate-300 dark:border-white/10">
                   <Calculator className="w-12 h-12 text-slate-400 dark:text-white/20" />
                 </div>
@@ -2084,7 +2084,7 @@ export default function App() {
             ) : (
               <>
                 {/* Desktop Table View */}
-                <div id="transactions-table" className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-slate-50/30">
+                <div id="transactions-table" className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-white">
                   <table className="w-full text-[15px] text-right border-collapse">
                     <thead className="sticky top-0 z-20 dark:text-white text-slate-800 shadow-sm ring-1 dark:ring-white/10 ring-slate-200/50">
                       {/* Category Headers */}
