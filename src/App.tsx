@@ -1143,7 +1143,7 @@ export default function App() {
         "sticky top-2 md:top-4 z-40 transition-all duration-500 px-2 md:px-0",
         isScrolled ? "md:translate-y-0" : "md:translate-y-2"
       )}>
-        <div className="glass rounded-[2rem] md:rounded-[2.5rem] p-2.5 md:px-6 md:py-3 shadow-xl md:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.3)] border dark:border-white/10 border-slate-200/50 flex items-center justify-between max-w-[1850px] mx-auto backdrop-blur-xl">
+        <div className="glass w-full rounded-[2rem] md:rounded-[2.5rem] p-2.5 md:px-4 lg:px-6 md:py-3 shadow-xl md:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.3)] border dark:border-white/10 border-slate-200/50 flex items-center justify-between max-w-[1850px] mx-auto backdrop-blur-xl">
           <div className="flex items-center gap-4">
             <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl border border-white/20 shadow-lg group transition-all hover:scale-105">
               <Calculator className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
@@ -1162,15 +1162,15 @@ export default function App() {
               {isMobileMenuOpen ? <XCircle className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
 
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-1.5 lg:gap-3">
               {/* Language Switcher */}
               <div className="relative" ref={langRef}>
                 <button 
                   onClick={() => setIsLangOpen(!isLangOpen)}
-                  className="flex items-center gap-2 pl-9 pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 hover:bg-white/10 dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black transition-all shadow-sm group"
+                  className="flex items-center gap-2 pl-3 lg:pl-9 pr-3 lg:pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 hover:bg-white/10 dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black transition-all shadow-sm group"
                 >
                   <Globe className="w-4 h-4 text-indigo-400" />
-                  <span>{language === 'ar' ? 'العربية' : language === 'en' ? 'English' : language === 'fr' ? 'Français' : language === 'es' ? 'Español' : language === 'tr' ? 'Türkçe' : language === 'ur' ? 'اردو' : language === 'ja' ? '日本語' : language === 'zh' ? '中文' : language === 'ru' ? 'Русский' : language === 'pt' ? 'Português' : 'English'}</span>
+                  <span className="hidden lg:inline-block">{language === 'ar' ? 'العربية' : language === 'en' ? 'English' : language === 'fr' ? 'Français' : language === 'es' ? 'Español' : language === 'tr' ? 'Türkçe' : language === 'ur' ? 'اردو' : language === 'ja' ? '日本語' : language === 'zh' ? '中文' : language === 'ru' ? 'Русский' : language === 'pt' ? 'Português' : 'English'}</span>
                 </button>
                 
                 {isLangOpen && (
@@ -1249,10 +1249,10 @@ export default function App() {
               <div className="relative" ref={currencyRef}>
                 <button 
                   onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
-                  className="flex items-center gap-2 pl-9 pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 border dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black"
+                  className="flex items-center gap-2 pl-3 lg:pl-9 pr-3 lg:pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 border dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black"
                 >
                   <Coins className="w-4 h-4 text-emerald-400" />
-                  <span>{CURRENCIES.find(c => c.code === currency)?.symbol}</span>
+                  <span className="hidden lg:inline-block">{CURRENCIES.find(c => c.code === currency)?.symbol}</span>
                 </button>
                 {isCurrencyOpen && (
                   <div className="absolute top-full right-0 mt-2 w-48 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto animate-scale-in origin-top-right">
@@ -1530,7 +1530,7 @@ export default function App() {
         "justify-center w-full mb-8"
       )}>
         <div className={cn(
-          "glass p-1.5 rounded-[2rem] border transition-all duration-500 shadow-2xl flex items-center gap-1",
+          "glass p-1.5 rounded-[2rem] border transition-all duration-500 shadow-2xl flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full",
           isScrolled 
             ? "dark:bg-slate-900/90 bg-white/90 dark:border-white/20 border-slate-300 scale-95 shadow-indigo-500/10" 
             : "dark:bg-slate-800/60 bg-white/60 dark:border-white/10 border-slate-200"
