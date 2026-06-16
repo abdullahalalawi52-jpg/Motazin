@@ -1291,7 +1291,7 @@ export default function App() {
           language === 'ar' 
             ? (isMobileMenuOpen ? "right-0 rounded-l-[2.5rem]" : "-right-full rounded-l-none") 
             : (isMobileMenuOpen ? "left-0 rounded-r-[2.5rem]" : "-left-full rounded-r-none")
-        )} dir={dir}>
+        )} dir={dir} style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}>
           {/* Header Area */}
           <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02]">
             <h2 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight">{t('menu') || 'Menu'}</h2>
