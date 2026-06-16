@@ -1293,10 +1293,7 @@ export default function App() {
             : (isMobileMenuOpen ? "left-0 rounded-r-[2.5rem]" : "-left-full rounded-r-none")
         )} dir={dir}>
           {/* Header Area */}
-          <div className={cn(
-            "flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-white dark:bg-slate-900 z-10 relative",
-            language === 'ar' ? "rounded-tl-[2.5rem]" : "rounded-tr-[2.5rem]"
-          )}>
+          <div className="flex items-center justify-between p-6 border-b dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02]">
             <h2 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight">{t('menu') || 'Menu'}</h2>
             <button 
               onClick={() => setIsMobileMenuOpen(false)} 
@@ -1465,10 +1462,7 @@ export default function App() {
           </div>
 
           {/* Footer Area */}
-          <div className={cn(
-            "p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-white dark:bg-slate-900 pb-safe z-10 relative",
-            language === 'ar' ? "rounded-bl-[2.5rem]" : "rounded-br-[2.5rem]"
-          )}>
+          <div className="p-6 pb-12 sm:pb-6 border-t dark:border-white/10 border-slate-100 bg-slate-50/50 dark:bg-white/[0.02] pb-safe">
             {user ? (
               <button 
                 onClick={() => signOut(auth)}
