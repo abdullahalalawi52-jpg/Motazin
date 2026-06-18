@@ -1025,10 +1025,10 @@ export default function App() {
       if (imgData === 'data:,') {
         throw new Error("Failed to generate image data from table.");
       }
-      
+
       const pdfWidth = Math.max(canvas.width / 2, 1);
       const pdfHeight = Math.max(canvas.height / 2, 1);
-      
+
       const pdf = new jsPDF({
         orientation: pdfWidth > pdfHeight ? 'l' : 'p',
         unit: 'px',
@@ -2840,20 +2840,19 @@ export default function App() {
               className="p-6 overflow-y-auto custom-scrollbar no-scrollbar flex-1 max-h-[calc(92vh-180px)] md:max-h-[calc(85vh-180px)] space-y-6 pb-6 bg-slate-50/50 dark:bg-slate-950/20"
             >
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="col-span-1 min-w-0">
+                <div className="col-span-1">
                   <label htmlFor="mob-tx-date" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('date')}</label>
                   <input
                     id="mob-tx-date"
                     name="mob-date"
                     type="text"
-                    required
                     value={date}
                     onChange={e => setDate(e.target.value)}
                     placeholder={t('exampleDate')}
-                    className="w-full min-w-0 glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
+                    className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
                   />
                 </div>
-                <div className="col-span-2 min-w-0">
+                <div className="col-span-2">
                   <label htmlFor="mob-tx-description" className="block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 dark:text-slate-400 text-slate-500">{t('description')}</label>
                   <input
                     id="mob-tx-description"
@@ -2863,7 +2862,7 @@ export default function App() {
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                     placeholder={t('exampleDesc')}
-                    className="w-full min-w-0 glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
+                    className="w-full glass-input px-4 py-3.5 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
                   />
                 </div>
               </div>
@@ -3113,11 +3112,11 @@ export default function App() {
         </div>
       </nav>
       {showConfetti && <Confetti />}
-      <BubbleChat 
+      <BubbleChat
         key={`${language}-${theme}`}
-        chatflowid="07926ee6-98dd-43a4-96fa-fe05eb2a6b3d" 
-        apiHost="https://cloud.flowiseai.com" 
-        chatflowConfig={{
+        chatflowid="07926ee6-98dd-43a4-96fa-fe05eb2a6b3d"
+        apiHost="https://cloud.flowiseai.com"
+        chatflowConfig={useMemo(() => ({
           vars: {
             userData: JSON.stringify({
               language: language,
@@ -3133,10 +3132,10 @@ export default function App() {
               }))
             })
           }
-        }}
-        theme={{ 
+        }), [language, totals, transactions])}
+        theme={useMemo(() => ({
           button: { backgroundColor: "#4f46e5", right: 20, bottom: 20, size: 56, iconColor: "white" },
-          chatWindow: { 
+          chatWindow: {
             welcomeMessage: t('botWelcomeMessage'),
             height: 600,
             backgroundColor: theme === 'dark' ? "#1e293b" : "#ffffff",
@@ -3156,7 +3155,7 @@ export default function App() {
               sendButtonColor: "#4f46e5",
             }
           }
-        }} 
+        }}
       />
     </>
   );
