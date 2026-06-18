@@ -255,6 +255,16 @@ export default function App() {
   const currencyRef = useRef<HTMLDivElement>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Handle Google Login
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      alert((t('errorOccurred') || 'Error') + '\\n' + (error.message || ''));
+    }
+  };
+
   // Auth Effect
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -1249,7 +1259,7 @@ export default function App() {
                       <LogOut className="w-4 h-4" />
                     </button>
                   ) : (
-                    <button onClick={() => signInWithPopup(auth, googleProvider)} className="text-[11px] font-black uppercase text-indigo-400">
+                    <button onClick={handleGoogleLogin} className="text-[11px] font-black uppercase text-indigo-400">
                       {t('login')}
                     </button>
                   )}
@@ -1499,7 +1509,7 @@ export default function App() {
                 </button>
               ) : (
                 <button
-                  onClick={() => signInWithPopup(auth, googleProvider)}
+                  onClick={handleGoogleLogin}
                   className="w-full flex items-center justify-center gap-3 p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/20 transition-all active:scale-95 uppercase tracking-widest text-xs"
                 >
                   <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
