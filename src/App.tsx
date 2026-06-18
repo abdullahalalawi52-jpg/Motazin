@@ -3140,6 +3140,23 @@ export default function App() {
         key={`${language}-${theme}`}
         chatflowid="07926ee6-98dd-43a4-96fa-fe05eb2a6b3d"
         apiHost="https://cloud.flowiseai.com"
+        chatflowConfig={useMemo(() => ({
+          vars: {
+            userData: JSON.stringify({
+              language: language,
+              totals: {
+                totalAssets: totals.totalAssets,
+                totalLiabilities: totals.totalLiabilities,
+                totalEquity: totals.totalEquity,
+                isBalanced: totals.isBalanced
+              },
+              recentTransactions: transactions.slice(0, 10).map(tx => ({
+                description: tx.description,
+                impacts: tx.impacts.map(i => ({ accountId: i.accountId, amount: i.amount, type: i.type }))
+              }))
+            })
+          }
+        }), [language, totals, transactions])}
         theme={bubbleChatTheme}
       />
     </>
