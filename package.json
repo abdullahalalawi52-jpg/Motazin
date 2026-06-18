@@ -20,6 +20,7 @@
     "clsx": "^2.1.0",
     "esbuild": "^0.28.1",
     "firebase": "^12.11.0",
+    "flowise-embed-react": "^3.1.6",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.1",

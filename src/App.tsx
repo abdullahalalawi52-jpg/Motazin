@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Plus, Trash2, Calculator, CheckCircle2, XCircle, AlertCircle, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, FileText, LogOut, Paperclip, Eye, FileImage, ImageIcon, Sun, Moon, Menu, Info, Mail, Phone, MapPin, Send, Heart, Shield, Zap, Clock, User as UserIcon, LayoutDashboard, Settings, FileSearch, ChevronRight } from 'lucide-react';
 import { Coins } from 'lucide-react';
+import { BubbleChat } from 'flowise-embed-react';
 import { useTheme } from './ThemeContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -3071,6 +3072,51 @@ export default function App() {
         </div>
       </nav>
       {showConfetti && <Confetti />}
+      <BubbleChat 
+        key={`${language}-${theme}`}
+        chatflowid="07926ee6-98dd-43a4-96fa-fe05eb2a6b3d" 
+        apiHost="https://cloud.flowiseai.com" 
+        chatflowConfig={{
+          vars: {
+            userData: JSON.stringify({
+              language: language,
+              totals: {
+                totalAssets: totals.totalAssets,
+                totalLiabilities: totals.totalLiabilities,
+                totalEquity: totals.totalEquity,
+                isBalanced: totals.isBalanced
+              },
+              recentTransactions: transactions.slice(0, 10).map(tx => ({
+                description: tx.description,
+                impacts: tx.impacts.map(i => ({ accountId: i.accountId, amount: i.amount, type: i.type }))
+              }))
+            })
+          }
+        }}
+        theme={{ 
+          button: { backgroundColor: "#4f46e5", right: 20, bottom: 20, size: 56, iconColor: "white" },
+          chatWindow: { 
+            welcomeMessage: t('botWelcomeMessage'),
+            height: 600,
+            backgroundColor: theme === 'dark' ? "#1e293b" : "#ffffff",
+            poweredByTextColor: theme === 'dark' ? "#94a3b8" : "#303235",
+            botMessage: {
+              backgroundColor: theme === 'dark' ? "#334155" : "#f7f8ff",
+              textColor: theme === 'dark' ? "#f8fafc" : "#303235",
+            },
+            userMessage: {
+              backgroundColor: "#4f46e5",
+              textColor: "#ffffff",
+            },
+            textInput: {
+              placeholder: t('botPlaceholder'),
+              backgroundColor: theme === 'dark' ? "#0f172a" : "#ffffff",
+              textColor: theme === 'dark' ? "#f8fafc" : "#303235",
+              sendButtonColor: "#4f46e5",
+            }
+          }
+        }} 
+      />
     </>
   );
 }

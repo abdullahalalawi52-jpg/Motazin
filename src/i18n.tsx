@@ -1079,6 +1079,30 @@ ar: 'لوحة القيادة', en: 'Dashboard', fr: 'Tableau de bord', es: 'Tabl
     ru: 'Произошла ошибка. Пожалуйста, проверьте ваш ключ API Gemini.',
     pt: 'Ocorreu um erro. Verifique sua chave da API Gemini.'
   },
+  botWelcomeMessage: {
+    ar: "مرحباً! أنا المساعد الذكي لحاسبة معادلة الميزانية. كيف يمكنني مساعدتك؟\n(ملاحظة: أنا الآن متصل بأرقامك ويمكنني تحليلها!)",
+    en: "Hello! I am the Smart Assistant for the Balance Sheet Calculator. How can I help you?\n(Note: I am connected to your live data and can analyze it!)",
+    fr: "Bonjour! Je suis l'Assistant Intelligent du Calculateur de Bilan. Comment puis-je vous aider ?\n(Note: Je suis connecté à vos données en direct!)",
+    es: "¡Hola! Soy el Asistente Inteligente de la Calculadora de Balance. ¿En qué puedo ayudarte?\n(Nota: ¡Estoy conectado a tus datos en vivo!)",
+    tr: "Merhaba! Bilanço Hesaplayıcı için Akıllı Asistanım. Size nasıl yardımcı olabilirim?\n(Not: Canlı verilerinize bağlıyım!)",
+    ur: "ہیلو! میں بیلنس شیٹ کیلکولیٹر کا اسمارٹ اسسٹنٹ ہوں۔ میں آپ کی کیسے مدد کر سکتا ہوں؟\n(نوٹ: میں آپ کے لائیو ڈیٹا سے منسلک ہوں!)",
+    ja: "こんにちは！バランスシート計算機のスマートアシスタントです。どのようにお手伝いしましょうか？\n(注: ライブデータに接続されています！)",
+    zh: "你好！我是资产负债表计算器的智能助手。有什么我可以帮您的？\n(注：我已连接到您的实时数据！)",
+    ru: "Здравствуйте! Я умный помощник для калькулятора баланса. Чем могу помочь?\n(Примечание: Я подключен к вашим данным!)",
+    pt: "Olá! Sou o Assistente Inteligente da Calculadora de Balanço. Como posso ajudar?\n(Nota: Estou conectado aos seus dados ao vivo!)"
+  },
+  botPlaceholder: {
+    ar: "اكتب سؤالك هنا...",
+    en: "Type your question here...",
+    fr: "Tapez votre question ici...",
+    es: "Escribe tu pregunta aquí...",
+    tr: "Sorunuzu buraya yazın...",
+    ur: "اپنا سوال یہاں لکھیں...",
+    ja: "ここに質問を入力してください...",
+    zh: "在此输入您的问题...",
+    ru: "Введите свой вопрос здесь...",
+    pt: "Digite sua pergunta aqui..."
+  },
 };
 
 interface LanguageContextType {
