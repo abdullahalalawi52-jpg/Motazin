@@ -1092,6 +1092,30 @@ export default function App() {
     </>
   );
 
+  const bubbleChatTheme = useMemo(() => ({
+    button: { backgroundColor: "#4f46e5", right: 20, bottom: 20, size: 56, iconColor: "white" },
+    chatWindow: {
+      welcomeMessage: t('botWelcomeMessage'),
+      height: 600,
+      backgroundColor: theme === 'dark' ? "#1e293b" : "#ffffff",
+      poweredByTextColor: theme === 'dark' ? "#94a3b8" : "#303235",
+      botMessage: {
+        backgroundColor: theme === 'dark' ? "#334155" : "#f7f8ff",
+        textColor: theme === 'dark' ? "#f8fafc" : "#303235",
+      },
+      userMessage: {
+        backgroundColor: "#4f46e5",
+        textColor: "#ffffff",
+      },
+      textInput: {
+        placeholder: t('botPlaceholder'),
+        backgroundColor: theme === 'dark' ? "#0f172a" : "#ffffff",
+        textColor: theme === 'dark' ? "#f8fafc" : "#303235",
+        sendButtonColor: "#4f46e5",
+      }
+    }
+  }), [theme, t]);
+
   if (!isAuthReady) {
     return (
       <div className="min-h-screen w-full flex flex-col p-4 md:p-8 space-y-6 select-none overflow-hidden">
@@ -3116,29 +3140,7 @@ export default function App() {
         key={`${language}-${theme}`}
         chatflowid="07926ee6-98dd-43a4-96fa-fe05eb2a6b3d"
         apiHost="https://cloud.flowiseai.com"
-        theme={useMemo(() => ({
-          button: { backgroundColor: "#4f46e5", right: 20, bottom: 20, size: 56, iconColor: "white" },
-          chatWindow: {
-            welcomeMessage: t('botWelcomeMessage'),
-            height: 600,
-            backgroundColor: theme === 'dark' ? "#1e293b" : "#ffffff",
-            poweredByTextColor: theme === 'dark' ? "#94a3b8" : "#303235",
-            botMessage: {
-              backgroundColor: theme === 'dark' ? "#334155" : "#f7f8ff",
-              textColor: theme === 'dark' ? "#f8fafc" : "#303235",
-            },
-            userMessage: {
-              backgroundColor: "#4f46e5",
-              textColor: "#ffffff",
-            },
-            textInput: {
-              placeholder: t('botPlaceholder'),
-              backgroundColor: theme === 'dark' ? "#0f172a" : "#ffffff",
-              textColor: theme === 'dark' ? "#f8fafc" : "#303235",
-              sendButtonColor: "#4f46e5",
-            }
-          }
-        }), [theme, t])}
+        theme={bubbleChatTheme}
       />
     </>
   );
