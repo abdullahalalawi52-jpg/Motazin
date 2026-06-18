@@ -41,7 +41,19 @@ export function calculateTotals(
   transactions.forEach(t => {
     t.impacts.forEach(i => {
       if (accTotals[i.accountId] !== undefined) {
-        accTotals[i.accountId] += i.amount;
+        if (i.type) {
+          const isAsset = assets.some(a => a.id === i.accountId);
+          const isCredit = i.type === 'credit';
+          let finalAmount = i.amount;
+          if (isAsset) {
+            finalAmount = isCredit ? -i.amount : i.amount;
+          } else {
+            finalAmount = isCredit ? i.amount : -i.amount;
+          }
+          accTotals[i.accountId] += finalAmount;
+        } else {
+          accTotals[i.accountId] += i.amount;
+        }
       }
     });
   });
