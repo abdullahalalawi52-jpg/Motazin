@@ -9,7 +9,7 @@ import { Toaster, toast } from 'sonner';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { auth, db, googleProvider, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
+import { signInWithRedirect, signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, doc, onSnapshot, setDoc, query, orderBy, writeBatch, addDoc } from 'firebase/firestore';
 import { useLanguage } from './i18n';
 import { FileScanner as PdfScanner } from './PdfScanner';
@@ -258,7 +258,7 @@ export default function App() {
   // Handle Google Login
   const handleGoogleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithRedirect(auth, googleProvider);
     } catch (error: any) {
       console.error("Google login error:", error);
       alert((t('errorOccurred') || 'Error') + '\\n' + (error.message || ''));
