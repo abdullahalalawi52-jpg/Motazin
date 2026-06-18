@@ -959,18 +959,23 @@ export default function App() {
       // Temporarily remove max-height on original element to calculate correct dimensions
       const originalMaxHeight = tableElement.style.maxHeight;
       const originalOverflow = tableElement.style.overflow;
+      const wasHidden = tableElement.classList.contains('hidden');
+
       tableElement.style.maxHeight = 'none';
       tableElement.style.overflow = 'visible';
+      if (wasHidden) {
+        tableElement.classList.remove('hidden');
+        tableElement.classList.remove('md:block');
+      }
 
       const html2canvas = (await import('html2canvas')).default;
-      const jsPDF = (await import('jspdf')).default;
+      const { jsPDF } = await import('jspdf');
 
       const canvas = await html2canvas(tableElement, {
         scale: 2,
         useCORS: true,
         backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
         logging: false,
-        allowTaint: true,
         onclone: (clonedDoc) => {
           const clonedTable = clonedDoc.getElementById('transactions-table');
           if (clonedTable) {
@@ -991,15 +996,34 @@ export default function App() {
       // Restore original styles
       tableElement.style.maxHeight = originalMaxHeight;
       tableElement.style.overflow = originalOverflow;
+      if (wasHidden) {
+        tableElement.classList.add('hidden');
+        tableElement.classList.add('md:block');
+      }
+
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error("Table is empty or not visible.");
+      }
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'px', [canvas.width / 2, canvas.height / 2]);
+      if (imgData === 'data:,') {
+        throw new Error("Failed to generate image data from table.");
+      }
+      
+      const pdfWidth = Math.max(canvas.width / 2, 1);
+      const pdfHeight = Math.max(canvas.height / 2, 1);
+      
+      const pdf = new jsPDF({
+        orientation: pdfWidth > pdfHeight ? 'l' : 'p',
+        unit: 'px',
+        format: [pdfWidth, pdfHeight]
+      });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save('transactions.pdf');
     } catch (error) {
       console.error('Error exporting PDF:', error);
-      alert(t('errorExportingPDF'));
+      alert(t('errorExportingPDF') + '\\n' + (error as Error).message);
     }
   };
 
