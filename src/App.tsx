@@ -15,6 +15,7 @@ import { DepreciationModal } from './DepreciationModal';
 import { SnapshotsModal } from './SnapshotsModal';
 import { ChatWidget } from './Chat';
 import { calculateTotals } from './utils/accounting';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Utility for tailwind classes
 function cn(...inputs: ClassValue[]) {
@@ -1172,6 +1173,7 @@ export default function App() {
     <>
       <div className="relative w-full max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-10 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
         <Toaster position="top-center" richColors theme={theme === 'system' ? 'system' : theme} dir={dir} />
+        <SpeedInsights />
 
         {/* Header */}
         {/* Header */}
