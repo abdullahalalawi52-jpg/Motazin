@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { MessageCircle, X, Send, User, Bot, Trash2, Check, Clock, Settings, Sparkles, Brain, BarChart3, DollarSign, HelpCircle, ChevronDown, ChevronUp, Key, Shield, Info } from 'lucide-react';
+import { MessageCircle, X, Send, User, Bot, MessageSquarePlus, Check, Clock, Settings, Sparkles, Brain, BarChart3, DollarSign, HelpCircle, ChevronDown, ChevronUp, Key, Shield, Info } from 'lucide-react';
 import { useLanguage } from './i18n';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -677,7 +677,7 @@ export function ChatWidget(props: ChatWidgetProps) {
       setMessages(newMessages);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newMessages));
     }
-  }, [isOpen]);
+  }, [isOpen, messages.length]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -1064,10 +1064,10 @@ export function ChatWidget(props: ChatWidgetProps) {
             {/* Clear Button */}
             <button
               onClick={clearChat}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold dark:text-slate-300 text-slate-600 hover:bg-rose-500/20 hover:text-rose-500 rounded-xl transition-all"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold dark:text-slate-300 text-slate-600 hover:bg-indigo-500/20 hover:text-indigo-500 rounded-xl transition-all"
               title={language === 'ar' ? 'محادثة جديدة' : 'New Chat'}
             >
-              <Trash2 className="w-4 h-4" />
+              <MessageSquarePlus className="w-4 h-4" />
               <span className="hidden sm:inline">{language === 'ar' ? 'محادثة جديدة' : 'New Chat'}</span>
             </button>
           </div>
