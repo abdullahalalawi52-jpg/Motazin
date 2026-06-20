@@ -854,23 +854,37 @@ export function ChatWidget(props: ChatWidgetProps) {
         contents.push({ role: 'user', parts: [{ text: newText }] });
       }
 
-      let response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-        {
+      let response;
+      if (apiKey) {
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: {
+                parts: [{ text: systemPrompt }]
+              },
+              contents: contents,
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 1000,
+              }
+            })
+          }
+        );
+      } else {
+        response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             system_instruction: {
               parts: [{ text: systemPrompt }]
             },
-            contents: contents,
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 1000,
-            }
+            contents: contents
           })
-        }
-      );
+        });
+      }
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));

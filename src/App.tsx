@@ -220,7 +220,7 @@ export default function App() {
 
   // Gemini API State
   const [geminiApiKey, setGeminiApiKey] = useState(() => {
-    return import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('motazin_gemini_api_key') || '';
+    return localStorage.getItem('motazin_gemini_api_key') || '';
   });
 
   // Custom Accounts State
