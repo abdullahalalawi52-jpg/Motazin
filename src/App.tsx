@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
 import { Plus, Trash2, GripVertical, Check, Download, AlertCircle, FileText, Share2, Sun, Moon, PieChart as PieChartIcon, Heart, FileDown, Eye, PenLine, Settings, CheckCircle2, ChevronRight, Calculator, FileCheck, ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, History, UserCircle2, BookOpen, Scale, ArrowRight, ShieldCheck, HelpCircle, GraduationCap, X, XCircle, Calendar, Camera, Upload, UploadCloud, Link as LinkIcon, CameraIcon, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, LogOut, Paperclip, FileImage, ImageIcon, Menu, Info, Mail, Phone, MapPin, Send, Shield, Zap, Clock, User as UserIcon, LayoutDashboard, FileSearch, Coins } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { clsx, type ClassValue } from 'clsx';
@@ -10,10 +10,10 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { signInWithRedirect, getRedirectResult, signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, doc, onSnapshot, setDoc, query, orderBy, writeBatch, addDoc } from 'firebase/firestore';
 import { useLanguage } from './i18n';
-import { FileScanner as PdfScanner } from './PdfScanner';
-import { DepreciationModal } from './DepreciationModal';
-import { SnapshotsModal } from './SnapshotsModal';
-import { ChatWidget } from './Chat';
+const PdfScanner = lazy(() => import('./PdfScanner').then(module => ({ default: module.FileScanner })));
+const DepreciationModal = lazy(() => import('./DepreciationModal').then(module => ({ default: module.DepreciationModal })));
+const SnapshotsModal = lazy(() => import('./SnapshotsModal').then(module => ({ default: module.SnapshotsModal })));
+const ChatWidget = lazy(() => import('./Chat').then(module => ({ default: module.ChatWidget })));
 import { calculateTotals } from './utils/accounting';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
@@ -2622,83 +2622,89 @@ export default function App() {
         </main>
       </div>
 
-      <SnapshotsModal
-        isOpen={isSnapshotsModalOpen}
-        onClose={() => setIsSnapshotsModalOpen(false)}
-        currentTransactions={transactions}
-        currentBudgets={budgets}
-        onLoadSnapshot={(loadedTransactions, loadedBudgets) => {
-          updateTransactions(loadedTransactions);
-          setBudgets(loadedBudgets);
-          localStorage.setItem('motazin_budgets', JSON.stringify(loadedBudgets));
-          toast.success(language === 'ar' ? 'تم استعادة النسخة بنجاح!' : 'Backup loaded successfully!');
-        }}
-      />
-
-      {isPdfScannerOpen && (
-        <PdfScanner
-          geminiApiKey={geminiApiKey}
-          onClose={() => setIsPdfScannerOpen(false)}
-          onImport={(rows) => {
-            const newTransactions = rows.map(r => {
-              const accountId = r.accountId || 'bank';
-              const account = allAccounts.find(a => a.id === accountId);
-              const category = account?.category || 'asset';
-
-              let impacts: Omit<Impact, 'id'>[] = [];
-              if (category === 'asset') {
-                impacts = [
-                  { accountId: accountId, amount: r.amount },
-                  { accountId: 'capital', amount: r.amount }
-                ];
-              } else if (category === 'liability') {
-                impacts = [
-                  { accountId: accountId, amount: r.amount },
-                  { accountId: 'capital', amount: -r.amount }
-                ];
-              } else {
-                impacts = [
-                  { accountId: accountId, amount: r.amount },
-                  { accountId: 'bank', amount: -r.amount }
-                ];
-              }
-
-              return {
-                id: r.id,
-                date: r.date,
-                description: r.description,
-                impacts: impacts.map(i => ({ ...i, id: Math.random().toString(36).substr(2, 9) })),
-                createdAt: new Date().toISOString()
-              };
-            });
-            updateTransactions([...transactions, ...newTransactions]);
-            setIsPdfScannerOpen(false);
-            toast.success(language === 'ar' ? 'تم استيراد البيانات بنجاح!' : 'Data imported successfully!');
+      <Suspense fallback={null}>
+        <SnapshotsModal
+          isOpen={isSnapshotsModalOpen}
+          onClose={() => setIsSnapshotsModalOpen(false)}
+          currentTransactions={transactions}
+          currentBudgets={budgets}
+          onLoadSnapshot={(loadedTransactions, loadedBudgets) => {
+            updateTransactions(loadedTransactions);
+            setBudgets(loadedBudgets);
+            localStorage.setItem('motazin_budgets', JSON.stringify(loadedBudgets));
+            toast.success(language === 'ar' ? 'تم استعادة النسخة بنجاح!' : 'Backup loaded successfully!');
           }}
         />
+      </Suspense>
+
+      {isPdfScannerOpen && (
+        <Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+          <PdfScanner
+            geminiApiKey={geminiApiKey}
+            onClose={() => setIsPdfScannerOpen(false)}
+            onImport={(rows) => {
+              const newTransactions = rows.map(r => {
+                const accountId = r.accountId || 'bank';
+                const account = allAccounts.find(a => a.id === accountId);
+                const category = account?.category || 'asset';
+
+                let impacts: Omit<Impact, 'id'>[] = [];
+                if (category === 'asset') {
+                  impacts = [
+                    { accountId: accountId, amount: r.amount },
+                    { accountId: 'capital', amount: r.amount }
+                  ];
+                } else if (category === 'liability') {
+                  impacts = [
+                    { accountId: accountId, amount: r.amount },
+                    { accountId: 'capital', amount: -r.amount }
+                  ];
+                } else {
+                  impacts = [
+                    { accountId: accountId, amount: r.amount },
+                    { accountId: 'bank', amount: -r.amount }
+                  ];
+                }
+
+                return {
+                  id: r.id,
+                  date: r.date,
+                  description: r.description,
+                  impacts: impacts.map(i => ({ ...i, id: Math.random().toString(36).substr(2, 9) })),
+                  createdAt: new Date().toISOString()
+                };
+              });
+              updateTransactions([...transactions, ...newTransactions]);
+              setIsPdfScannerOpen(false);
+              toast.success(language === 'ar' ? 'تم استيراد البيانات بنجاح!' : 'Data imported successfully!');
+            }}
+          />
+        </Suspense>
       )}
 
-      <DepreciationModal
-        isOpen={isDepreciationModalOpen}
-        onClose={() => setIsDepreciationModalOpen(false)}
-        assets={allAccounts.filter(a => a.category === 'asset' && !['cash', 'bank', 'ar', 'inventory', 'supplies', 'prepaid_expenses'].includes(a.id))}
-        onApply={(accountId, amount, description) => {
-          const txId = Math.random().toString(36).substr(2, 9);
-          const newTx: Transaction = {
-            id: txId,
-            date: new Date().toLocaleDateString('en-GB'),
-            description: description,
-            impacts: [
-              { id: Math.random().toString(36).substr(2, 9), accountId: 'expenses', amount: amount },
-              { id: Math.random().toString(36).substr(2, 9), accountId: accountId, amount: -amount }
-            ],
-            createdAt: new Date().toISOString()
-          };
-          updateTransactions([...transactions, newTx]);
-          setIsDepreciationModalOpen(false);
-          toast.success(language === 'ar' ? 'تم إضافة قيد الإهلاك بنجاح!' : 'Depreciation entry added successfully!');
-        }}
-      />
+      <Suspense fallback={null}>
+        <DepreciationModal
+          isOpen={isDepreciationModalOpen}
+          onClose={() => setIsDepreciationModalOpen(false)}
+          assets={allAccounts.filter(a => a.category === 'asset' && !['cash', 'bank', 'ar', 'inventory', 'supplies', 'prepaid_expenses'].includes(a.id))}
+          onApply={(accountId, amount, description) => {
+            const txId = Math.random().toString(36).substr(2, 9);
+            const newTx: Transaction = {
+              id: txId,
+              date: new Date().toLocaleDateString('en-GB'),
+              description: description,
+              impacts: [
+                { id: Math.random().toString(36).substr(2, 9), accountId: 'expenses', amount: amount },
+                { id: Math.random().toString(36).substr(2, 9), accountId: accountId, amount: -amount }
+              ],
+              createdAt: new Date().toISOString()
+            };
+            updateTransactions([...transactions, newTx]);
+            setIsDepreciationModalOpen(false);
+            toast.success(language === 'ar' ? 'تم إضافة قيد الإهلاك بنجاح!' : 'Depreciation entry added successfully!');
+          }}
+        />
+      </Suspense>
 
       <DocPreviewModal
         isOpen={isDocPreviewOpen}
@@ -3113,24 +3119,26 @@ export default function App() {
         </div>
       </nav>
       {showConfetti && <Confetti />}
-      <ChatWidget 
-        financialContext={{
-          accounts: totals.accounts,
-          totalAssets: totals.totalAssets,
-          totalLiabilities: totals.totalLiabilities,
-          totalEquity: totals.totalEquity,
-          isBalanced: totals.isBalanced,
-          transactionCount: transactions.length,
-          netProfit: insights.netProfit,
-          currentRatio: insights.currentRatio,
-          debtToEquity: insights.debtToEquity,
-        }}
-        geminiApiKey={geminiApiKey}
-        onApiKeyChange={(key) => {
-          setGeminiApiKey(key);
-          localStorage.setItem('motazin_gemini_api_key', key);
-        }}
-      />
+      <Suspense fallback={null}>
+        <ChatWidget 
+          financialContext={{
+            accounts: totals.accounts,
+            totalAssets: totals.totalAssets,
+            totalLiabilities: totals.totalLiabilities,
+            totalEquity: totals.totalEquity,
+            isBalanced: totals.isBalanced,
+            transactionCount: transactions.length,
+            netProfit: insights.netProfit,
+            currentRatio: insights.currentRatio,
+            debtToEquity: insights.debtToEquity,
+          }}
+          geminiApiKey={geminiApiKey}
+          onApiKeyChange={(key) => {
+            setGeminiApiKey(key);
+            localStorage.setItem('motazin_gemini_api_key', key);
+          }}
+        />
+      </Suspense>
     </>
   );
 }
