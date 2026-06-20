@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Trash2, GripVertical, Check, Download, AlertCircle, FileText, Share2, Sun, Moon, PieChart as PieChartIcon, Heart, FileDown, Eye, PenLine, Settings, CheckCircle2, ChevronRight, Calculator, FileCheck, ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, History, UserCircle2, BookOpen, Scale, ArrowRight, ShieldCheck, HelpCircle, GraduationCap, X, Calendar, Camera, Upload, UploadCloud, Link as LinkIcon, CameraIcon, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, LogOut, Paperclip, FileImage, ImageIcon, Menu, Info, Mail, Phone, MapPin, Send, Shield, Zap, Clock, User as UserIcon, LayoutDashboard, FileSearch, Coins } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Check, Download, AlertCircle, FileText, Share2, Sun, Moon, PieChart as PieChartIcon, Heart, FileDown, Eye, PenLine, Settings, CheckCircle2, ChevronRight, Calculator, FileCheck, ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, History, UserCircle2, BookOpen, Scale, ArrowRight, ShieldCheck, HelpCircle, GraduationCap, X, XCircle, Calendar, Camera, Upload, UploadCloud, Link as LinkIcon, CameraIcon, ArrowRightLeft, Target, Edit2, Save, Undo2, Redo2, Globe, FileSpreadsheet, LogOut, Paperclip, FileImage, ImageIcon, Menu, Info, Mail, Phone, MapPin, Send, Shield, Zap, Clock, User as UserIcon, LayoutDashboard, FileSearch, Coins } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -13,6 +13,7 @@ import { useLanguage } from './i18n';
 import { FileScanner as PdfScanner } from './PdfScanner';
 import { DepreciationModal } from './DepreciationModal';
 import { SnapshotsModal } from './SnapshotsModal';
+import { ChatWidget } from './Chat';
 import { calculateTotals } from './utils/accounting';
 
 // Utility for tailwind classes
@@ -3110,6 +3111,24 @@ export default function App() {
         </div>
       </nav>
       {showConfetti && <Confetti />}
+      <ChatWidget 
+        financialContext={{
+          accounts: totals.accounts,
+          totalAssets: totals.totalAssets,
+          totalLiabilities: totals.totalLiabilities,
+          totalEquity: totals.totalEquity,
+          isBalanced: totals.isBalanced,
+          transactionCount: transactions.length,
+          netProfit: insights.netProfit,
+          currentRatio: insights.currentRatio,
+          debtToEquity: insights.debtToEquity,
+        }}
+        geminiApiKey={geminiApiKey}
+        onApiKeyChange={(key) => {
+          setGeminiApiKey(key);
+          localStorage.setItem('motazin_gemini_api_key', key);
+        }}
+      />
     </>
   );
 }
