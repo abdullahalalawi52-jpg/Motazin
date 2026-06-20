@@ -633,6 +633,7 @@ export function ChatWidget(props: ChatWidgetProps) {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [localApiKey, setLocalApiKey] = useState(() => {
     return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
   });
@@ -697,6 +698,7 @@ export function ChatWidget(props: ChatWidgetProps) {
       onApiKeyChange(localApiKey);
     }
     setShowSettings(false);
+    setHasError(false);
 
     // Add a system message about activation
     if (localApiKey.trim()) {
@@ -937,14 +939,17 @@ export function ChatWidget(props: ChatWidgetProps) {
             ? '⏳ **عذراً، لقد تجاوزت الحد المسموح به للطلبات (Rate Limit).**\nيرجى الانتظار دقيقة واحدة ثم المحاولة مرة أخرى.'
             : '⏳ **Sorry, you have exceeded the rate limit.**\nPlease wait a minute and try again.';
           isAi = false;
+          setHasError(true);
         } else if (aiReply) {
           botReply = aiReply;
           isAi = true;
+          setHasError(false);
         } else {
           // AI Failed (e.g. invalid key, quota exceeded, 400 error)
           botReply = language === 'ar'
             ? '⚠️ **عذراً، فشل الاتصال بالذكاء الاصطناعي.**\nيرجى التأكد من أن مفتاح Gemini API الخاص بك صحيح ويعمل، أو تحقق من اتصال الإنترنت. (يمكنك مراجعة نافذة الـ Console بالضغط على F12 لمعرفة الخطأ بالتفصيل).'
             : '⚠️ **Sorry, connection to AI failed.**\nPlease ensure your Gemini API key is valid and working. (Check the Console using F12 for detailed error).';
+          setHasError(true);
         }
       } else {
         botReply = findReply(text);
@@ -1049,18 +1054,20 @@ export function ChatWidget(props: ChatWidgetProps) {
           </div>
           <div className="flex items-center gap-1">
             {/* Settings Button */}
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={cn(
-                "p-2 rounded-xl transition-all",
-                showSettings
-                  ? "bg-indigo-500/20 text-indigo-500"
-                  : "dark:text-slate-400 text-slate-500 hover:bg-indigo-500/20 hover:text-indigo-500"
-              )}
-              title={language === 'ar' ? 'إعدادات الذكاء الاصطناعي' : 'AI Settings'}
-            >
-              <Settings className="w-4 h-4" />
-            </button>
+            {hasError && (
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className={cn(
+                  "p-2 rounded-xl transition-all",
+                  showSettings
+                    ? "bg-indigo-500/20 text-indigo-500"
+                    : "dark:text-slate-400 text-slate-500 hover:bg-indigo-500/20 hover:text-indigo-500"
+                )}
+                title={language === 'ar' ? 'إعدادات الذكاء الاصطناعي' : 'AI Settings'}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
             {/* Clear Button */}
             <button
               onClick={clearChat}
