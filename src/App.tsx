@@ -3120,7 +3120,7 @@ export default function App() {
       </nav>
       {showConfetti && <Confetti />}
       <Suspense fallback={null}>
-        <ChatWidget 
+        <ChatWidget
           financialContext={{
             accounts: totals.accounts,
             totalAssets: totals.totalAssets,
