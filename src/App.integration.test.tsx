@@ -16,6 +16,9 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }));
 
+// Mock scrollIntoView for jsdom
+window.HTMLElement.prototype.scrollIntoView = vi.fn();
+
 // Mock Firebase Modules
 vi.mock('./firebase', () => ({
   auth: {
@@ -50,6 +53,7 @@ vi.mock('firebase/auth', () => ({
   GoogleAuthProvider: vi.fn(),
   signInWithPopup: vi.fn(),
   signOut: vi.fn(),
+  getRedirectResult: vi.fn(() => Promise.resolve(null)),
   onAuthStateChanged: vi.fn((auth, cb) => {
     cb(null);
     return () => {};

@@ -86,4 +86,38 @@ describe('calculateTotals', () => {
     expect(result.totalEquity).toBe(0);
     expect(result.isBalanced).toBe(false);
   });
+
+  it('should calculate correctly using debit and credit types', () => {
+    const transactions: Transaction[] = [
+      {
+        id: 'tx1',
+        date: '2026-06-10',
+        description: 'Buy asset on credit',
+        impacts: [
+          { accountId: 'bank', amount: 500, type: 'debit' }, // Asset debit increases
+          { accountId: 'loan', amount: 500, type: 'credit' } // Liability credit increases
+        ]
+      },
+      {
+        id: 'tx2',
+        date: '2026-06-11',
+        description: 'Pay part of loan',
+        impacts: [
+          { accountId: 'loan', amount: 200, type: 'debit' }, // Liability debit decreases
+          { accountId: 'bank', amount: 200, type: 'credit' } // Asset credit decreases
+        ]
+      }
+    ];
+
+    const result = calculateTotals(transactions, activeAccountIds, assets, liabilities, equities);
+    
+    // Bank = 500 - 200 = 300
+    // Loan = 500 - 200 = 300
+    expect(result.totalAssets).toBe(300);
+    expect(result.totalLiabilities).toBe(300);
+    expect(result.totalEquity).toBe(0);
+    expect(result.isBalanced).toBe(true);
+    expect(result.accounts['bank']).toBe(300);
+    expect(result.accounts['loan']).toBe(300);
+  });
 });

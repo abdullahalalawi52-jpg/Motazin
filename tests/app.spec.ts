@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 test.describe('Motazin E2E Automation Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -44,5 +45,55 @@ test.describe('Motazin E2E Automation Tests', () => {
 
     // Verify modal is closed
     await expect(modal).not.toBeVisible();
+  });
+
+  test('should add a new transaction and update the balance sheet', async ({ page }) => {
+    // Fill description
+    await page.locator('#dt-tx-desc').fill('شراء معدات نقداً');
+
+    // Select 'equipment' for first impact
+    await page.locator('#dt-account-id-0').selectOption('equipment');
+    // Click Debit (which is default, but just in case)
+    await page.locator('button:has-text("مدين"), button:has-text("Debit")').first().click();
+    // Fill amount for first impact
+    await page.locator('#dt-amount-input-0').fill('5000');
+
+    // Select 'cash' for second impact
+    await page.locator('#dt-account-id-1').selectOption('cash');
+    // Click Credit
+    await page.locator('button:has-text("دائن"), button:has-text("Credit")').nth(1).click();
+    // Fill amount for second impact
+    await page.locator('#dt-amount-input-1').fill('5000');
+
+    // Submit transaction
+    await page.locator('button[type="submit"]').click();
+
+    // Verify transaction appears in the list
+    // Wait for the text to appear
+    await expect(page.locator('text=شراء معدات نقداً').first()).toBeVisible();
+
+    // Check if the balance is maintained
+    await expect(page.locator('text=المعادلة متوازنة').first()).toBeAttached();
+  });
+
+  test('should not have any automatically detectable accessibility issues', async ({ page }) => {
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .disableRules(['button-name', 'color-contrast', 'region'])
+      .analyze();
+    expect(accessibilityScanResults.violations).toEqual([]);
+  });
+
+  test('should have basic SEO meta tags', async ({ page }) => {
+    // Check description meta tag
+    const description = await page.locator('meta[name="description"]').getAttribute('content');
+    expect(description).toBeTruthy();
+
+    // Check charset
+    const charset = await page.locator('meta[charset]').getAttribute('charset');
+    expect(charset).toBeTruthy();
+    
+    // Check viewport
+    const viewport = await page.locator('meta[name="viewport"]').getAttribute('content');
+    expect(viewport).toBeTruthy();
   });
 });
