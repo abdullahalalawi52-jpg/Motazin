@@ -997,6 +997,8 @@ export function ChatWidget(props: ChatWidgetProps) {
       {/* Floating Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="المستشار الذكي"
+        title={language === 'ar' ? 'المستشار الذكي' : 'AI Advisor'}
         className={cn(
           "fixed bottom-24 md:bottom-10 right-4 md:right-10 z-[9999] p-4 rounded-2xl shadow-2xl transition-all duration-300 group",
           isOpen
@@ -1148,8 +1150,8 @@ export function ChatWidget(props: ChatWidgetProps) {
                 className={cn(
                   "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
                   msg.role === 'user'
-                    ? "bg-indigo-600 text-white rounded-br-md"
-                    : "dark:bg-slate-800 bg-slate-100 dark:text-white text-slate-900 rounded-bl-md"
+                    ? "bg-indigo-600 text-white rounded-br-md shadow-sm"
+                    : "dark:bg-slate-800 bg-slate-100 border border-slate-300 dark:border-slate-700 shadow-sm dark:text-white text-slate-900 rounded-bl-md"
                 )}
               >
                 <div className="whitespace-pre-line">
@@ -1194,7 +1196,7 @@ export function ChatWidget(props: ChatWidgetProps) {
                   <Bot className="w-4 h-4 text-indigo-400" />
                 )}
               </div>
-              <div className="dark:bg-slate-800 bg-slate-100 px-4 py-3 rounded-2xl rounded-bl-md">
+              <div className="dark:bg-slate-800 bg-slate-100 border border-slate-300 dark:border-slate-700 shadow-sm px-4 py-3 rounded-2xl rounded-bl-md">
                 <div className="flex gap-1">
                   <span className="w-2 h-2 dark:bg-white/40 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-2 h-2 dark:bg-white/40 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
