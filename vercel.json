@@ -6,6 +6,10 @@
         {
           "key": "X-Powered-By",
           "value": ""
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
         }
       ]
     }
