@@ -1,23 +1,61 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke="url(#motazin-gradient-dark)">
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6366f1" />
-      <stop offset="100%" stop-color="#4338ca" />
+    <linearGradient id="motazin-gradient-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+    <linearGradient id="motazin-highlight-dark" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#67e8f9" />
+      <stop offset="100%" stop-color="#d8b4fe" />
     </linearGradient>
   </defs>
-  <rect width="32" height="32" rx="10" fill="url(#bgGradient)"/>
-  <rect width="32" height="32" rx="10" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+
+  <!-- Base and pole -->
+  <path d="M10 28h12" stroke-width="1.5" opacity="0.8" />
+  <path d="M16 26v2" stroke-width="1.5" opacity="0.8" />
+
+  <!-- Decorative Top Pivot -->
+  <path d="M14.5 5 L17.5 5 M16 5 L16 4" stroke-width="1" stroke-linecap="round" />
+  <circle cx="16" cy="3" r="1" stroke-width="1.2" fill="none" />
+  <path d="M16 2 L16 1" stroke-width="1" stroke-linecap="round" />
+  <circle cx="16" cy="0.5" r="0.5" fill="url(#motazin-gradient-dark)" stroke="none" />
+
+  <!-- Curved Arms (The Beam) -->
+  <path d="M 15 3 C 11 4.5, 7 2, 4 6" stroke-width="1.5" fill="none" stroke-linecap="round" />
+  <path d="M 17 3 C 21 4.5, 25 2, 28 6" stroke-width="1.5" fill="none" stroke-linecap="round" />
+
+  <!-- Left Bowl -->
+  <path d="M4 6 L1 18 M4 6 L7 18" stroke-width="1" stroke="url(#motazin-gradient-dark)" fill="none" opacity="0.7" />
+  <path d="M1 18 c 0 3.5, 6 3.5, 6 0 z" fill="url(#motazin-gradient-dark)" stroke="none" opacity="0.85" />
+  <path d="M1 18 c 1.5 1, 4.5 1, 6 0" stroke-width="0.8" stroke="#080c14" fill="none" opacity="0.5" />
   
-  <g transform="translate(4, 4)" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <rect width="16" height="20" x="4" y="2" rx="2"></rect>
-    <line x1="8" x2="16" y1="6" y2="6"></line>
-    <line x1="16" x2="16" y1="14" y2="18"></line>
-    <path d="M16 10h.01"></path>
-    <path d="M12 10h.01"></path>
-    <path d="M8 10h.01"></path>
-    <path d="M12 14h.01"></path>
-    <path d="M8 14h.01"></path>
-    <path d="M12 18h.01"></path>
-    <path d="M8 18h.01"></path>
+  <!-- Right Bowl -->
+  <path d="M28 6 L25 18 M28 6 L31 18" stroke-width="1" stroke="url(#motazin-gradient-dark)" fill="none" opacity="0.7" />
+  <path d="M25 18 c 0 3.5, 6 3.5, 6 0 z" fill="url(#motazin-gradient-dark)" stroke="none" opacity="0.85" />
+  <path d="M25 18 c 1.5 1, 4.5 1, 6 0" stroke-width="0.8" stroke="#080c14" fill="none" opacity="0.5" />
+
+  <g transform="translate(9, 5)">
+    <rect width="14" height="21" rx="3" fill="#080c14" stroke="url(#motazin-highlight-dark)" stroke-width="1.2" />
+    <rect width="12" height="19" x="1" y="1" rx="2" stroke-width="0.5" opacity="0.6" />
+    
+    <rect width="10" height="5" x="2" y="2" rx="1.5" fill="url(#motazin-gradient-dark)" stroke="url(#motazin-highlight-dark)" fill-opacity="0.15" stroke-width="0.8" />
+    <path d="M4 4.5h3 M9 4.5h1" stroke-width="1" stroke="url(#motazin-highlight-dark)" />
+    
+    <g fill="url(#motazin-gradient-dark)" opacity="0.9" stroke="none">
+      <rect width="2.5" height="2" x="2" y="8.5" rx="0.5" />
+      <rect width="2.5" height="2" x="5.75" y="8.5" rx="0.5" />
+      <rect width="2.5" height="2" x="9.5" y="8.5" rx="0.5" />
+      
+      <rect width="2.5" height="2" x="2" y="11.5" rx="0.5" />
+      <rect width="2.5" height="2" x="5.75" y="11.5" rx="0.5" />
+      <rect width="2.5" height="2" x="9.5" y="11.5" rx="0.5" />
+      
+      <rect width="2.5" height="2" x="2" y="14.5" rx="0.5" />
+      <rect width="2.5" height="2" x="5.75" y="14.5" rx="0.5" />
+      <rect width="2.5" height="5" x="9.5" y="14.5" rx="0.5" fill="url(#motazin-highlight-dark)" opacity="1" />
+      
+      <rect width="6.25" height="2" x="2" y="17.5" rx="0.5" />
+    </g>
   </g>
 </svg>
