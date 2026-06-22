@@ -1068,16 +1068,16 @@ ar: 'لوحة القيادة', en: 'Dashboard', fr: 'Tableau de bord', es: 'Tabl
     ja: 'Dark Mode', zh: 'Dark Mode', ru: 'Dark Mode', pt: 'Dark Mode'
   },
   errorOccurred: {
-    ar: 'حدث خطأ أثناء الاتصال. يرجى التأكد من صحة مفتاح Gemini API الخاص بك وأنه يملك صلاحيات كافية.',
-    en: 'An error occurred during connection. Please ensure your Gemini API key is correct and has sufficient permissions.',
-    fr: 'Une erreur s\'est produite. Veuillez vérifier votre clé API Gemini.',
-    es: 'Se produjo un error. Verifique su clave API de Gemini.',
-    tr: 'Bir hata oluştu. Lütfen Gemini API anahtarınızı kontrol edin.',
-    ur: 'ایک خرابی پیش آگئی۔ براہ کرم اپنی جیمنی API کی کو چیک کریں۔',
-    ja: 'エラーが発生しました。Gemini APIキーを確認してください。',
-    zh: '发生错误。请检查您的Gemini API密钥。',
-    ru: 'Произошла ошибка. Пожалуйста, проверьте ваш ключ API Gemini.',
-    pt: 'Ocorreu um erro. Verifique sua chave da API Gemini.'
+    ar: 'حدث خطأ. الرجاء المحاولة مرة أخرى.',
+    en: 'An error occurred. Please try again.',
+    fr: 'Une erreur s\'est produite. Veuillez réessayer.',
+    es: 'Ocurrió un error. Por favor, inténtelo de nuevo.',
+    tr: 'Bir hata oluştu. Lütfen tekrar deneyin.',
+    ur: 'ایک خرابی پیش آگئی۔ براہ کرم دوبارہ کوشش کریں۔',
+    ja: 'エラーが発生しました。もう一度お試しください。',
+    zh: '发生错误。请重试。',
+    ru: 'Произошла ошибка. Пожалуйста, попробуйте еще раз.',
+    pt: 'Ocorreu um erro. Por favor, tente novamente.'
   },
   botWelcomeMessage: {
     ar: "مرحباً! أنا المساعد الذكي لحاسبة معادلة الميزانية. كيف يمكنني مساعدتك؟\n(ملاحظة: أنا الآن متصل بأرقامك ويمكنني تحليلها!)",

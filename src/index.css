@@ -37,7 +37,8 @@
     background: var(--bg-gradient);
     background-attachment: fixed;
     background-repeat: no-repeat;
-    background-size: cover;
+    background-size: 400% 400%;
+    animation: gradientBackgroundMove 15s ease infinite;
     color: var(--text-main);
     font-feature-settings: "cv11", "ss01", "tnum";
   }
@@ -120,6 +121,18 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradientBackgroundMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Custom scrollbar */
