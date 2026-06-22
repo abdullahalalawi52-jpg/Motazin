@@ -268,6 +268,27 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
+  // PWA Install Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
+
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem('motazin_transactions');
     if (saved) {
@@ -1300,6 +1321,15 @@ export default function App() {
               </button>
 
               <div className="hidden md:flex items-center gap-1.5 lg:gap-3">
+                {deferredPrompt && (
+                  <button
+                    onClick={handleInstallClick}
+                    className="hidden lg:flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-[13px] font-black transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>{t('installApp') || 'تثبيت التطبيق'}</span>
+                  </button>
+                )}
                 {/* Language Switcher */}
                 <div className="relative" ref={langRef}>
                   <button
@@ -1497,6 +1527,17 @@ export default function App() {
               <div className="space-y-2">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">{t('quickActions') || 'Quick Actions'}</p>
                 <div className="space-y-2">
+                  {deferredPrompt && (
+                    <button
+                      onClick={handleInstallClick}
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 hover:shadow-indigo-700/20"
+                    >
+                      <div className="p-2 rounded-xl bg-white/20">
+                        <Download className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-sm font-bold uppercase tracking-widest">{t('installApp') || 'تثبيت التطبيق'}</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => { setIsPdfScannerOpen(true); setIsMobileMenuOpen(false); }}
                     className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-95 border bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
