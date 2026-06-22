@@ -876,7 +876,8 @@ export function ChatWidget(props: ChatWidgetProps) {
           }
         );
       } else {
-        response = await fetch('/api/chat', {
+        // Use the absolute URL to the Vercel backend so this works even on GitHub Pages
+        response = await fetch('https://motazin.vercel.app/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

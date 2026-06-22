@@ -3,10 +3,24 @@ export const config = {
 };
 
 export default async function handler(req: Request) {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
     });
   }
 
@@ -20,7 +34,10 @@ export default async function handler(req: Request) {
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured on server' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       });
     }
 
@@ -44,7 +61,10 @@ export default async function handler(req: Request) {
       const errorData = await response.json().catch(() => ({}));
       return new Response(JSON.stringify({ error: 'Failed to fetch from Gemini', details: errorData }), {
         status: response.status,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       });
     }
 
@@ -52,13 +72,19 @@ export default async function handler(req: Request) {
     
     return new Response(JSON.stringify(data), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
     });
 
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
     });
   }
 }
