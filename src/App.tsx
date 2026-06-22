@@ -357,7 +357,7 @@ export default function App() {
   // Handle Google Login
   const handleGoogleLogin = async () => {
     try {
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       console.error("Google login error:", error);
       alert((t('errorOccurred') || 'Error') + '\\n' + (error.message || ''));
