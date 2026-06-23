@@ -876,8 +876,14 @@ export function ChatWidget(props: ChatWidgetProps) {
           }
         );
       } else {
-        // Use the absolute URL to the Vercel backend so this works even on GitHub Pages
-        response = await fetch('https://motazin.vercel.app/api/chat', {
+        // Detect environment to decide whether to fetch via relative path (when on Vercel) or absolute URL (when on GitHub Pages or Localhost)
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const apiEndpoint = (isGitHubPages || isLocalhost)
+          ? 'https://motazin.vercel.app/api/chat'
+          : '/api/chat';
+
+        response = await fetch(apiEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

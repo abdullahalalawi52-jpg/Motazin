@@ -11,7 +11,16 @@ const ALLOWED_ORIGINS = [
 
 export default async function handler(req: Request) {
   const origin = req.headers.get('origin') || '';
-  const isAllowedOrigin = ALLOWED_ORIGINS.includes(origin);
+  
+  let isAllowedOrigin = ALLOWED_ORIGINS.includes(origin);
+  if (!isAllowedOrigin && origin) {
+    try {
+      const url = new URL(origin);
+      if (url.hostname.endsWith('.vercel.app') || url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+        isAllowedOrigin = true;
+      }
+    } catch (_) {}
+  }
   
   const corsHeaders: Record<string, string> = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
