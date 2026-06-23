@@ -858,23 +858,54 @@ export function ChatWidget(props: ChatWidgetProps) {
 
       let response;
       if (apiKey) {
-        response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              system_instruction: {
-                parts: [{ text: systemPrompt }]
-              },
-              contents: contents,
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 1000,
+        // Try multiple models (gemini-3.1-flash-lite, gemini-2.5-flash, gemini-3.5-flash) to find an active one
+        const clientModels = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-3.5-flash'];
+        let success = false;
+        for (const model of clientModels) {
+          try {
+            response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  system_instruction: {
+                    parts: [{ text: systemPrompt }]
+                  },
+                  contents: contents,
+                  generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 1000,
+                  }
+                }),
+                signal: AbortSignal.timeout(5000)
               }
-            })
+            );
+            if (response.ok) {
+              success = true;
+              break;
+            }
+          } catch (e) {
+            console.error(`Client-side model ${model} fetch failed:`, e);
           }
-        );
+        }
+
+        // Final fallback try (without timeout just in case it was a network glitch)
+        if (!success) {
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                system_instruction: {
+                  parts: [{ text: systemPrompt }]
+                },
+                contents: contents
+              })
+            }
+          );
+        }
       } else {
         // Detect environment to decide whether to fetch via relative path (when on Vercel) or absolute URL (when on GitHub Pages or Localhost)
         const isGitHubPages = window.location.hostname.includes('github.io');

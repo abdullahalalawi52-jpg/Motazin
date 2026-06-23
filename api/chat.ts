@@ -74,36 +74,63 @@ export default async function handler(req: Request) {
       });
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction,
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000,
-          }
-        }),
-      }
-    );
+    const modelsToTry = [
+      'gemini-3.1-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-3.5-flash'
+    ];
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return new Response(JSON.stringify({ error: 'Failed to fetch from Gemini', details: errorData }), {
-        status: response.status,
+    let lastError: any = null;
+    let responseStatus = 500;
+    let responseData: any = null;
+    let success = false;
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction,
+              contents,
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 1000,
+              }
+            }),
+            signal: AbortSignal.timeout(5000)
+          }
+        );
+
+        responseStatus = response.status;
+        responseData = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+          success = true;
+          break;
+        } else {
+          console.warn(`Model ${model} failed with status ${response.status}:`, responseData);
+          lastError = responseData;
+        }
+      } catch (err: any) {
+        console.error(`Error with model ${model}:`, err.message);
+        lastError = { message: err.message };
+      }
+    }
+
+    if (success) {
+      return new Response(JSON.stringify(responseData), {
+        status: 200,
+        headers: jsonHeaders,
+      });
+    } else {
+      return new Response(JSON.stringify({ error: 'Failed to fetch from Gemini', details: lastError }), {
+        status: responseStatus,
         headers: jsonHeaders,
       });
     }
-
-    const data = await response.json();
-    
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: jsonHeaders,
-    });
 
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
