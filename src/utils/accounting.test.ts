@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculateTotals, Transaction, Account } from './accounting';
+import { calculateTotals } from './accounting';
+import { Transaction, Account } from '../types/accounting';
 
 describe('calculateTotals', () => {
   const assets: Account[] = [{ id: 'bank', name: 'Bank', category: 'asset' }];

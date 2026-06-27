@@ -93,7 +93,12 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      allow create: if true;
+      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'message', 'createdAt']) &&
+                       request.resource.data.keys().hasOnly(['name', 'email', 'message', 'createdAt']) &&
+                       request.resource.data.name is string && request.resource.data.name.size() <= 100 &&
+                       request.resource.data.email is string && request.resource.data.email.size() <= 100 &&
+                       request.resource.data.message is string && request.resource.data.message.size() <= 2000 &&
+                       request.resource.data.createdAt is string;
       allow read: if false;
     }
   }

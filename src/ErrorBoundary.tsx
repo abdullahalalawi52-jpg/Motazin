@@ -25,24 +25,31 @@ class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      const isAr = typeof window !== 'undefined' && localStorage.getItem('language') === 'ar';
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-6">
+        <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-6" dir={isAr ? 'rtl' : 'ltr'}>
           <div className="bg-slate-800 p-8 rounded-2xl border border-rose-500/30 max-w-lg w-full shadow-2xl">
-            <h1 className="text-2xl font-bold text-rose-400 mb-4">Oops! Something went wrong</h1>
+            <h1 className="text-2xl font-bold text-rose-400 mb-4">
+              {isAr ? 'عذراً! حدث خطأ غير متوقع' : 'Oops! Something went wrong'}
+            </h1>
             <p className="text-slate-300 mb-6">
-              The application encountered an unexpected error. This usually happens when a resource fails to load or there's a problem with the environment.
+              {isAr 
+                ? 'واجه التطبيق خطأً غير متوقع. يحدث هذا عادةً عندما يفشل تحميل أحد الموارد أو هناك مشكلة في البيئة المحيطة.' 
+                : 'The application encountered an unexpected error. This usually happens when a resource fails to load or there\'s a problem with the environment.'}
             </p>
-            <div className="bg-slate-950 p-4 rounded-lg overflow-auto max-h-40 border border-white/10 mb-6">
+            <div className="bg-slate-950 p-4 rounded-lg overflow-auto max-h-40 border border-white/10 mb-6 text-left" dir="ltr">
               <code className="text-rose-300 text-sm">{this.state.error?.toString()}</code>
             </div>
             <button
               onClick={() => window.location.reload()}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all"
             >
-              Reload Page
+              {isAr ? 'إعادة تحميل الصفحة' : 'Reload Page'}
             </button>
             <p className="mt-4 text-xs text-slate-500 text-center">
-              If the problem persists, please check your Firebase settings or clear your browser cache.
+              {isAr 
+                ? 'إذا استمرت المشكلة، يرجى التحقق من إعدادات Firebase أو مسح ذاكرة التخزين المؤقت للمتصفح.' 
+                : 'If the problem persists, please check your Firebase settings or clear your browser cache.'}
             </p>
           </div>
         </div>

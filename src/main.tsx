@@ -6,6 +6,7 @@ import { LanguageProvider } from './i18n.tsx'
 import { ThemeProvider } from './ThemeContext.tsx'
 import ErrorBoundary from './ErrorBoundary.tsx'
 import { registerSW } from 'virtual:pwa-register'
+import { BrowserRouter } from 'react-router-dom'
 
 registerSW({
   onNeedRefresh() {},
@@ -17,11 +18,13 @@ registerSW({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <LanguageProvider>
-        <ThemeProvider>
-          <App />
-        </ThemeProvider>
-      </LanguageProvider>
+      <BrowserRouter>
+        <LanguageProvider>
+          <ThemeProvider>
+            <App />
+          </ThemeProvider>
+        </LanguageProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>,
 )

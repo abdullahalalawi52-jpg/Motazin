@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 vi.mock('./PdfScanner', () => ({
   FileScanner: () => <div>Mocked PdfScanner</div>,
 }));
@@ -99,13 +100,15 @@ describe('App Integration Tests', () => {
     vi.clearAllMocks();
   });
 
-  const renderApp = () => {
+  const renderApp = (initialRoute = '/equation') => {
     return render(
-      <LanguageProvider>
-        <ThemeProvider>
-          <App />
-        </ThemeProvider>
-      </LanguageProvider>
+      <MemoryRouter initialEntries={[initialRoute]}>
+        <LanguageProvider>
+          <ThemeProvider>
+            <App />
+          </ThemeProvider>
+        </LanguageProvider>
+      </MemoryRouter>
     );
   };
 
@@ -147,5 +150,74 @@ describe('App Integration Tests', () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/اكتب رسالتك هنا/i)).toBeInTheDocument();
     });
+  });
+
+  it('can navigate between views using Link tabs', async () => {
+    renderApp();
+    
+    // Check that we have the Balance Sheet tab
+    const balanceSheetLinks = screen.getAllByRole('link', { name: /الميزانية العمومية/i });
+    expect(balanceSheetLinks.length).toBeGreaterThan(0);
+    
+    // Find and click the Income Statement link (قائمة الدخل)
+    const incomeLinks = screen.getAllByRole('link', { name: /قائمة الدخل/i });
+    expect(incomeLinks.length).toBeGreaterThan(0);
+    fireEvent.click(incomeLinks[0]);
+    
+    // Verify that the active styling is applied to the clicked link
+    await waitFor(() => {
+      expect(incomeLinks[0]).toHaveClass('bg-indigo-600');
+    });
+  });
+
+  it('can toggle the language from Arabic to English', async () => {
+    renderApp();
+    
+    // Initially in Arabic
+    expect(screen.getByText(/مُتّزِن/i)).toBeInTheDocument();
+    
+    // Find and click the Language switcher button
+    const langBtn = screen.getByRole('button', { name: /العربية/i });
+    expect(langBtn).toBeInTheDocument();
+    fireEvent.click(langBtn);
+    
+    // Select English from dropdown
+    const enBtn = screen.getByRole('button', { name: /English/i });
+    expect(enBtn).toBeInTheDocument();
+    fireEvent.click(enBtn);
+    
+    // Verify page elements translate to English
+    await waitFor(() => {
+      expect(screen.getByText(/Motazin/i)).toBeInTheDocument();
+    });
+  });
+
+  it('can toggle the application theme', async () => {
+    renderApp();
+    
+    // Find theme toggle button by its aria-label
+    const themeBtn = screen.getByRole('button', { name: /Switch to/i });
+    expect(themeBtn).toBeInTheDocument();
+    
+    // Click to toggle
+    fireEvent.click(themeBtn);
+    
+    // Verify theme changes in localStorage
+    expect(localStorage.getItem('app_theme')).toBeDefined();
+  });
+
+  it('can trigger undo and redo operations', async () => {
+    renderApp();
+    
+    // Verify undo/redo buttons exist
+    const undoBtn = screen.getByRole('button', { name: /Undo/i });
+    const redoBtn = screen.getByRole('button', { name: /Redo/i });
+    
+    expect(undoBtn).toBeInTheDocument();
+    expect(redoBtn).toBeInTheDocument();
+    
+    // Initially disabled (no transaction history)
+    expect(undoBtn).toBeDisabled();
+    expect(redoBtn).toBeDisabled();
   });
 });

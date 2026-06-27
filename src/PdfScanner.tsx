@@ -5,30 +5,16 @@ import mammoth from 'mammoth';
 import JSZip from 'jszip';
 import { createWorker } from 'tesseract.js';
 import { UploadCloud, CheckCircle2, FileText, X, AlertCircle, Image, FileSpreadsheet, Presentation } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from './utils/cn';
 import { useLanguage } from './i18n';
-
-// Utility for tailwind classes
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { ParsedRow } from './types/accounting';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-interface ParsedRow {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  accountId: string;
-  selected: boolean;
-}
-
 interface FileScannerProps {
   geminiApiKey?: string;
-  onImport: (rows: any[]) => void;
+  onImport: (rows: ParsedRow[]) => void;
   onClose: () => void;
 }
 
@@ -282,7 +268,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
 
       if (foundDate && foundAmount !== null) {
         results.push({
-          id: Math.random().toString(36).substr(2, 9),
+          id: crypto.randomUUID().substring(0, 9),
           date: foundDate,
           description: descriptionParts.join(' ') || 'Excel Transaction',
           amount: foundAmount,
@@ -350,7 +336,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
               const parsed = JSON.parse(aiText);
               if (Array.isArray(parsed) && parsed.length > 0) {
                 const results: ParsedRow[] = parsed.map((item: any) => ({
-                  id: Math.random().toString(36).substr(2, 9),
+                  id: crypto.randomUUID().substring(0, 9),
                   date: item.date || new Date().toLocaleDateString('en-GB'),
                   description: item.description || 'AI Extracted Item',
                   amount: Math.abs(Number(item.amount) || 0),
@@ -545,7 +531,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
 
         if (!results.some(r => r.amount === Math.abs(amt.value) && r.description === desc)) {
           results.push({
-            id: Math.random().toString(36).substr(2, 9),
+            id: crypto.randomUUID().substring(0, 9),
             date: globalDate,
             description: desc,
             amount: Math.abs(amt.value),
@@ -584,7 +570,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
 
   const handleAddManualRow = () => {
      setParsedRows(prev => [...prev, {
-       id: Math.random().toString(36).substr(2, 9),
+       id: crypto.randomUUID().substring(0, 9),
        date: new Date().toLocaleDateString('en-GB'),
        description: 'Manual Transaction',
        amount: 0,

@@ -2,26 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Clock, Trash2, Download } from 'lucide-react';
 import { useLanguage } from './i18n';
 import { useTheme } from './ThemeContext';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from './utils/cn';
+import { ConfirmationModal } from './components/ConfirmationModal';
+import { Transaction } from './types/accounting';
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 interface Snapshot {
   id: string;
   name: string;
   date: string;
-  transactions: any[];
+  transactions: Transaction[];
   budgets: Record<string, number>;
 }
 
 interface SnapshotsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentTransactions: any[];
+  currentTransactions: Transaction[];
   currentBudgets: Record<string, number>;
-  onLoadSnapshot: (transactions: any[], budgets: Record<string, number>) => void;
+  onLoadSnapshot: (transactions: Transaction[], budgets: Record<string, number>) => void;
 }
 
 export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBudgets, onLoadSnapshot }: SnapshotsModalProps) {
@@ -29,6 +27,27 @@ export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBu
   const { theme } = useTheme();
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [newSnapshotName, setNewSnapshotName] = useState('');
+
+  // Confirmation Modal States
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({
+    title: '',
+    message: '',
+    confirmText: '',
+    cancelText: '',
+    onConfirm: () => {}
+  });
+
+  const triggerConfirm = (config: {
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText: string;
+    onConfirm: () => void;
+  }) => {
+    setConfirmConfig(config);
+    setConfirmOpen(true);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -53,7 +72,7 @@ export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBu
     if (!newSnapshotName.trim()) return;
 
     const newSnapshot: Snapshot = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID().substring(0, 9),
       name: newSnapshotName,
       date: new Date().toISOString(),
       transactions: currentTransactions,
@@ -65,16 +84,30 @@ export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBu
   };
 
   const handleDeleteSnapshot = (id: string) => {
-    if (confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه النسخة الاحتياطية؟' : 'Are you sure you want to delete this backup?')) {
-      saveSnapshots(snapshots.filter(s => s.id !== id));
-    }
+    triggerConfirm({
+      title: language === 'ar' ? 'حذف نسخة احتياطية' : 'Delete Backup',
+      message: language === 'ar' ? 'هل أنت متأكد من حذف هذه النسخة الاحتياطية؟' : 'Are you sure you want to delete this backup?',
+      confirmText: language === 'ar' ? 'حذف' : 'Delete',
+      cancelText: language === 'ar' ? 'إلغاء' : 'Cancel',
+      onConfirm: () => {
+        saveSnapshots(snapshots.filter(s => s.id !== id));
+        setConfirmOpen(false);
+      }
+    });
   };
 
   const handleLoadSnapshot = (snapshot: Snapshot) => {
-    if (confirm(language === 'ar' ? 'تحذير: سيتم مسح البيانات الحالية واستبدالها بهذه النسخة. هل تريد الاستمرار؟' : 'Warning: Current data will be replaced by this backup. Continue?')) {
-      onLoadSnapshot(snapshot.transactions, snapshot.budgets);
-      onClose();
-    }
+    triggerConfirm({
+      title: language === 'ar' ? 'استعادة النسخة الاحتياطية' : 'Restore Backup',
+      message: language === 'ar' ? 'تحذير: سيتم مسح البيانات الحالية واستبدالها بهذه النسخة. هل تريد الاستمرار؟' : 'Warning: Current data will be replaced by this backup. Continue?',
+      confirmText: language === 'ar' ? 'استعادة' : 'Restore',
+      cancelText: language === 'ar' ? 'إلغاء' : 'Cancel',
+      onConfirm: () => {
+        onLoadSnapshot(snapshot.transactions, snapshot.budgets);
+        setConfirmOpen(false);
+        onClose();
+      }
+    });
   };
 
   if (!isOpen) return null;
@@ -185,6 +218,16 @@ export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBu
           </div>
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={confirmOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        cancelText={confirmConfig.cancelText}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmOpen(false)}
+        dir={dir}
+      />
     </div>
   );
 }

@@ -1,12 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MessageCircle, X, Send, User, Bot, MessageSquarePlus, Check, Clock, Settings, Sparkles, Brain, BarChart3, DollarSign, HelpCircle, ChevronDown, ChevronUp, Key, Shield, Info } from 'lucide-react';
 import { useLanguage } from './i18n';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from './utils/cn';
+import { ConfirmationModal } from './components/ConfirmationModal';
 
-function cn(...inputs: any[]) {
-  return twMerge(clsx(inputs));
-}
 
 // --- Types ---
 interface ChatMessage {
@@ -633,6 +630,7 @@ export function ChatWidget(props: ChatWidgetProps) {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [localApiKey, setLocalApiKey] = useState(() => {
     return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
@@ -1015,11 +1013,14 @@ export function ChatWidget(props: ChatWidgetProps) {
   };
 
   const clearChat = () => {
-    if (window.confirm(language === 'ar' ? 'هل تريد مسح المحادثة وبدء محادثة جديدة؟' : 'Are you sure you want to start a new chat?')) {
-      hasSentWelcome.current = false;
-      setMessages([]);
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmClear = () => {
+    hasSentWelcome.current = false;
+    setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
+    setConfirmOpen(false);
   };
 
   const formatTime = (timestamp: number) => {
@@ -1292,6 +1293,16 @@ export function ChatWidget(props: ChatWidgetProps) {
           </p>
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={confirmOpen}
+        title={language === 'ar' ? 'مسح المحادثة' : 'Clear Chat'}
+        message={language === 'ar' ? 'هل تريد مسح المحادثة وبدء محادثة جديدة؟' : 'Are you sure you want to start a new chat?'}
+        confirmText={language === 'ar' ? 'مسح' : 'Clear'}
+        cancelText={language === 'ar' ? 'إلغاء' : 'Cancel'}
+        onConfirm={handleConfirmClear}
+        onCancel={() => setConfirmOpen(false)}
+        dir={language === 'ar' ? 'rtl' : 'ltr'}
+      />
     </>
   );
 }
