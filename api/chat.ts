@@ -2,44 +2,72 @@ export const config = {
   runtime: 'edge', // Using Edge runtime for fast responses
 };
 
-const ALLOWED_ORIGINS = [
-  'https://motazin.vercel.app',
-  'https://abdullahalalawi52-jpg.github.io',
-  'http://localhost:3000',
-  'http://localhost:5173'
-];
+// Check if the given value (Origin or Referer) represents a trusted host or preview site
+function isAllowedHostOrOrigin(value: string | null): boolean {
+  if (!value) return false;
+  try {
+    // If value has no scheme, prepend one to make it a valid URL for parsing
+    const urlStr = value.startsWith('http://') || value.startsWith('https://') 
+      ? value 
+      : `https://${value}`;
+    const url = new URL(urlStr);
+    const hostname = url.hostname;
+
+    // 1. Strict exact matches
+    const exactHosts = [
+      'motazin.vercel.app',
+      'abdullahalalawi52-jpg.github.io',
+      'localhost',
+      '127.0.0.1'
+    ];
+    if (exactHosts.includes(hostname)) {
+      return true;
+    }
+
+    // 2. Allow Vercel preview environments specific to this project or owner
+    if (hostname.endsWith('.vercel.app')) {
+      if (hostname.startsWith('motazin-') || hostname.endsWith('-abdullahalalawi52-jpg.vercel.app')) {
+        return true;
+      }
+    }
+  } catch (_) {}
+  return false;
+}
 
 export default async function handler(req: Request) {
   const origin = req.headers.get('origin') || '';
-  
-  let isAllowedOrigin = ALLOWED_ORIGINS.includes(origin);
-  if (!isAllowedOrigin && origin) {
-    try {
-      const url = new URL(origin);
-      if (url.hostname.endsWith('.vercel.app') || url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
-        isAllowedOrigin = true;
-      }
-    } catch (_) {}
-  }
-  
+  const referer = req.headers.get('referer') || '';
+
+  const isAllowedOrigin = isAllowedHostOrOrigin(origin);
+  const isAllowedReferer = isAllowedHostOrOrigin(referer);
+
+  // Secure validation: block request if both Origin and Referer are invalid, 
+  // or if Origin is present but invalid. This prevents curl bypass where Origin is empty.
+  const isValidSource = isAllowedOrigin || (origin === '' && isAllowedReferer);
+
   const corsHeaders: Record<string, string> = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 
-  // Only append Allow-Origin if it's from an explicitly allowed domain
-  if (isAllowedOrigin) {
+  // Only append Allow-Origin if it is a valid allowed origin
+  if (origin && isAllowedOrigin) {
     corsHeaders['Access-Control-Allow-Origin'] = origin;
   }
 
   if (req.method === 'OPTIONS') {
+    if (!isValidSource) {
+      return new Response(JSON.stringify({ error: 'Unauthorized origin' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
     });
   }
 
-  // Include CORS headers in all responses
   const jsonHeaders = {
     'Content-Type': 'application/json',
     ...corsHeaders
@@ -52,17 +80,36 @@ export default async function handler(req: Request) {
     });
   }
 
-  // If origin is strictly not allowed, block the request before hitting Gemini
-  if (!isAllowedOrigin && origin !== '') {
-    return new Response(JSON.stringify({ error: 'Unauthorized origin' }), {
+  if (!isValidSource) {
+    return new Response(JSON.stringify({ error: 'Unauthorized request source' }), {
       status: 403,
-      headers: jsonHeaders,
+      headers: { 'Content-Type': 'application/json' }, // Do not include corsHeaders here to prevent origin exposure
     });
   }
 
   try {
     const body = await req.json();
     const { contents, system_instruction } = body;
+
+    // Validate request body
+    if (!Array.isArray(contents) || contents.length === 0) {
+      return new Response(JSON.stringify({ error: 'Invalid or empty contents' }), {
+        status: 400,
+        headers: jsonHeaders,
+      });
+    }
+
+    // Validate system instruction to prevent general API key abuse
+    const systemPromptText = system_instruction?.parts?.[0]?.text || '';
+    const isArabicBase = systemPromptText.includes('أنت مستشار مالي ومحاسب قانوني ذكي');
+    const isEnglishBase = systemPromptText.includes('You are an expert financial advisor');
+
+    if (!isArabicBase && !isEnglishBase) {
+      return new Response(JSON.stringify({ error: 'Invalid system instruction' }), {
+        status: 400,
+        headers: jsonHeaders,
+      });
+    }
     
     // Read the API key securely from environment variables
     const apiKey = process.env.GEMINI_API_KEY;
@@ -126,14 +173,18 @@ export default async function handler(req: Request) {
         headers: jsonHeaders,
       });
     } else {
-      return new Response(JSON.stringify({ error: 'Failed to fetch from Gemini', details: lastError }), {
+      // Return a safe error message without exposing backend details
+      return new Response(JSON.stringify({ 
+        error: 'Failed to fetch from Gemini model backend', 
+        message: 'The AI service is temporarily unavailable. Please try again later.' 
+      }), {
         status: responseStatus,
         headers: jsonHeaders,
       });
     }
 
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: jsonHeaders,
     });
