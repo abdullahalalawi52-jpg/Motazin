@@ -10,3 +10,5 @@ coverage/
 # Firebase config files
 firebase-applet-config.json
 firebase-blueprint.json
+
+.vercel
