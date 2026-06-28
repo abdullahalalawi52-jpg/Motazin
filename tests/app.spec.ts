@@ -78,7 +78,6 @@ test.describe('Motazin E2E Automation Tests', () => {
 
   test('should not have any automatically detectable accessibility issues', async ({ page }) => {
     const accessibilityScanResults = await new AxeBuilder({ page })
-      .disableRules(['button-name', 'color-contrast', 'region'])
       .analyze();
     expect(accessibilityScanResults.violations).toEqual([]);
   });

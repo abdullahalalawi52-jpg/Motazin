@@ -39,8 +39,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('app_theme', newTheme);
+    if ((document as any).startViewTransition) {
+      (document as any).startViewTransition(() => {
+        setThemeState(newTheme);
+        localStorage.setItem('app_theme', newTheme);
+      });
+    } else {
+      setThemeState(newTheme);
+      localStorage.setItem('app_theme', newTheme);
+    }
   };
 
   return (

@@ -284,4 +284,66 @@
   animation: confettiFall 4s linear forwards;
 }
 
+/* Mobile Landscape Adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Non-sticky header in landscape to maximize vertical content space */
+  header.sticky {
+    position: relative !important;
+    top: 0 !important;
+    transform: none !important;
+  }
+  
+  /* Make page containers more compact */
+  body {
+    font-size: 14px !important;
+  }
+  
+  /* Reduce paddings and spacing */
+  .py-4, .py-6, .py-8 {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+  
+  .space-y-4, .space-y-6 {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Make modals scrollable on short landscape screens */
+  .fixed.inset-0.z-\[100\],
+  .fixed.inset-0.z-\[200\],
+  .fixed.inset-0.z-\[150\] {
+    overflow-y: auto !important;
+    display: block !important;
+    padding: 10px !important;
+  }
+
+  .fixed.inset-0.z-\[100\] > div,
+  .fixed.inset-0.z-\[200\] > div,
+  .fixed.inset-0.z-\[150\] > div {
+    margin: 10px auto !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 95% !important;
+    border-radius: 1.5rem !important;
+  }
+  
+  /* Adjust OCR scanner inner scroll heights to fit */
+  .max-h-\[85vh\] {
+    max-height: none !important;
+  }
+  
+  /* Make grid systems layout as rows/columns properly */
+  .grid-cols-12 {
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Smooth View Transition for Theme Toggling */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 

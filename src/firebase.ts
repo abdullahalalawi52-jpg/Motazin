@@ -4,30 +4,32 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// Firebase configuration from environment variables
+// Firebase configuration from environment variables (supports VITE_ and REACT_APP_ prefixes)
 const firebaseConfig = {
-  apiKey: import.meta.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: import.meta.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: import.meta.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || import.meta.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || import.meta.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || import.meta.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || import.meta.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || import.meta.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || import.meta.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 // Validate that all required environment variables are set
 const requiredEnvVars = [
-  'REACT_APP_FIREBASE_API_KEY',
-  'REACT_APP_FIREBASE_AUTH_DOMAIN',
-  'REACT_APP_FIREBASE_PROJECT_ID',
-  'REACT_APP_FIREBASE_STORAGE_BUCKET',
-  'REACT_APP_FIREBASE_MESSAGING_SENDER_ID',
-  'REACT_APP_FIREBASE_APP_ID',
+  'FIREBASE_API_KEY',
+  'FIREBASE_AUTH_DOMAIN',
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_STORAGE_BUCKET',
+  'FIREBASE_MESSAGING_SENDER_ID',
+  'FIREBASE_APP_ID',
 ];
 
-requiredEnvVars.forEach((envVar) => {
-  if (!import.meta.env[envVar]) {
-    console.warn(`Missing environment variable: ${envVar}`);
+requiredEnvVars.forEach((name) => {
+  const viteName = `VITE_${name}`;
+  const reactName = `REACT_APP_${name}`;
+  if (!import.meta.env[viteName] && !import.meta.env[reactName]) {
+    console.warn(`Missing environment variable: ${viteName} or ${reactName}`);
   }
 });
 

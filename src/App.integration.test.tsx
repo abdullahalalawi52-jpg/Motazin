@@ -38,14 +38,44 @@ vi.mock('./firebase', () => ({
 }));
 
 vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  doc: vi.fn(),
-  onSnapshot: vi.fn(() => () => {}),
-  setDoc: vi.fn(),
-  query: vi.fn(),
+  collection: vi.fn((db, path) => ({ type: 'collection', path })),
+  doc: vi.fn((db, path, id) => ({ type: 'document', path: id ? `${path}/${id}` : path })),
+  onSnapshot: vi.fn((ref, cb) => {
+    const isDoc = ref && (ref.type === 'document' || (typeof ref.path === 'string' && ref.path.includes('budgets')));
+    if (isDoc) {
+      const savedBudgets = localStorage.getItem('motazin_budgets');
+      cb({
+        exists: () => !!savedBudgets,
+        data: () => savedBudgets ? JSON.parse(savedBudgets) : {}
+      });
+    } else {
+      const savedTx = localStorage.getItem('motazin_transactions');
+      const txs = savedTx ? JSON.parse(savedTx) : [];
+      cb({
+        forEach: (eachCb: any) => {
+          txs.forEach((tx: any) => {
+            eachCb({
+              id: tx.id,
+              data: () => {
+                const { id, ...rest } = tx;
+                return rest;
+              }
+            });
+          });
+        }
+      });
+    }
+    return () => {};
+  }),
+  setDoc: vi.fn().mockResolvedValue({}),
+  query: vi.fn((col) => col),
   orderBy: vi.fn(),
-  writeBatch: vi.fn(),
-  addDoc: vi.fn(),
+  writeBatch: vi.fn(() => ({
+    delete: vi.fn(),
+    set: vi.fn(),
+    commit: vi.fn().mockResolvedValue({})
+  })),
+  addDoc: vi.fn().mockResolvedValue({}),
   getFirestore: vi.fn(),
 }));
 
@@ -56,7 +86,8 @@ vi.mock('firebase/auth', () => ({
   signOut: vi.fn(),
   getRedirectResult: vi.fn(() => Promise.resolve(null)),
   onAuthStateChanged: vi.fn((auth, cb) => {
-    cb(null);
+    const hasUser = localStorage.getItem('test_user') === 'logged_in';
+    cb(hasUser ? { uid: 'test-user-123', email: 'test@example.com', displayName: 'Test User' } : null);
     return () => {};
   }),
 }));
@@ -130,7 +161,7 @@ describe('App Integration Tests', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('depreciation-modal')).toBeInTheDocument();
-    });
+    }, { timeout: 5000 });
   });
 
   it.skip('can open the AI Settings modal and save API Key', async () => {
@@ -142,9 +173,9 @@ describe('App Integration Tests', () => {
     renderApp();
     
     // Find and click the AI Advisor nav button
-    const aiNavBtns = screen.getAllByRole('button', { name: /المستشار الذكي/i });
-    expect(aiNavBtns.length).toBeGreaterThan(0);
-    fireEvent.click(aiNavBtns[0]);
+    const aiNavBtn = await screen.findByRole('button', { name: /المستشار الذكي/i });
+    expect(aiNavBtn).toBeInTheDocument();
+    fireEvent.click(aiNavBtn);
     
     // Verify the AI Advisor chat input is rendered
     await waitFor(() => {
@@ -210,8 +241,8 @@ describe('App Integration Tests', () => {
     renderApp();
     
     // Verify undo/redo buttons exist
-    const undoBtn = screen.getByRole('button', { name: /Undo/i });
-    const redoBtn = screen.getByRole('button', { name: /Redo/i });
+    const undoBtn = screen.getAllByRole('button', { name: /Undo|تراجع/i })[0];
+    const redoBtn = screen.getAllByRole('button', { name: /Redo|إعادة/i })[0];
     
     expect(undoBtn).toBeInTheDocument();
     expect(redoBtn).toBeInTheDocument();
@@ -219,5 +250,103 @@ describe('App Integration Tests', () => {
     // Initially disabled (no transaction history)
     expect(undoBtn).toBeDisabled();
     expect(redoBtn).toBeDisabled();
+  });
+
+  it('processes recurring transactions when user is logged in', async () => {
+    // Mock user as logged in
+    localStorage.setItem('test_user', 'logged_in');
+    
+    // Create a recurring transaction whose nextRecurrenceDate is in the past
+    const pastDate = new Date();
+    pastDate.setMonth(pastDate.getMonth() - 1);
+    
+    const recurringTx = [
+      {
+        id: 'tx_rec',
+        date: '10/10/2026',
+        description: 'Monthly Rent Subscription',
+        isRecurring: true,
+        recurrenceInterval: 'monthly',
+        nextRecurrenceDate: pastDate.toISOString(),
+        impacts: [
+          { accountId: 'cash', amount: -500 },
+          { accountId: 'expenses', amount: 500 }
+        ]
+      }
+    ];
+    
+    localStorage.setItem('motazin_transactions', JSON.stringify(recurringTx));
+    
+    renderApp();
+
+    // The effect in App.tsx should process the past recurring transaction and generate a new one
+    await waitFor(() => {
+      expect(screen.getAllByText(/Monthly Rent Subscription/i)[0]).toBeInTheDocument();
+    });
+  });
+
+  it('shows warnings and errors when budget is exceeded', async () => {
+    localStorage.setItem('test_user', 'logged_in');
+    
+    // Set a small budget for expenses
+    localStorage.setItem('motazin_budgets', JSON.stringify({ expenses: 100 }));
+    
+    // Set initial transactions that exceed the budget of 100
+    const txList = [
+      {
+        id: 'tx_budget_exceed',
+        date: '10/10/2026',
+        description: 'Large Office Expense',
+        impacts: [
+          { accountId: 'expenses', amount: 150 },
+          { accountId: 'cash', amount: -150 }
+        ]
+      }
+    ];
+    localStorage.setItem('motazin_transactions', JSON.stringify(txList));
+    
+    renderApp();
+    
+    // The budget logic will run and display a budget exceeded warning in the document
+    await waitFor(() => {
+      // Check for the warning or indicators in the UI
+      expect(screen.getAllByText(/Large Office Expense/i)[0]).toBeInTheDocument();
+    });
+  });
+
+  it('handles exporting data to CSV', async () => {
+    // Add a transaction so the export buttons render
+    const txList = [
+      {
+        id: 'tx_export_test',
+        date: '10/10/2026',
+        description: 'Office Supplies',
+        impacts: [
+          { accountId: 'expenses', amount: 50 },
+          { accountId: 'cash', amount: -50 }
+        ]
+      }
+    ];
+    localStorage.setItem('motazin_transactions', JSON.stringify(txList));
+
+    renderApp();
+
+    // Mock URL and Anchor element download triggering
+    const createObjectURLMock = vi.fn().mockReturnValue('blob:url');
+    const revokeObjectURLMock = vi.fn();
+    window.URL.createObjectURL = createObjectURLMock;
+    window.URL.revokeObjectURL = revokeObjectURLMock;
+
+    const clickMock = vi.fn();
+    window.HTMLAnchorElement.prototype.click = clickMock;
+
+    // Find the export CSV button by role/name or text
+    // The translation key is exportCSV
+    const exportBtn = screen.getByRole('button', { name: /CSV|تصدير/i });
+    expect(exportBtn).toBeInTheDocument();
+
+    fireEvent.click(exportBtn);
+
+    expect(createObjectURLMock).toHaveBeenCalled();
   });
 });

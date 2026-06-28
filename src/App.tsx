@@ -17,6 +17,14 @@ import { cn } from './utils/cn';
 
 import { Category, Account, Impact, Transaction, ParsedRow } from './types/accounting';
 import { ACCOUNTS, CURRENCIES } from './constants/accounting';
+import { generateId } from './utils/uuid';
+
+import { useHistory } from './hooks/useHistory';
+import { useTransactions } from './hooks/useTransactions';
+import { useFirestoreSync } from './hooks/useFirestoreSync';
+import { useRecurringTransactions } from './hooks/useRecurringTransactions';
+import { useAccountingPeriod } from './hooks/useAccountingPeriod';
+import { useFinancialInsights } from './hooks/useFinancialInsights';
 
 // Component imports
 import { MotazinLogo } from './components/MotazinLogo';
@@ -39,11 +47,29 @@ const DepreciationModal = lazy(() => import('./DepreciationModal').then(module =
 const SnapshotsModal = lazy(() => import('./SnapshotsModal').then(module => ({ default: module.SnapshotsModal })));
 const ChatWidget = lazy(() => import('./Chat').then(module => ({ default: module.ChatWidget })));
 
+type HistoryAction =
+  | { type: 'ADD'; tx: Transaction }
+  | { type: 'DELETE'; tx: Transaction }
+  | { type: 'EDIT'; oldTx: Transaction; newTx: Transaction }
+  | { type: 'CLEAR'; txs: Transaction[] }
+  | { type: 'BATCH'; added: Transaction[]; deleted: Transaction[] };
+
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
 export default function App() {
   const { t, language, setLanguage, dir } = useLanguage();
   const { theme, setTheme } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      toast.error((t('errorOccurred') || 'Error') + '\n' + (error.message || ''));
+    }
+  };
 
   // Confirmation Modal State
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -92,35 +118,6 @@ export default function App() {
     }
   };
 
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('motazin_transactions');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Error parsing local transactions", e);
-      }
-    }
-    return [];
-  });
-
-  // History State for Undo/Redo
-  const [history, setHistory] = useState<Transaction[][]>(() => {
-    const saved = localStorage.getItem('motazin_transactions');
-    if (saved) {
-      try {
-        return [JSON.parse(saved)];
-      } catch (e) { }
-    }
-    return [[]];
-  });
-  const [historyIndex, setHistoryIndex] = useState<number>(0);
-
-  // Currency State
-  const [currency, setCurrency] = useState(() => {
-    return localStorage.getItem('motazin_currency') || 'OMR';
-  });
-
   // Budget State
   const [budgets, setBudgets] = useState<Record<string, number>>(() => {
     const saved = localStorage.getItem('motazin_budgets');
@@ -137,6 +134,11 @@ export default function App() {
   });
   const [isEditingBudgets, setIsEditingBudgets] = useState(false);
 
+  // Currency State
+  const [currency, setCurrency] = useState(() => {
+    return localStorage.getItem('motazin_currency') || 'OMR';
+  });
+
   // Modals Open State
   const [isPdfScannerOpen, setIsPdfScannerOpen] = useState(false);
   const [isDepreciationModalOpen, setIsDepreciationModalOpen] = useState(false);
@@ -147,23 +149,9 @@ export default function App() {
     return localStorage.getItem('motazin_gemini_api_key') || '';
   });
 
-  // Custom Accounts State
-  const [customAccounts, setCustomAccounts] = useState<Account[]>(() => {
-    const saved = localStorage.getItem('motazin_custom_accounts');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) { }
-    }
-    return [];
-  });
   const [customAccountModalIdx, setCustomAccountModalIdx] = useState<number | null>(null);
   const [newCustomAccountName, setNewCustomAccountName] = useState('');
   const [newCustomAccountCategory, setNewCustomAccountCategory] = useState<Category>('asset');
-
-  const allAccounts = useMemo(() => {
-    return [...ACCOUNTS, ...customAccounts];
-  }, [customAccounts]);
 
   // Document Archiving State
   const [isUploading, setIsUploading] = useState(false);
@@ -182,7 +170,6 @@ export default function App() {
     return 'equation';
   }, [location.pathname]);
 
-
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
@@ -190,17 +177,101 @@ export default function App() {
   const currencyRef = useRef<HTMLDivElement>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Handle Google Login
-  const handleGoogleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      toast.error((t('errorOccurred') || 'Error') + '\n' + (error.message || ''));
+  // Form State
+  const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
+  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const modalScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isTransactionFormOpen && modalScrollRef.current) {
+      modalScrollRef.current.scrollTop = 0;
     }
+  }, [isTransactionFormOpen]);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
+  const [date, setDate] = useState('');
+  const [description, setDescription] = useState('');
+  const [impacts, setImpacts] = useState<Omit<Impact, 'id'>[]>([
+    { accountId: 'bank', amount: 0 },
+    { accountId: 'capital', amount: 0 },
+  ]);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceInterval, setRecurrenceInterval] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+
+  // --- 1. Transactions & Custom Accounts ---
+  const {
+    transactions,
+    setTransactions,
+    customAccounts,
+    setCustomAccounts,
+    allAccounts,
+    saveTransactions,
+    addCustomAccount,
+  } = useTransactions(user, t);
+
+  // --- 2. Undo/Redo Action Stack ---
+  const {
+    history,
+    setHistory,
+    historyIndex,
+    setHistoryIndex,
+    applyAction,
+    handleUndo,
+    handleRedo,
+  } = useHistory(transactions, setTransactions, saveTransactions);
+
+  const updateTransactions = async (newTransactions: Transaction[], skipHistory = false) => {
+    if (!skipHistory) {
+      const added = newTransactions.filter(n => !transactions.some(o => o.id === n.id));
+      const deleted = transactions.filter(o => !newTransactions.some(n => n.id === o.id));
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push({ type: 'BATCH', added, deleted });
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+    await saveTransactions(newTransactions);
   };
 
-  // Auth Effect
+  // --- 3. Firestore synchronizations & Dual Storage ---
+  useFirestoreSync(user, setTransactions, setBudgets, setCurrency, setCustomAccounts);
+
+  // --- 4. Recurring Transactions Processor ---
+  useRecurringTransactions(user, transactions, updateTransactions, t);
+
+  // --- 5. Accounting Period filter ---
+  const {
+    accountingPeriod,
+    setAccountingPeriod,
+    filteredTransactions,
+    isPeriodOpen,
+    setIsPeriodOpen,
+    periodRef,
+  } = (function() {
+    const { accountingPeriod, setAccountingPeriod, filteredTransactions } = useAccountingPeriod(transactions);
+    const [isPeriodOpen, setIsPeriodOpen] = useState(false);
+    const periodRef = useRef<HTMLDivElement>(null);
+    return { accountingPeriod, setAccountingPeriod, filteredTransactions, isPeriodOpen, setIsPeriodOpen, periodRef };
+  })();
+
+  // --- 6. Financial Insights memoizations ---
+  const {
+    totals,
+    insights,
+    assetChartData,
+    incomeExpenseData,
+    profitTrendData,
+    assets,
+    liabilities,
+    equities,
+    activeAccounts,
+  } = useFinancialInsights(filteredTransactions, allAccounts, t);
+
+  // --- Auth & Navigation Effect ---
   useEffect(() => {
     getRedirectResult(auth).catch((error: any) => {
       console.error("Redirect login error:", error);
@@ -210,9 +281,23 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsAuthReady(true);
+      setHistory([]);
+      setHistoryIndex(-1);
+      if (!currentUser) {
+        const saved = localStorage.getItem('motazin_transactions');
+        if (saved) {
+          try {
+            setTransactions(JSON.parse(saved));
+          } catch (e) {
+            setTransactions([]);
+          }
+        } else {
+          setTransactions([]);
+        }
+      }
     });
     return unsubscribe;
-  }, [t]);
+  }, [t, setHistory, setHistoryIndex, setTransactions]);
 
   // Click outside to close dropdowns
   useEffect(() => {
@@ -222,6 +307,9 @@ export default function App() {
       }
       if (currencyRef.current && !currencyRef.current.contains(event.target as Node)) {
         setIsCurrencyOpen(false);
+      }
+      if (periodRef.current && !periodRef.current.contains(event.target as Node)) {
+        setIsPeriodOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -244,339 +332,6 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Sync User Preferences
-  useEffect(() => {
-    if (!user) return;
-    const userDocRef = doc(db, 'users', user.uid);
-
-    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.budgets) setBudgets(data.budgets);
-        if (data.currency) setCurrency(data.currency);
-        if (data.customAccounts) setCustomAccounts(data.customAccounts);
-      } else {
-        setDoc(userDocRef, {
-          currency: 'OMR',
-          budgets: { cars: 20000, furniture: 12000, expenses: 5000 },
-          customAccounts: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }).catch(error => {
-          console.error("Error initializing user preferences:", error);
-        });
-      }
-    }, (error) => {
-      console.error("Error fetching user preferences:", error);
-    });
-
-    return unsubscribe;
-  }, [user]);
-
-  // Sync Transactions
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'users', user.uid, 'transactions'), orderBy('createdAt', 'asc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const txs: Transaction[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        txs.push({
-          id: doc.id,
-          date: data.date,
-          description: data.description,
-          impacts: data.impacts,
-          createdAt: data.createdAt,
-          isRecurring: data.isRecurring,
-          recurrenceInterval: data.recurrenceInterval,
-          nextRecurrenceDate: data.nextRecurrenceDate,
-          attachmentUrl: data.attachmentUrl
-        });
-      });
-      setTransactions(txs);
-
-      if (history.length === 1 && history[0].length === 0) {
-        setHistory([txs]);
-        setHistoryIndex(0);
-      }
-    }, (error) => {
-      console.error("Error fetching transactions:", error);
-    });
-
-    return unsubscribe;
-  }, [user]);
-
-  // Helper to update transactions and history
-  const updateTransactions = async (newTransactions: Transaction[], skipHistory = false) => {
-    shouldCelebrateRef.current = true;
-    if (!skipHistory) {
-      const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push(newTransactions);
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-    }
-
-    setTransactions(newTransactions);
-    localStorage.setItem('motazin_transactions', JSON.stringify(newTransactions));
-
-    if (!user) return;
-
-    try {
-      const txRef = collection(db, 'users', user.uid, 'transactions');
-      const newIds = new Set(newTransactions.map(t => t.id));
-
-      const allOps: { type: 'delete' | 'set'; ref: any; data?: any }[] = [
-        ...transactions.filter(tx => !newIds.has(tx.id)).map(tx => ({
-          type: 'delete' as const,
-          ref: doc(txRef, tx.id)
-        })),
-        ...newTransactions.map(tx => ({
-          type: 'set' as const,
-          ref: doc(txRef, tx.id),
-          data: {
-            date: tx.date,
-            description: tx.description,
-            impacts: tx.impacts,
-            attachmentUrl: tx.attachmentUrl || null,
-            createdAt: tx.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            isRecurring: tx.isRecurring || false,
-            recurrenceInterval: tx.recurrenceInterval || null,
-            nextRecurrenceDate: tx.nextRecurrenceDate || null
-          }
-        }))
-      ];
-
-      const CHUNK_SIZE = 500;
-      for (let i = 0; i < allOps.length; i += CHUNK_SIZE) {
-        const currentBatch = writeBatch(db);
-        const chunk = allOps.slice(i, i + CHUNK_SIZE);
-        chunk.forEach(op => {
-          if (op.type === 'delete') {
-            currentBatch.delete(op.ref);
-          } else if (op.type === 'set' && op.data) {
-            currentBatch.set(op.ref, op.data, { merge: true });
-          }
-        });
-        await currentBatch.commit();
-      }
-    } catch (error) {
-      console.error("Error updating transactions:", error);
-      toast.error(t('errorSavingTransactions'));
-    }
-  };
-
-  const addCustomAccount = async (name: string, category: Category) => {
-    const trimmedName = name.trim();
-    if (!trimmedName) return null;
-
-    const nameExists = allAccounts.some(
-      a => a.name.toLowerCase() === trimmedName.toLowerCase() ||
-        t(a.name).toLowerCase() === trimmedName.toLowerCase()
-    );
-    if (nameExists) {
-      toast.error(t('accountExists'));
-      return null;
-    }
-
-    const newId = 'custom_' + crypto.randomUUID().substring(0, 9);
-    const newAccount: Account = {
-      id: newId,
-      name: trimmedName,
-      category: category
-    };
-
-    const updated = [...customAccounts, newAccount];
-    setCustomAccounts(updated);
-    localStorage.setItem('motazin_custom_accounts', JSON.stringify(updated));
-
-    if (user) {
-      try {
-        await setDoc(doc(db, 'users', user.uid), {
-          customAccounts: updated,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-      } catch (error) {
-        console.error("Error saving custom accounts to Firebase:", error);
-      }
-    }
-
-    toast.success(t('accountAdded'));
-    return newAccount;
-  };
-
-  // Process Recurring Transactions
-  useEffect(() => {
-    if (!user || transactions.length === 0) return;
-
-    let hasChanges = false;
-    const newTransactions: Transaction[] = [];
-
-    const updatedTransactions = transactions.map(tx => {
-      if (tx.isRecurring && tx.nextRecurrenceDate) {
-        let currentDate = new Date(tx.nextRecurrenceDate);
-        const now = new Date();
-
-        if (currentDate <= now) {
-          let currentTx = { ...tx };
-          let safetyLimit = 0;
-
-          while (currentDate <= now && safetyLimit < 100) {
-            safetyLimit++;
-            hasChanges = true;
-
-            const newTx: Transaction = {
-              id: crypto.randomUUID().substring(0, 9),
-              date: currentDate.toLocaleDateString('ar-SA'),
-              description: currentTx.description,
-              impacts: currentTx.impacts.map(i => ({ ...i, id: crypto.randomUUID().substring(0, 9) })),
-              createdAt: new Date().toISOString()
-            };
-            newTransactions.push(newTx);
-
-            const prevTime = currentDate.getTime();
-            if (currentTx.recurrenceInterval === 'daily') currentDate.setDate(currentDate.getDate() + 1);
-            else if (currentTx.recurrenceInterval === 'weekly') currentDate.setDate(currentDate.getDate() + 7);
-            else if (currentTx.recurrenceInterval === 'monthly') currentDate.setMonth(currentDate.getMonth() + 1);
-            else if (currentTx.recurrenceInterval === 'yearly') currentDate.setFullYear(currentDate.getFullYear() + 1);
-            else break;
-
-            // If date didn't change (invalid date calculation), break to avoid infinite loop
-            if (currentDate.getTime() === prevTime) break;
-
-            currentTx.nextRecurrenceDate = currentDate.toISOString();
-          }
-          return currentTx;
-        }
-      }
-      return tx;
-    });
-
-    if (hasChanges) {
-      updateTransactions([...updatedTransactions, ...newTransactions]);
-      toast.success(`${newTransactions.length} ${t('recurringCreated')}`);
-    }
-  }, [transactions, user]);
-
-  // Form State
-  const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
-  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
-  const modalScrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (isTransactionFormOpen && modalScrollRef.current) {
-      modalScrollRef.current.scrollTop = 0;
-    }
-  }, [isTransactionFormOpen]);
-
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
-  const [date, setDate] = useState('');
-  const [description, setDescription] = useState('');
-  const [impacts, setImpacts] = useState<Omit<Impact, 'id'>[]>([
-    { accountId: 'bank', amount: 0 },
-    { accountId: 'capital', amount: 0 },
-  ]);
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrenceInterval, setRecurrenceInterval] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
-
-  // --- Derived State ---
-  const activeAccountIds = useMemo(() => {
-    const ids = new Set<string>();
-    transactions.forEach(t => t.impacts.forEach(i => ids.add(i.accountId)));
-    return Array.from(ids);
-  }, [transactions]);
-
-  const activeAccounts = useMemo(() => {
-    return allAccounts.filter(a => activeAccountIds.includes(a.id));
-  }, [activeAccountIds, allAccounts]);
-
-  const assets = activeAccounts.filter(a => a.category === 'asset');
-  const liabilities = activeAccounts.filter(a => a.category === 'liability');
-  const equities = activeAccounts.filter(a => a.category === 'equity');
-
-  const totals = useMemo(() => {
-    return calculateTotals(transactions as any, activeAccountIds, assets as any, liabilities as any, equities as any);
-  }, [transactions, activeAccountIds, assets, liabilities, equities]);
-
-  // --- Chart Data ---
-  const assetChartData = useMemo(() => {
-    return assets
-      .map(a => ({ name: t(a.name), value: Math.max(0, totals.accounts[a.id] || 0) }))
-      .filter(d => d.value > 0);
-  }, [assets, totals.accounts, t]);
-
-  const incomeExpenseData = useMemo(() => {
-    return [
-      { name: t('revenue'), amount: Math.abs(totals.accounts['revenue'] || 0) },
-      { name: t('expenses'), amount: Math.abs(totals.accounts['expenses'] || 0) }
-    ];
-  }, [totals.accounts, t]);
-
-  const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-
-  // --- Financial Insights & Trends ---
-  const currentAssetIds = ['bank', 'cash', 'ar', 'inventory', 'supplies', 'prepaid_expenses'];
-  const currentLiabilityIds = ['ap', 'short_term_loans', 'accrued_expenses', 'unearned_revenues'];
-
-  const insights = useMemo(() => {
-    const totalCurrentAssets = currentAssetIds.reduce((sum, id) => sum + (totals.accounts[id] || 0), 0);
-    const totalCurrentLiabilities = currentLiabilityIds.reduce((sum, id) => sum + (totals.accounts[id] || 0), 0);
-
-    const currentRatio = totalCurrentLiabilities !== 0 ? totalCurrentAssets / totalCurrentLiabilities : 0;
-    const debtToEquity = totals.totalEquity !== 0 ? totals.totalLiabilities / totals.totalEquity : 0;
-    const netProfit = (totals.accounts['revenue'] || 0) + (totals.accounts['expenses'] || 0);
-
-    return {
-      currentRatio,
-      debtToEquity,
-      netProfit,
-    };
-  }, [totals]);
-
-  const profitTrendData = useMemo(() => {
-    const monthlyData: Record<string, number> = {};
-
-    const sortedTxs = [...transactions].sort((a, b) => {
-      const parseDate = (d: string) => {
-        const parts = d.split(/[/\-.]/);
-        if (parts.length < 2) return new Date();
-        const day = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1;
-        const year = parts[2] ? (parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2])) : new Date().getFullYear();
-        return new Date(year, month, day || 1);
-      };
-      return parseDate(a.date).getTime() - parseDate(b.date).getTime();
-    });
-
-    sortedTxs.forEach(tx => {
-      const parts = tx.date.split(/[/\-.]/);
-      if (parts.length < 2) return;
-      const month = parseInt(parts[1]);
-      const year = parts[2] ? (parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2])) : new Date().getFullYear();
-      const key = `${year}-${month.toString().padStart(2, '0')}`;
-
-      const impact = tx.impacts.reduce((sum, imp) => {
-        if (imp.accountId === 'revenue' || imp.accountId === 'expenses') {
-          return sum + imp.amount;
-        }
-        return sum;
-      }, 0);
-
-      monthlyData[key] = (monthlyData[key] || 0) + impact;
-    });
-
-    return Object.entries(monthlyData).map(([key, value]) => ({
-      name: key,
-      profit: value
-    })).slice(-12);
-  }, [transactions]);
 
   // --- Confetti Celebration Effect ---
   const [showConfetti, setShowConfetti] = useState(false);
@@ -694,7 +449,7 @@ export default function App() {
             ...tx,
             date: date || new Date().toLocaleDateString('ar-SA'),
             description,
-            impacts: validImpacts.map(i => ({ ...i, id: crypto.randomUUID().substring(0, 9) })),
+            impacts: validImpacts.map(i => ({ ...i, id: generateId() })),
             isRecurring,
             recurrenceInterval: isRecurring ? recurrenceInterval : undefined,
             nextRecurrenceDate: isRecurring ? (tx.nextRecurrenceDate || nextDate) : undefined,
@@ -706,13 +461,13 @@ export default function App() {
       updateTransactions(updatedTransactions);
       setEditingTransactionId(null);
     } else {
-      const txId = crypto.randomUUID().substring(0, 9);
+      const txId = generateId();
       const attachmentUrl = await uploadFile(txId);
       const newTx: Transaction = {
         id: txId,
         date: date || new Date().toLocaleDateString('ar-SA'),
         description,
-        impacts: validImpacts.map(i => ({ ...i, id: crypto.randomUUID().substring(0, 9) })),
+        impacts: validImpacts.map(i => ({ ...i, id: generateId() })),
         createdAt: new Date().toISOString(),
         isRecurring,
         recurrenceInterval: isRecurring ? recurrenceInterval : undefined,
@@ -760,7 +515,10 @@ export default function App() {
   };
 
   const handleDeleteTransaction = (id: string) => {
-    updateTransactions(transactions.filter(t => t.id !== id));
+    const tx = transactions.find(t => t.id === id);
+    if (tx) {
+      applyAction({ type: 'DELETE', tx });
+    }
     if (selectedTransactions.has(id)) {
       const newSelected = new Set(selectedTransactions);
       newSelected.delete(id);
@@ -794,8 +552,8 @@ export default function App() {
       confirmText: language === 'ar' ? 'حذف' : 'Delete',
       cancelText: language === 'ar' ? 'إلغاء' : 'Cancel',
       onConfirm: () => {
-        const remainingTransactions = transactions.filter(t => !selectedTransactions.has(t.id));
-        updateTransactions(remainingTransactions);
+        const deleted = transactions.filter(t => selectedTransactions.has(t.id));
+        applyAction({ type: 'BATCH', added: [], deleted });
         setSelectedTransactions(new Set());
         setConfirmModalOpen(false);
       }
@@ -809,28 +567,13 @@ export default function App() {
       confirmText: language === 'ar' ? 'مسح الكل' : 'Clear All',
       cancelText: language === 'ar' ? 'إلغاء' : 'Cancel',
       onConfirm: () => {
-        updateTransactions([]);
+        applyAction({ type: 'CLEAR', txs: transactions });
         setSelectedTransactions(new Set());
         setConfirmModalOpen(false);
       }
     });
   };
 
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      updateTransactions(history[newIndex], true);
-    }
-  };
-
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      updateTransactions(history[newIndex], true);
-    }
-  };
 
   const handleSaveBudgets = async () => {
     setIsEditingBudgets(false);
@@ -1196,6 +939,43 @@ export default function App() {
                   )}
                 </div>
 
+                {/* Accounting Period Switcher */}
+                <div className="relative" ref={periodRef}>
+                  <button
+                    onClick={() => setIsPeriodOpen(!isPeriodOpen)}
+                    className="flex items-center gap-2 pl-3 lg:pl-9 pr-3 lg:pr-4 py-2.5 dark:bg-white/5 bg-slate-100/80 border dark:border-white/10 border-slate-200 rounded-2xl text-[13px] font-black dark:text-white/90 text-black group"
+                  >
+                    <Globe className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                    <span className="hidden lg:inline-block">
+                      {accountingPeriod === 'all' 
+                        ? (language === 'ar' ? 'كل الفترات' : 'All Periods') 
+                        : accountingPeriod === 'current_month' 
+                          ? (language === 'ar' ? 'الشهر الحالي' : 'Current Month') 
+                          : (language === 'ar' ? 'السنة الحالية' : 'Current Year')}
+                    </span>
+                  </button>
+                  {isPeriodOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-48 glass dark:bg-slate-900/95 bg-white/95 rounded-2xl border dark:border-white/10 border-slate-200 shadow-2xl z-50 overflow-hidden animate-scale-in origin-top-right">
+                      {[
+                        { id: 'all', labelAr: 'كل الفترات', labelEn: 'All Periods' },
+                        { id: 'current_month', labelAr: 'الشهر الحالي', labelEn: 'Current Month' },
+                        { id: 'current_year', labelAr: 'السنة الحالية', labelEn: 'Current Year' }
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => { setAccountingPeriod(item.id as any); setIsPeriodOpen(false); }}
+                          className={cn(
+                            "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-indigo-500/10",
+                            accountingPeriod === item.id ? "text-indigo-600 dark:text-indigo-400 bg-indigo-500/5" : "dark:text-white/80 text-slate-700"
+                          )}
+                        >
+                          {language === 'ar' ? item.labelAr : item.labelEn}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Currency Switcher */}
                 <div className="relative" ref={currencyRef}>
                   <button
@@ -1226,10 +1006,10 @@ export default function App() {
                 <div className="h-8 w-px dark:bg-white/5 bg-slate-200 mx-1"></div>
 
                 <div className="flex items-center gap-1 dark:bg-black/20 bg-slate-100 p-1 rounded-xl border dark:border-white/5 border-slate-200 text-black dark:text-white">
-                  <button onClick={handleUndo} disabled={historyIndex === 0} className="p-2 disabled:opacity-20" aria-label="Undo"><Undo2 className="w-4 h-4" /></button>
-                  <button onClick={handleRedo} disabled={historyIndex === history.length - 1} className="p-2 disabled:opacity-20" aria-label="Redo"><Redo2 className="w-4 h-4" /></button>
+                  <button onClick={handleUndo} disabled={historyIndex < 0} className="p-2 disabled:opacity-20" aria-label={language === 'ar' ? 'تراجع' : 'Undo'}><Undo2 className="w-4 h-4" /></button>
+                  <button onClick={handleRedo} disabled={historyIndex === history.length - 1} className="p-2 disabled:opacity-20" aria-label={language === 'ar' ? 'إعادة' : 'Redo'}><Redo2 className="w-4 h-4" /></button>
                 </div>
-                <button onClick={handleClearAll} className="p-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={handleClearAll} className="p-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all" aria-label={language === 'ar' ? 'مسح الكل' : 'Clear All'}><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
           </div>
@@ -1407,7 +1187,10 @@ export default function App() {
         </div>
 
         {/* Navigation Tabs Desktop */}
-        <div className="hidden md:flex justify-center w-full">
+        <nav 
+          aria-label={language === 'ar' ? 'القائمة الرئيسية' : 'Main Menu'}
+          className="hidden md:flex justify-center w-full"
+        >
           <div className="glass p-2 rounded-[2rem] flex items-center gap-2 shadow-lg dark:border-white/10 border-slate-200/50">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -1430,7 +1213,7 @@ export default function App() {
               );
             })}
           </div>
-        </div>
+        </nav>
 
         {/* Balanced Status Banner */}
         <div className="flex justify-center md:hidden">
@@ -1493,7 +1276,7 @@ export default function App() {
 
                   {/* Right Column: Transactions Table */}
                   <TransactionTable
-                    transactions={transactions}
+                    transactions={filteredTransactions}
                     selectedTransactions={selectedTransactions}
                     historyIndex={historyIndex}
                     historyLength={history.length}
@@ -1609,10 +1392,10 @@ export default function App() {
                 }
 
                 return {
-                  id: r.id || crypto.randomUUID().substring(0, 9),
+                  id: r.id || generateId(),
                   date: r.date,
                   description: r.description,
-                  impacts: impacts.map(i => ({ ...i, id: crypto.randomUUID().substring(0, 9) })),
+                  impacts: impacts.map(i => ({ ...i, id: generateId() })),
                   createdAt: new Date().toISOString()
                 };
               });
@@ -1631,14 +1414,14 @@ export default function App() {
           onClose={() => setIsDepreciationModalOpen(false)}
           assets={allAccounts.filter(a => a.category === 'asset' && !['cash', 'bank', 'ar', 'inventory', 'supplies', 'prepaid_expenses'].includes(a.id))}
           onApply={(accountId, amount, description) => {
-            const txId = crypto.randomUUID().substring(0, 9);
+            const txId = generateId();
             const newTx: Transaction = {
               id: txId,
               date: new Date().toLocaleDateString('en-GB'),
               description: description,
               impacts: [
-                { id: crypto.randomUUID().substring(0, 9), accountId: 'expenses', amount: amount },
-                { id: crypto.randomUUID().substring(0, 9), accountId: accountId, amount: -amount }
+                { id: generateId(), accountId: 'expenses', amount: amount },
+                { id: generateId(), accountId: accountId, amount: -amount }
               ],
               createdAt: new Date().toISOString()
             };

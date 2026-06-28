@@ -5,6 +5,7 @@ import { useTheme } from './ThemeContext';
 import { cn } from './utils/cn';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { Transaction } from './types/accounting';
+import { generateId } from './utils/uuid';
 
 interface Snapshot {
   id: string;
@@ -72,7 +73,7 @@ export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBu
     if (!newSnapshotName.trim()) return;
 
     const newSnapshot: Snapshot = {
-      id: crypto.randomUUID().substring(0, 9),
+      id: generateId(),
       name: newSnapshotName,
       date: new Date().toISOString(),
       transactions: currentTransactions,

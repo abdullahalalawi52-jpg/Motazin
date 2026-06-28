@@ -8,6 +8,7 @@ import { UploadCloud, CheckCircle2, FileText, X, AlertCircle, Image, FileSpreads
 import { cn } from './utils/cn';
 import { useLanguage } from './i18n';
 import { ParsedRow } from './types/accounting';
+import { generateId } from './utils/uuid';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -268,7 +269,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
 
       if (foundDate && foundAmount !== null) {
         results.push({
-          id: crypto.randomUUID().substring(0, 9),
+          id: generateId(),
           date: foundDate,
           description: descriptionParts.join(' ') || 'Excel Transaction',
           amount: foundAmount,
@@ -335,8 +336,8 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
             try {
               const parsed = JSON.parse(aiText);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                const results: ParsedRow[] = parsed.map((item: any) => ({
-                  id: crypto.randomUUID().substring(0, 9),
+                 const results: ParsedRow[] = parsed.map((item: any) => ({
+                  id: generateId(),
                   date: item.date || new Date().toLocaleDateString('en-GB'),
                   description: item.description || 'AI Extracted Item',
                   amount: Math.abs(Number(item.amount) || 0),
@@ -531,7 +532,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
 
         if (!results.some(r => r.amount === Math.abs(amt.value) && r.description === desc)) {
           results.push({
-            id: crypto.randomUUID().substring(0, 9),
+            id: generateId(),
             date: globalDate,
             description: desc,
             amount: Math.abs(amt.value),
@@ -570,7 +571,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
 
   const handleAddManualRow = () => {
      setParsedRows(prev => [...prev, {
-       id: crypto.randomUUID().substring(0, 9),
+       id: generateId(),
        date: new Date().toLocaleDateString('en-GB'),
        description: 'Manual Transaction',
        amount: 0,
@@ -610,6 +611,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
 
           <button 
             onClick={onClose} 
+            aria-label={language === 'ar' ? 'إغلاق' : 'Close'}
             className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 p-3 rounded-2xl border border-slate-200 dark:border-white/10 hover:scale-110 active:scale-95 shadow-xl"
           >
             <X className="w-6 h-6" />

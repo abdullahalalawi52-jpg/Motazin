@@ -309,7 +309,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                               placeholder="0.00"
                               className={cn(
                                 "w-full pl-4 pr-12 py-3 border dark:border-white/5 border-slate-200 rounded-2xl text-lg focus:ring-2 focus:ring-indigo-500 outline-none text-right font-mono transition-all dark:bg-slate-950/80 bg-white shadow-lg",
-                                isCredit ? "dark:text-rose-400 text-rose-600 focus:border-rose-500/50" : "dark:text-emerald-400 text-emerald-600 focus:border-emerald-500/50"
+                                isCredit ? "dark:text-rose-400 text-rose-600 focus:border-rose-500/50" : "dark:text-emerald-400 text-emerald-700 focus:border-emerald-500/50"
                               )}
                               dir="ltr"
                             />
@@ -348,7 +348,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             }}
                             className={cn(
                               "w-full pl-12 pr-4 py-2.5 dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-sm font-mono text-right font-bold transition-all outline-none focus:border-indigo-500/50",
-                              isCredit ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"
+                              isCredit ? "text-rose-600 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"
                             )}
                             placeholder="0.00"
                             dir="ltr"

@@ -34,3 +34,24 @@ export interface ParsedRow {
   accountId: string;
   selected: boolean;
 }
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'bot';
+  text: string;
+  timestamp: number;
+  isAi?: boolean;
+}
+
+export interface FinancialContext {
+  accounts: Record<string, number>;
+  totalAssets: number;
+  totalLiabilities: number;
+  totalEquity: number;
+  isBalanced: boolean;
+  transactionCount: number;
+  netProfit: number;
+  currentRatio: number;
+  debtToEquity: number;
+}
+
