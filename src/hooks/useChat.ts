@@ -28,7 +28,7 @@ export function useChat(
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [localApiKey, setLocalApiKey] = useState(() => {
-    return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
+    return import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.REACT_APP_GEMINI_API_KEY || localStorage.getItem(API_KEY_STORAGE_KEY) || '';
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);

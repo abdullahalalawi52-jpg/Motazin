@@ -146,7 +146,7 @@ export default function App() {
 
   // Gemini API State
   const [geminiApiKey, setGeminiApiKey] = useState(() => {
-    return localStorage.getItem('motazin_gemini_api_key') || '';
+    return import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.REACT_APP_GEMINI_API_KEY || localStorage.getItem('motazin_gemini_api_key') || '';
   });
 
   const [customAccountModalIdx, setCustomAccountModalIdx] = useState<number | null>(null);
