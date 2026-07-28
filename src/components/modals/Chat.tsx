@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChatWindow } from './components/Chat/ChatWindow';
+import { ChatWindow } from '../Chat/ChatWindow';
 
 interface FinancialContext {
   accounts: Record<string, number>;

@@ -88,7 +88,7 @@ export const FinancialInsights: React.FC<FinancialInsightsProps> = ({
         <h3 className="text-lg font-semibold dark:text-white text-slate-800 mb-6">{t('monthlyProfitTrend')}</h3>
         <div className="h-[300px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
           {profitTrendData.length > 0 ? (
-            <ResponsiveContainer id="profit-trend-line-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
+            <ResponsiveContainer id="profit-trend-line-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350} minWidth={1}>
               <LineChart data={profitTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900, dy: -5 }} />

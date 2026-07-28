@@ -1,9 +1,13 @@
 import React from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { toast } from 'sonner';
 import { Transaction } from '../types/accounting';
 import { cn } from '../utils/cn';
+import { formatDate } from '../utils/date';
+import { useAppStore } from '../store/useAppStore';
+import { motion } from 'framer-motion';
+import { EmptyState } from './EmptyState';
 
 interface IncomeStatementViewProps {
   transactions: Transaction[];
@@ -27,13 +31,28 @@ export const IncomeStatementView: React.FC<IncomeStatementViewProps> = ({ transa
 
   const netIncome = totalRevenue - totalExpenses;
 
+  const { budgets } = useAppStore();
+  const expenseBudget = budgets.expenses || 0;
+  const budgetExceeded = expenseBudget > 0 && totalExpenses > expenseBudget;
+  const budgetPercentage = expenseBudget > 0 ? Math.min((totalExpenses / expenseBudget) * 100, 100) : 0;
+
   return (
-    <div id="income-statement-report" className="glass-card responsive-p animate-fade-in space-y-6 sm:space-y-8 dark:bg-slate-900/40 bg-white/40 border dark:border-white/10 border-slate-200" dir={dir}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      id="income-statement-report" 
+      className="glass-card responsive-p space-y-6 sm:space-y-8 dark:bg-slate-900/40 bg-white/40 border dark:border-white/10 border-slate-200" 
+      dir={dir}
+    >
       <div className="text-center space-y-2 border-b dark:border-white/10 border-slate-200 pb-6">
         <h2 className="text-2xl sm:text-3xl font-bold dark:text-white text-slate-900">{t('incomeStatement')}</h2>
-        <p className="text-sm dark:text-slate-400 text-slate-600">{t('periodEnding')}: {new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
+        <p className="text-sm dark:text-slate-400 text-slate-600">{t('periodEnding' as any)}: {formatDate(new Date(), language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
       </div>
 
+      {transactions.length === 0 ? (
+        <EmptyState titleKey="noIncomeExpenses" subtitleKey="addTransactionPrompt" />
+      ) : (
       <div className="space-y-6">
         {/* Revenue Section */}
         <div className="space-y-4">
@@ -61,6 +80,31 @@ export const IncomeStatementView: React.FC<IncomeStatementViewProps> = ({ transa
               <span className="dark:text-white text-slate-900 font-mono font-bold" dir="ltr">{formatCurrency(totalExpenses)}</span>
             </div>
           </div>
+          
+          {expenseBudget > 0 && (
+            <div className="mt-4 bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  {t('budgetLimit') || 'Budget Limit'}: <span dir="ltr" className="font-mono text-slate-900 dark:text-white">{formatCurrency(expenseBudget)}</span>
+                </span>
+                <span className={cn("text-xs font-bold px-2 py-1 rounded-md", budgetExceeded ? "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400")}>
+                  {budgetPercentage.toFixed(0)}%
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                <div 
+                  className={cn("h-2 rounded-full transition-all duration-1000", budgetExceeded ? "bg-rose-500" : "bg-emerald-500")}
+                  style={{ width: `${budgetPercentage}%` }}
+                ></div>
+              </div>
+              {budgetExceeded && (
+                <div className="flex items-center gap-2 mt-3 text-rose-600 dark:text-rose-400 text-sm font-medium bg-rose-50 dark:bg-rose-900/20 p-2 rounded-lg">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{t('budgetExceeded') || 'Warning: Operating expenses have exceeded the allocated budget!'}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Net Income Section */}
@@ -84,6 +128,7 @@ export const IncomeStatementView: React.FC<IncomeStatementViewProps> = ({ transa
           </div>
         </div>
       </div>
+      )}
 
       <div className="flex justify-end gap-4 pt-4">
         <button
@@ -122,6 +167,6 @@ export const IncomeStatementView: React.FC<IncomeStatementViewProps> = ({ transa
           {t('exportPDF')}
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };

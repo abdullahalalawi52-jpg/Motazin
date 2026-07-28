@@ -246,5 +246,10 @@
   "botWelcomeMessage": "Merhaba! Bilanço Hesaplayıcı için Akıllı Asistanım. Size nasıl yardımcı olabilirim?\n(Not: Canlı verilerinize bağlıyım!)",
   "botPlaceholder": "Sorunuzu buraya yazın...",
   "accountExists": "Bu hesap zaten var!",
-  "accountAdded": "Yeni hesap başarıyla eklendi!"
+  "accountAdded": "Yeni hesap başarıyla eklendi!",
+  "proAccount": "PRO HESAP",
+  "offlineMode": "ÇEVRİMDIŞI MOD",
+  "backupLoaded": "Yedek başarıyla yüklendi!",
+  "dataImported": "Veriler başarıyla içe aktarıldı!",
+  "depreciationAdded": "Amortisman kaydı başarıyla eklendi!"
 }

@@ -1,8 +1,8 @@
 import React, { useState, memo } from 'react';
 import { Mail, Send, CheckCircle2, Info, MapPin } from 'lucide-react';
 import { useLanguage } from '../i18n';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { db, auth } from '../config/firebase';
 import { toast } from 'sonner';
 
 export const ContactUsView: React.FC = memo(() => {
@@ -18,12 +18,23 @@ export const ContactUsView: React.FC = memo(() => {
     setIsSending(true);
 
     try {
-      // Save to Firebase
-      await addDoc(collection(db, 'messages'), {
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error(t('loginRequired') || 'يجب تسجيل الدخول لإرسال رسالة');
+        return;
+      }
+
+      // Rate limiting logic: one message per user per day
+      const today = new Date().toISOString().split('T')[0];
+      const messageId = `${user.uid}_${today}`;
+      const createdAt = new Date().toISOString();
+
+      // Save to Firebase using setDoc to enforce rate limits via rules
+      await setDoc(doc(db, 'messages', messageId), {
         name: formName,
         email: formEmail,
         message: formMessage,
-        createdAt: new Date().toISOString()
+        createdAt: createdAt
       });
 
       setIsSent(true);

@@ -1,8 +1,10 @@
 import React from 'react';
-import { CheckCircle2, AlertCircle, Target, Edit2, Save } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Target, Edit2, Save, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { Account, Category } from '../types/accounting';
 import { cn } from '../utils/cn';
+
+import { motion } from 'framer-motion';
 
 interface EquationDashboardProps {
   totals: {
@@ -12,6 +14,11 @@ interface EquationDashboardProps {
     totalEquity: number;
     accounts: Record<string, number>;
   };
+  previousTotals?: {
+    totalAssets: number;
+    totalLiabilities: number;
+    totalEquity: number;
+  } | null;
   budgets: Record<string, number>;
   setBudgets: (budgets: Record<string, number>) => void;
   isEditingBudgets: boolean;
@@ -23,6 +30,7 @@ interface EquationDashboardProps {
 
 export const EquationDashboard: React.FC<EquationDashboardProps> = ({
   totals,
+  previousTotals,
   budgets,
   setBudgets,
   isEditingBudgets,
@@ -34,7 +42,12 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
   const { t } = useLanguage();
 
   return (
-    <div className="hidden md:block xl:col-span-4 space-y-6 animate-fade-in [animation-delay:400ms]">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="hidden md:block xl:col-span-4 space-y-6"
+    >
       {/* Balance Equation Status Visualization */}
       <div className={cn(
         "rounded-[2.5rem] shadow-2xl border-2 p-8 transition-all duration-700 backdrop-blur-3xl overflow-hidden relative group/card",
@@ -65,13 +78,39 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-              <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm">
-                <span className="text-[10px] uppercase font-bold block mb-2 tracking-widest text-theme-muted">{t('totalAssets')}</span>
-                <span className="text-xl font-bold dark:text-white text-slate-900" dir="ltr">{formatCurrency(totals.totalAssets)}</span>
+              <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm min-w-0 relative">
+                <span className="text-[10px] sm:text-xs uppercase font-bold block mb-2 tracking-wider text-theme-muted leading-tight">{t('totalAssets')}</span>
+                <span className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 truncate block" dir="ltr">{formatCurrency(totals.totalAssets)}</span>
+                
+                {previousTotals && (
+                  <div className="absolute top-4 right-4 flex items-center gap-1 rtl:left-4 rtl:right-auto text-xs font-bold">
+                    {(() => {
+                      const diff = totals.totalAssets - previousTotals.totalAssets;
+                      const isZero = previousTotals.totalAssets === 0;
+                      if (diff === 0) return <span className="text-slate-500 flex items-center"><Minus className="w-3 h-3" /> 0%</span>;
+                      if (diff > 0) return <span className="text-emerald-500 flex items-center" title={t('growth')}><TrendingUp className="w-3 h-3 mr-1 rtl:ml-1" /> {isZero ? '100%' : `${((diff / previousTotals.totalAssets) * 100).toFixed(1)}%`}</span>;
+                      return <span className="text-rose-500 flex items-center" title={t('decline')}><TrendingDown className="w-3 h-3 mr-1 rtl:ml-1" /> {isZero ? '-100%' : `${((Math.abs(diff) / previousTotals.totalAssets) * 100).toFixed(1)}%`}</span>;
+                    })()}
+                  </div>
+                )}
               </div>
-              <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm">
-                <span className="text-[10px] uppercase font-bold block mb-2 tracking-widest text-theme-muted">{t('totalLiabilitiesEquity')}</span>
-                <span className="text-xl font-bold dark:text-white text-slate-900" dir="ltr">{formatCurrency(totals.totalLiabilities + totals.totalEquity)}</span>
+              <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm min-w-0 relative">
+                <span className="text-[10px] sm:text-xs uppercase font-bold block mb-2 tracking-wider text-theme-muted leading-tight" title={t('totalLiabilitiesEquity')}>{t('totalLiabilitiesEquity')}</span>
+                <span className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 truncate block" dir="ltr">{formatCurrency(totals.totalLiabilities + totals.totalEquity)}</span>
+                
+                {previousTotals && (
+                  <div className="absolute top-4 right-4 flex items-center gap-1 rtl:left-4 rtl:right-auto text-xs font-bold">
+                    {(() => {
+                      const currentLE = totals.totalLiabilities + totals.totalEquity;
+                      const prevLE = previousTotals.totalLiabilities + previousTotals.totalEquity;
+                      const diff = currentLE - prevLE;
+                      const isZero = prevLE === 0;
+                      if (diff === 0) return <span className="text-slate-500 flex items-center"><Minus className="w-3 h-3" /> 0%</span>;
+                      if (diff > 0) return <span className="text-rose-500 flex items-center" title={t('growth')}><TrendingUp className="w-3 h-3 mr-1 rtl:ml-1" /> {isZero ? '100%' : `${((diff / prevLE) * 100).toFixed(1)}%`}</span>;
+                      return <span className="text-emerald-500 flex items-center" title={t('decline')}><TrendingDown className="w-3 h-3 mr-1 rtl:ml-1" /> {isZero ? '-100%' : `${((Math.abs(diff) / prevLE) * 100).toFixed(1)}%`}</span>;
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -212,6 +251,6 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
           })}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

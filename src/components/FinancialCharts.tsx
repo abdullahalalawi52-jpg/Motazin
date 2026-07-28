@@ -5,7 +5,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Ba
 import { Transaction } from '../types/accounting';
 
 interface FinancialChartsProps {
-  mounted: boolean;
+
   transactions: Transaction[];
   assetChartData: { name: string; value: number }[];
   incomeExpenseData: { name: string; amount: number }[];
@@ -14,8 +14,8 @@ interface FinancialChartsProps {
   colors: string[];
 }
 
-export const FinancialCharts: React.FC<FinancialChartsProps> = ({
-  mounted,
+export const FinancialCharts: React.FC<FinancialChartsProps> = React.memo(({
+
   transactions,
   assetChartData,
   incomeExpenseData,
@@ -25,7 +25,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  if (!mounted || transactions.length === 0) return null;
+  if (transactions.length === 0) return null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" style={{ minWidth: 0 }}>
@@ -37,7 +37,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
         </h2>
         <div className="h-[300px] md:h-[350px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
           {assetChartData.length > 0 ? (
-            <ResponsiveContainer id="asset-distribution-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
+            <ResponsiveContainer id="asset-distribution-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350} minWidth={1}>
               <PieChart>
                 <Pie
                   data={assetChartData}
@@ -75,7 +75,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
         </h2>
         <div className="h-[300px] md:h-[350px] w-full relative" style={{ minWidth: 0, minHeight: 0 }}>
           {incomeExpenseData.some(d => d.amount > 0) ? (
-            <ResponsiveContainer id="income-expense-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350}>
+            <ResponsiveContainer id="income-expense-chart" width="100%" height={window.innerWidth < 768 ? 300 : 350} minWidth={1}>
               <BarChart data={incomeExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#94a3b8' : '#000000', fontSize: 13, fontWeight: 900, dy: -5 }} />
@@ -106,4 +106,4 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
       </div>
     </div>
   );
-};
+});

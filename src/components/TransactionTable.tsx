@@ -1,8 +1,12 @@
-import React from 'react';
-import { Undo2, Redo2, FileSearch, Calculator, Trash2, FileSpreadsheet, FileText, Eye, Edit2 } from 'lucide-react';
+import React, { useRef, useMemo } from 'react';
+import { useVirtualizer, useWindowVirtualizer } from '@tanstack/react-virtual';
+import { Undo2, Redo2, FileSearch, Calculator, Trash2, FileSpreadsheet, FileText, Eye, Edit2, Paperclip, Loader2, Percent } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { Account, Transaction } from '../types/accounting';
 import { cn } from '../utils/cn';
+import { formatDate } from '../utils/date';
+import { TransactionTableRow } from './TransactionTableRow';
+import { useAppStore } from '../store/useAppStore';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -13,6 +17,7 @@ interface TransactionTableProps {
   handleRedo: () => void;
   setIsPdfScannerOpen: (open: boolean) => void;
   setIsDepreciationModalOpen: (open: boolean) => void;
+  setIsVatModalOpen: (open: boolean) => void;
   handleBulkDelete: () => void;
   handleExportCSV: () => void;
   handleExportPDF: () => void;
@@ -34,10 +39,10 @@ interface TransactionTableProps {
   handleSelectAll: () => void;
   setPreviewUrl: (url: string | null) => void;
   setIsDocPreviewOpen: (open: boolean) => void;
-  currency: string;
+  handleBulkAttach: (file: File) => Promise<void>;
 }
 
-export const TransactionTable: React.FC<TransactionTableProps> = ({
+export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
   transactions,
   selectedTransactions,
   historyIndex,
@@ -46,6 +51,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   handleRedo,
   setIsPdfScannerOpen,
   setIsDepreciationModalOpen,
+  setIsVatModalOpen,
   handleBulkDelete,
   handleExportCSV,
   handleExportPDF,
@@ -61,9 +67,45 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   handleSelectAll,
   setPreviewUrl,
   setIsDocPreviewOpen,
-  currency
+  handleBulkAttach
 }) => {
   const { t, language } = useLanguage();
+  const { isUploading } = useAppStore();
+  const hasAccounts = assets.length > 0 || liabilities.length > 0 || equities.length > 0;
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const { globalSearchTerm, setGlobalSearchTerm } = useAppStore();
+
+  const processedTransactions = useMemo(() => {
+    if (!globalSearchTerm.trim()) return transactions;
+    const term = globalSearchTerm.toLowerCase();
+    return transactions.filter(tx => 
+      tx.description.toLowerCase().includes(term) || 
+      tx.impacts.some(i => 
+        i.amount.toString().includes(term) || 
+        (allAccounts.find(a => a.id === i.accountId)?.name || '').toLowerCase().includes(term)
+      )
+    );
+  }, [transactions, globalSearchTerm, allAccounts]);
+
+  const desktopVirtualizer = useVirtualizer({
+    count: processedTransactions.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 55,
+    overscan: 10,
+  });
+
+  const desktopItems = desktopVirtualizer.getVirtualItems();
+  const desktopPaddingTop = desktopItems.length > 0 ? desktopItems[0].start : 0;
+  const desktopPaddingBottom = desktopItems.length > 0 ? desktopVirtualizer.getTotalSize() - desktopItems[desktopItems.length - 1].end : 0;
+
+  const mobileVirtualizer = useWindowVirtualizer({
+    count: processedTransactions.length,
+    estimateSize: () => 220,
+    overscan: 5,
+  });
+
+  const mobileItems = mobileVirtualizer.getVirtualItems();
 
   const getImpactAmount = (tx: Transaction, accountId: string) => {
     const impact = tx.impacts.find(i => i.accountId === accountId);
@@ -84,26 +126,33 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   };
 
   return (
-    <div className="xl:col-span-8">
+    <div className="xl:col-span-7">
       <div className="glass-card overflow-hidden flex flex-col h-full" style={{ borderRadius: '1.5rem' }}>
-        <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-100/90 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-100/90 flex flex-col items-stretch gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <div className="flex items-center gap-1 dark:bg-white/5 bg-slate-100 p-1 rounded-xl border dark:border-white/10 border-slate-200">
               <button
                 onClick={handleUndo}
                 disabled={historyIndex <= 0}
-                className="p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
-                title={language === 'ar' ? "تراجع" : "Undo"}
+                className="group relative p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
               >
                 <Undo2 className="w-4 h-4" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
+                  {language === 'ar' ? "تراجع" : "Undo"}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700"></div>
+                </div>
               </button>
               <button
                 onClick={handleRedo}
                 disabled={historyIndex >= historyLength - 1}
-                className="p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
-                title={language === 'ar' ? "إعادة التعديل المتراجع عنه" : "Redo"}
+                className="group relative p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
               >
                 <Redo2 className="w-4 h-4" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
+                  {language === 'ar' ? "إعادة" : "Redo"}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700"></div>
+                </div>
               </button>
             </div>
 
@@ -122,224 +171,187 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               title={t('depreciationCalc')}
             >
               <Calculator className="w-4 h-4" />
-              <span>{t('depreciationCalc')}</span>
+              <span className="hidden sm:inline">{t('depreciationCalc')}</span>
             </button>
+
+            <button
+              onClick={() => setIsVatModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 text-[10px] sm:text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
+              title={language === 'ar' ? 'حاسبة الضريبة' : 'VAT Calculator'}
+            >
+              <Percent className="w-4 h-4" />
+              <span className="hidden sm:inline">{language === 'ar' ? 'الضريبة' : 'VAT'}</span>
+            </button>
+
           </div>
-          {transactions.length > 0 && (
+        </div>
+          {processedTransactions.length > 0 && (
             <div className="flex flex-wrap justify-center items-center gap-2">
               {selectedTransactions.size > 0 && (
                 <button
                   onClick={handleBulkDelete}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-[15px] font-medium text-white bg-rose-600 border border-rose-600 rounded-lg hover:bg-rose-700 transition-colors shadow-sm"
-                  title={t('deleteSelected')}
+                  className="group relative flex items-center gap-1.5 px-3 py-1.5 text-[15px] font-medium text-white bg-rose-600 border border-rose-600 rounded-lg hover:bg-rose-700 transition-colors shadow-sm"
                 >
                   <Trash2 className="w-4 h-4" />
                   {t('deleteSelected')} ({selectedTransactions.size})
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-rose-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
+                    {t('deleteSelected')}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-rose-700"></div>
+                  </div>
                 </button>
               )}
               <button
                 onClick={handleExportCSV}
-                className="flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-indigo-600/50 hover:bg-indigo-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
-                title={t('exportCSV')}
+                className="relative flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-indigo-600/50 hover:bg-indigo-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
               >
                 <FileSpreadsheet className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-indigo-600" />
                 <span className="sr-only sm:not-sr-only">{t('exportCSV')}</span>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
+                  {t('exportCSV')}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700"></div>
+                </div>
               </button>
               <button
                 onClick={handleExportPDF}
-                className="flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-rose-600/50 hover:bg-rose-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
-                title={t('exportPDF')}
+                className="relative flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-rose-600/50 hover:bg-rose-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
               >
                 <FileText className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-rose-600" />
                 <span className="sr-only sm:not-sr-only">PDF</span>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
+                  {t('exportPDF')}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700"></div>
+                </div>
               </button>
             </div>
           )}
         </div>
 
-        {transactions.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-transparent">
-            <div className="p-6 bg-slate-200/50 dark:bg-white/5 rounded-full mb-6 border border-slate-300 dark:border-white/10">
-              <Calculator className="w-12 h-12 text-slate-400 dark:text-white/20" />
-            </div>
-            <p className="text-lg font-black text-slate-800 dark:text-white mb-2">{t('noTransactions')}</p>
-            <p className="text-sm font-bold text-slate-400 dark:text-slate-500 max-w-xs">{t('addTransactionPrompt')}</p>
-          </div>
-        ) : (
-          <>
-            {/* Desktop Table View */}
-            <div id="transactions-table" className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-white">
-              <table className="w-full text-[15px] text-right border-collapse">
-                <thead className="sticky top-0 z-20 dark:text-white text-slate-800 shadow-sm ring-1 dark:ring-white/10 ring-slate-200/50">
-                  {/* Category Headers */}
-                  <tr className="border-b dark:border-white/10 border-slate-200 ring-1 dark:ring-white/5 ring-slate-100/50">
-                    <th className="p-4 border-l dark:border-white/5 border-slate-200/50 w-10 dark:bg-slate-900/40 bg-slate-100/80 text-center">
-                      <input
-                        id="select-all-transactions"
-                        name="selectAll"
-                        type="checkbox"
-                        checked={transactions.length > 0 && selectedTransactions.size === transactions.length}
-                        onChange={handleSelectAll}
-                        className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                        aria-label={t('selectAll') || 'Select All'}
+        <div id="transactions-table" ref={parentRef} className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-white">
+          <table className="w-full text-[15px] text-right border-collapse">
+            {processedTransactions.length > 0 && (
+            <thead className="sticky top-20 md:top-28 z-20 dark:text-white text-slate-800 shadow-sm ring-1 dark:ring-white/10 ring-slate-200/50 backdrop-blur-md bg-white/90 dark:bg-slate-900/90">
+              {/* Category Headers */}
+              <tr className="border-b dark:border-white/10 border-slate-200 ring-1 dark:ring-white/5 ring-slate-100/50">
+                <th rowSpan={hasAccounts ? 2 : 1} className="p-4 border-l dark:border-white/5 border-slate-200/50 w-10 text-center">
+                  <input
+                    id="select-all-transactions"
+                    name="selectAll"
+                    type="checkbox"
+                    checked={processedTransactions.length > 0 && selectedTransactions.size === processedTransactions.length}
+                    onChange={handleSelectAll}
+                    className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    aria-label={t('selectAll') || 'Select All'}
+                  />
+                </th>
+                <th rowSpan={hasAccounts ? 2 : 1} className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest w-24 text-center">{t('date')}</th>
+                <th rowSpan={hasAccounts ? 2 : 1} className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest min-w-[200px]">{t('description')}</th>
+
+                {assets.length > 0 && (
+                  <th colSpan={assets.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-indigo-500/10 dark:text-indigo-300 text-indigo-950">
+                    {t('assets')}
+                  </th>
+                )}
+
+                {liabilities.length > 0 && (
+                  <th colSpan={liabilities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-amber-500/10 dark:text-amber-300 text-amber-950">
+                    {t('liabilities')}
+                  </th>
+                )}
+
+                {equities.length > 0 && (
+                  <th colSpan={equities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-emerald-500/10 dark:text-emerald-300 text-emerald-950">
+                    {t('equity')}
+                  </th>
+                )}
+                <th rowSpan={hasAccounts ? 2 : 1} className="p-3 w-10"></th>
+              </tr>
+              {/* Account Headers */}
+              {hasAccounts && (
+                <tr className="border-b dark:border-white/5 border-slate-200/30">
+                {assets.map(a => (
+                  <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-indigo-400 text-indigo-900 bg-indigo-500/5">{t(a.name)}</th>
+                ))}
+
+                {liabilities.map(a => (
+                  <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-amber-400 text-amber-900 bg-amber-500/5">{t(a.name)}</th>
+                ))}
+
+                {equities.map(a => (
+                  <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-emerald-400 text-emerald-900 bg-emerald-500/5">{t(a.name)}</th>
+                ))}
+              </tr>
+              )}
+            </thead>
+            )}
+            <tbody className="divide-y dark:divide-white/5 divide-slate-200/60">
+              {processedTransactions.length === 0 ? (
+                <tr>
+                  <td colSpan={100} className="p-16 text-center bg-white/50 dark:bg-transparent">
+                    <div className="flex flex-col items-center justify-center animate-fade-in">
+                      <div className="relative mb-8 mt-4">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 blur-3xl rounded-full animate-pulse-slow"></div>
+                        <div className="relative z-10 w-32 h-32 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-full flex items-center justify-center shadow-2xl border border-white/80 dark:border-white/10">
+                           <FileSpreadsheet className="w-14 h-14 text-indigo-500 dark:text-indigo-400 opacity-90" />
+                           <div className="absolute -top-3 -right-3 w-12 h-12 bg-emerald-50 dark:bg-slate-800 rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-700 animate-float" style={{ animationDelay: '0s' }}>
+                             <Calculator className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                           </div>
+                           <div className="absolute -bottom-2 -left-3 w-10 h-10 bg-amber-50 dark:bg-slate-800 rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-700 animate-float" style={{ animationDelay: '1.5s' }}>
+                             <Percent className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                           </div>
+                        </div>
+                      </div>
+                      
+                      {globalSearchTerm ? (
+                        <>
+                          <h3 className="text-2xl font-black bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-3">{language === 'ar' ? "لم نجد أي نتائج للبحث" : "No results found"}</h3>
+                          <p className="text-base font-bold text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-6">{language === 'ar' ? "جرب البحث بكلمات أخرى أو قم بإلغاء البحث لرؤية جميع العمليات." : "Try different keywords or clear the search to see all transactions."}</p>
+                          <button onClick={() => setGlobalSearchTerm('')} className="px-6 py-2.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-white rounded-xl font-bold transition-all active:scale-95 shadow-sm">
+                            {language === 'ar' ? "إلغاء البحث" : "Clear Search"}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <h3 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent mb-3">{t('noTransactions')}</h3>
+                          <p className="text-base font-bold text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-4">{t('addTransactionPrompt')}</p>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                <>
+                  {desktopPaddingTop > 0 && (
+                    <tr><td style={{ height: `${desktopPaddingTop}px` }} colSpan={100} /></tr>
+                  )}
+                  {desktopItems.map((virtualRow) => {
+                    const tx = processedTransactions[virtualRow.index];
+                    return (
+                      <TransactionTableRow
+                        key={tx.id}
+                        tx={tx}
+                        selectedTransactions={selectedTransactions}
+                        handleSelectTransaction={handleSelectTransaction}
+                        t={t}
+                        setPreviewUrl={setPreviewUrl}
+                        setIsDocPreviewOpen={setIsDocPreviewOpen}
+                        assets={assets}
+                        liabilities={liabilities}
+                        equities={equities}
+                        getImpactAmount={getImpactAmount}
+                        formatCurrency={formatCurrency}
+                        handleEditTransaction={handleEditTransaction}
+                        handleDeleteTransaction={handleDeleteTransaction}
                       />
-                    </th>
-                    <th className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest w-24 dark:bg-slate-900/40 bg-slate-100/80 text-center">{t('date')}</th>
-                    <th className="p-4 border-l dark:border-white/5 border-slate-200/50 font-bold text-[11px] uppercase tracking-widest min-w-[200px] dark:bg-slate-900/40 bg-slate-100/80">{t('description')}</th>
-
-                    {assets.length > 0 && (
-                      <th colSpan={assets.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-indigo-500/10 dark:text-indigo-300 text-indigo-950">
-                        {t('assets')}
-                      </th>
-                    )}
-
-                    {liabilities.length > 0 && (
-                      <th colSpan={liabilities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-amber-500/10 dark:text-amber-300 text-amber-950">
-                        {t('liabilities')}
-                      </th>
-                    )}
-
-                    {equities.length > 0 && (
-                      <th colSpan={equities.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-emerald-500/10 dark:text-emerald-300 text-emerald-950">
-                        {t('equity')}
-                      </th>
-                    )}
-                    <th className="p-3 w-10 dark:bg-slate-900/40 bg-slate-100/80"></th>
-                  </tr>
-                  {/* Account Headers */}
-                  <tr className="border-b dark:border-white/5 border-slate-200/30">
-                    <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
-                    <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
-                    <th className="p-2 border-l dark:border-white/5 border-slate-200/30 dark:bg-slate-900/20 bg-slate-50/50"></th>
-
-                    {assets.map(a => (
-                      <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-indigo-400 text-indigo-900 bg-indigo-500/5">{t(a.name)}</th>
-                    ))}
-
-                    {liabilities.map(a => (
-                      <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-amber-400 text-amber-900 bg-amber-500/5">{t(a.name)}</th>
-                    ))}
-
-                    {equities.map(a => (
-                      <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-emerald-400 text-emerald-900 bg-emerald-500/5">{t(a.name)}</th>
-                    ))}
-                    <th className="dark:bg-slate-900/20 bg-slate-50/50"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y dark:divide-white/5 divide-slate-200/60">
-                  {transactions.map((tx) => (
-                    <tr key={tx.id} className="dark:even:bg-white/5 even:bg-slate-100/20 dark:hover:bg-slate-700/50 hover:bg-slate-100/80 transition-colors group">
-                      <td className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center">
-                        <input
-                          id={`select-tx-${tx.id}`}
-                          name={`selectTx-${tx.id}`}
-                          type="checkbox"
-                          checked={selectedTransactions.has(tx.id)}
-                          onChange={() => handleSelectTransaction(tx.id)}
-                          className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                          aria-label={`${t('select')} ${tx.description}`}
-                        />
-                      </td>
-                      <td className="p-3 border-l dark:border-white/5 border-slate-200/30 whitespace-nowrap dark:text-white text-slate-800 text-center"><span dir="ltr" className="inline-block transform -translate-y-[3px]">{tx.date}</span></td>
-                      <td className="p-3 border-l dark:border-white/5 border-slate-200/30 dark:text-white text-slate-850">
-                        <div className="flex items-center gap-2">
-                          {tx.description}
-                          {tx.isRecurring && (
-                            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700" title={`${t('repeatsEveryLabel')} ${t(tx.recurrenceInterval || 'monthly')}`}>
-                              {t('recurring')}
-                            </span>
-                          )}
-                          {tx.attachmentUrl && (
-                            <button
-                              onClick={() => {
-                                setPreviewUrl(tx.attachmentUrl || null);
-                                setIsDocPreviewOpen(true);
-                              }}
-                              className="p-1 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all"
-                              title={t('viewDocument')}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-
-                      {assets.map(a => {
-                        const amt = getImpactAmount(tx, a.id);
-                        return (
-                          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-indigo-500/5 transition-colors" dir="ltr">
-                            {amt !== 0 ? (
-                              <span className={cn(
-                                "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
-                                amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
-                              )}>
-                                {formatCurrency(amt)}
-                              </span>
-                            ) : (
-                              <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
-                            )}
-                          </td>
-                        );
-                      })}
-
-                      {liabilities.map(a => {
-                        const amt = getImpactAmount(tx, a.id);
-                        return (
-                          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-amber-500/5 transition-colors" dir="ltr">
-                            {amt !== 0 ? (
-                              <span className={cn(
-                                "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
-                                amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
-                              )}>
-                                {formatCurrency(amt)}
-                              </span>
-                            ) : (
-                              <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
-                            )}
-                          </td>
-                        );
-                      })}
-
-                      {equities.map(a => {
-                        const amt = getImpactAmount(tx, a.id);
-                        return (
-                          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-emerald-500/5 transition-colors" dir="ltr">
-                            {amt !== 0 ? (
-                              <span className={cn(
-                                "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
-                                amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
-                              )}>
-                                {formatCurrency(amt)}
-                              </span>
-                            ) : (
-                              <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
-                            )}
-                          </td>
-                        );
-                      })}
-
-                      <td className="p-2 text-center">
-                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                          <button
-                            onClick={() => handleEditTransaction(tx)}
-                            className="p-1.5 dark:text-white text-slate-600 hover:text-indigo-600 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
-                            title={t('editTransaction')}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTransaction(tx.id)}
-                            className="p-1.5 dark:text-white text-slate-600 hover:text-rose-500 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
-                            title={t('deleteTransaction')}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                {/* Totals Row */}
+                    );
+                  })}
+                  {desktopPaddingBottom > 0 && (
+                    <tr><td style={{ height: `${desktopPaddingBottom}px` }} colSpan={100} /></tr>
+                  )}
+                </>
+              )}
+            </tbody>
+            {/* Totals Row */}
+            {processedTransactions.length > 0 && (
                 <tfoot className="sticky bottom-0 z-20 bg-slate-900 border-t-2 dark:border-white/10 border-slate-800 font-bold shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
                   <tr>
                     <td colSpan={3} className="p-4 border-l dark:border-white/5 border-slate-800 text-left text-white/90 bg-slate-900/60 uppercase tracking-widest text-[11px]">
@@ -366,93 +378,136 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     <td className="bg-slate-900/60"></td>
                   </tr>
                 </tfoot>
+            )}
               </table>
             </div>
 
             {/* Mobile Card View - Enhanced Design */}
-            <div className="md:hidden flex flex-col gap-5 responsive-px py-6 bg-slate-50/50 dark:bg-slate-950/20">
-              {transactions.map((tx) => (
-                <div key={tx.id} className="mobile-card !mb-0 group overflow-hidden border dark:border-white/10 border-slate-200 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/60 dark:shadow-none p-5 rounded-[2rem]">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-start gap-4">
-                      <div className="relative mt-1">
-                        <input
-                          id={`mob-select-tx-${tx.id}`}
-                          name={`mob-selectTx-${tx.id}`}
-                          type="checkbox"
-                          checked={selectedTransactions.has(tx.id)}
-                          onChange={() => handleSelectTransaction(tx.id)}
-                          className="rounded-lg border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-6 h-6 transition-all"
-                          aria-label={`${t('select')} ${tx.description}`}
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.15em] mb-1.5" dir="ltr">{tx.date}</span>
-                        <p className="text-[16px] font-black dark:text-white text-slate-900 leading-snug">{tx.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleEditTransaction(tx)}
-                        className="p-3 dark:text-indigo-400 text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white rounded-2xl transition-all active:scale-90"
-                        title={t('editTransaction')}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
+            <div className="md:hidden flex flex-col gap-5 responsive-px py-6 bg-slate-50/50 dark:bg-slate-950/20 min-h-[300px]">
+              {processedTransactions.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 min-h-[350px]">
+                  <div className="relative mb-6 mt-4">
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 blur-2xl rounded-full animate-pulse-slow"></div>
+                    <div className="relative z-10 w-24 h-24 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-full flex items-center justify-center shadow-xl border border-white/80 dark:border-white/10">
+                       <FileSpreadsheet className="w-10 h-10 text-indigo-500 dark:text-indigo-400 opacity-90" />
+                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-emerald-50 dark:bg-slate-800 rounded-full flex items-center justify-center shadow-md border-2 border-white dark:border-slate-700 animate-float" style={{ animationDelay: '0s' }}>
+                         <Calculator className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                       </div>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap gap-2 py-4 border-t dark:border-white/10 border-slate-100">
-                    {tx.impacts.map((imp, i) => (
-                      <div key={i} className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm",
-                        imp.amount > 0
-                          ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20"
-                          : "bg-rose-50 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20"
-                      )}>
-                        <span className={cn(
-                          "text-[11px] font-bold",
-                          imp.amount > 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
-                        )}>
-                          {t(allAccounts.find(a => a.id === imp.accountId)?.name || '')}
-                        </span>
-                        <div className={cn("w-1 h-1 rounded-full", imp.amount > 0 ? "bg-emerald-400" : "bg-rose-400")}></div>
-                        <span className={cn(
-                          "font-black font-mono text-[12px]",
-                          imp.amount > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
-                        )} dir="ltr">
-                          {formatCurrency(imp.amount)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-1">
-                    {tx.attachmentUrl && (
-                      <button
-                        onClick={() => {
-                          setPreviewUrl(tx.attachmentUrl || null);
-                          setIsDocPreviewOpen(true);
-                        }}
-                        className="flex-1 py-3 flex items-center justify-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border dark:border-white/10 border-slate-200 text-[10px] font-black uppercase tracking-widest dark:text-indigo-400 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all active:scale-95 shadow-sm"
-                      >
-                        <Eye className="w-4 h-4" />
-                        {t('viewAttachment') || 'View Attachment'}
+                  
+                  {globalSearchTerm ? (
+                    <>
+                      <h3 className="text-lg font-black bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-2">{language === 'ar' ? "لم نجد نتائج" : "No results"}</h3>
+                      <p className="text-[13px] font-bold text-slate-500 dark:text-slate-400 max-w-[250px] leading-relaxed mb-5">{language === 'ar' ? "لم نجد أي عمليات تطابق بحثك." : "We couldn't find any transactions matching your search."}</p>
+                      <button onClick={() => setGlobalSearchTerm('')} className="px-5 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm">
+                        {language === 'ar' ? "إلغاء البحث" : "Clear Search"}
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteTransaction(tx.id)}
-                      className="p-3 dark:text-rose-400 text-rose-600 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-2xl transition-all active:scale-90 border border-rose-500/20 shadow-sm"
-                      title={t('deleteTransaction')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent mb-2">{t('noTransactions')}</h3>
+                      <p className="text-[13px] font-bold text-slate-500 dark:text-slate-400 max-w-[250px]">{t('addTransactionPrompt')}</p>
+                    </>
+                  )}
                 </div>
-              ))}
+              ) : (
+                <div style={{ position: 'relative', height: `${mobileVirtualizer.getTotalSize()}px` }}>
+                  {mobileItems.map((virtualRow) => {
+                    const tx = processedTransactions[virtualRow.index];
+                    return (
+                      <div 
+                        key={tx.id} 
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                        className="mobile-card !mb-0 group overflow-hidden border dark:border-white/10 border-slate-200 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/60 dark:shadow-none p-5 rounded-[2rem]"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-start gap-4">
+                            <div className="relative mt-1">
+                              <input
+                                id={`mob-select-tx-${tx.id}`}
+                                name={`mob-selectTx-${tx.id}`}
+                                type="checkbox"
+                                checked={selectedTransactions.has(tx.id)}
+                                onChange={() => handleSelectTransaction(tx.id)}
+                                className="rounded-lg border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-6 h-6 transition-all"
+                                aria-label={`${t('select')} ${tx.description}`}
+                              />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.15em] mb-1.5" dir="ltr">{formatDate(tx.date, language === 'ar' ? 'ar-SA' : 'en-GB')}</span>
+                              <p className="text-[16px] font-black dark:text-white text-slate-900 leading-snug">{tx.description}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleEditTransaction(tx)}
+                              className="p-3 dark:text-indigo-400 text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white rounded-2xl transition-all active:scale-90"
+                              title={t('editTransaction')}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 py-4 border-t dark:border-white/10 border-slate-100">
+                          {tx.impacts.map((imp, i) => (
+                            <div key={i} className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm",
+                              imp.amount > 0
+                                ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20"
+                                : "bg-rose-50 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20"
+                            )}>
+                              <span className={cn(
+                                "text-[11px] font-bold",
+                                imp.amount > 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
+                              )}>
+                                {t(allAccounts.find(a => a.id === imp.accountId)?.name || '')}
+                              </span>
+                              <div className={cn("w-1 h-1 rounded-full", imp.amount > 0 ? "bg-emerald-400" : "bg-rose-400")}></div>
+                              <span className={cn(
+                                "font-black font-mono text-[12px]",
+                                imp.amount > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
+                              )} dir="ltr">
+                                {formatCurrency(imp.amount)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-1">
+                          {tx.attachmentUrl && (
+                            <button
+                              onClick={() => {
+                                setPreviewUrl(tx.attachmentUrl || null);
+                                setIsDocPreviewOpen(true);
+                              }}
+                              className="flex-1 py-3 flex items-center justify-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border dark:border-white/10 border-slate-200 text-[10px] font-black uppercase tracking-widest dark:text-indigo-400 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all active:scale-95 shadow-sm"
+                            >
+                              <Eye className="w-4 h-4" />
+                              {t('viewAttachment') || 'View Attachment'}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteTransaction(tx.id)}
+                            className="p-3 dark:text-rose-400 text-rose-600 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-2xl transition-all active:scale-90 border border-rose-500/20 shadow-sm"
+                            title={t('deleteTransaction')}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </>
-        )}
 
         {/* Final Equation Summary */}
         {transactions.length > 0 && (
@@ -476,4 +531,4 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       </div>
     </div>
   );
-};
+});

@@ -246,5 +246,10 @@
   "botWelcomeMessage": "您好！我是资产负债表计算器的智能财务助理。有什么我可以帮您的吗？\n（注：我已连接您的实时财务账簿，能够直接对其进行诊断和分析！）",
   "botPlaceholder": "在此输入您的问题...",
   "accountExists": "该会计科目已存在！",
-  "accountAdded": "新会计科目添加成功！"
+  "accountAdded": "新会计科目添加成功！",
+  "proAccount": "专业账户",
+  "offlineMode": "离线模式",
+  "backupLoaded": "备份加载成功！",
+  "dataImported": "数据导入成功！",
+  "depreciationAdded": "折旧分录添加成功！"
 }

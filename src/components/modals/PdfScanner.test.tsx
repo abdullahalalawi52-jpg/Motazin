@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { FileScanner } from './PdfScanner';
-import { LanguageProvider } from './i18n';
+import { LanguageProvider } from '../../i18n';
 
 // Mock external heavy libraries
 vi.mock('pdfjs-dist', () => ({
@@ -63,18 +63,18 @@ describe('FileScanner (PdfScanner) Component Tests', () => {
     );
   };
 
-  it('renders correctly with upload dropzone', () => {
+  it('renders correctly with upload dropzone', async () => {
     renderScanner();
 
     // Verify header and dropzone label
-    expect(screen.getByText(/استيراد ملفات\/صور/i)).toBeInTheDocument();
+    expect(await screen.findByText(/استيراد ملفات\/صور/i)).toBeInTheDocument();
     expect(screen.getByText(/انقر هنا للرفع أو اسحب الملف هنا/i)).toBeInTheDocument();
   });
 
   it('displays error on unsupported file type', async () => {
     renderScanner();
 
-    const input = screen.getByLabelText(/انقر هنا للرفع|click to upload/i);
+    const input = await screen.findByLabelText(/انقر هنا للرفع|click to upload/i);
     
     // Create an unsupported file
     const file = new File(['dummy'], 'test.txt', { type: 'text/plain' });
@@ -86,11 +86,11 @@ describe('FileScanner (PdfScanner) Component Tests', () => {
     });
   });
 
-  it('successfully triggers close callback when clicking close button', () => {
+  it('successfully triggers close callback when clicking close button', async () => {
     const onClose = vi.fn();
     renderScanner(vi.fn(), onClose);
 
-    const closeBtn = screen.getByRole('button', { name: /إغلاق|close/i });
+    const closeBtn = await screen.findByRole('button', { name: /إغلاق|close/i });
     fireEvent.click(closeBtn);
 
     expect(onClose).toHaveBeenCalled();

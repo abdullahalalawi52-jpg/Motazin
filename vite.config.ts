@@ -46,14 +46,12 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
-    exclude: ['node_modules', 'dist', 'tests'],
+    exclude: ['node_modules', 'dist', 'tests/app.spec.ts'],
   },
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    sourcemap: true,
     chunkSizeWarningLimit: 1500,
-    rolldownOptions: {
-    },
     rollupOptions: {
       output: {
         manualChunks(id: string) {

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { doc, onSnapshot, collection, query, orderBy, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { Transaction, Account } from '../types/accounting';
 
 export function useFirestoreSync(

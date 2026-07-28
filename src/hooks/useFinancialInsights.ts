@@ -2,10 +2,14 @@ import { useMemo } from 'react';
 import { Transaction, Account } from '../types/accounting';
 import { calculateTotals } from '../utils/accounting';
 
+const currentAssetIds = ['bank', 'cash', 'ar', 'inventory', 'supplies', 'prepaid_expenses'];
+const currentLiabilityIds = ['ap', 'short_term_loans', 'accrued_expenses', 'unearned_revenues'];
+
 export function useFinancialInsights(
   filteredTransactions: Transaction[],
   allAccounts: Account[],
-  t: (key: string) => string
+  t: (key: string) => string,
+  previousFilteredTransactions: Transaction[] = []
 ) {
   const activeAccountIds = useMemo(() => {
     const ids = new Set<string>();
@@ -20,10 +24,17 @@ export function useFinancialInsights(
   const assets = useMemo(() => activeAccounts.filter(a => a.category === 'asset'), [activeAccounts]);
   const liabilities = useMemo(() => activeAccounts.filter(a => a.category === 'liability'), [activeAccounts]);
   const equities = useMemo(() => activeAccounts.filter(a => a.category === 'equity'), [activeAccounts]);
+  const incomes = useMemo(() => activeAccounts.filter(a => a.category === 'income'), [activeAccounts]);
+  const expenses = useMemo(() => activeAccounts.filter(a => a.category === 'expense'), [activeAccounts]);
 
   const totals = useMemo(() => {
-    return calculateTotals(filteredTransactions, activeAccountIds, assets, liabilities, equities);
-  }, [filteredTransactions, activeAccountIds, assets, liabilities, equities]);
+    return calculateTotals(filteredTransactions, activeAccountIds, assets, liabilities, equities, incomes, expenses);
+  }, [filteredTransactions, activeAccountIds, assets, liabilities, equities, incomes, expenses]);
+
+  const previousTotals = useMemo(() => {
+    if (previousFilteredTransactions.length === 0) return null;
+    return calculateTotals(previousFilteredTransactions, activeAccountIds, assets, liabilities, equities, incomes, expenses);
+  }, [previousFilteredTransactions, activeAccountIds, assets, liabilities, equities, incomes, expenses]);
 
   const assetChartData = useMemo(() => {
     return assets
@@ -37,9 +48,6 @@ export function useFinancialInsights(
       { name: t('expenses'), amount: Math.abs(totals.accounts['expenses'] || 0) }
     ];
   }, [totals.accounts, t]);
-
-  const currentAssetIds = ['bank', 'cash', 'ar', 'inventory', 'supplies', 'prepaid_expenses'];
-  const currentLiabilityIds = ['ap', 'short_term_loans', 'accrued_expenses', 'unearned_revenues'];
 
   const insights = useMemo(() => {
     const totalCurrentAssets = currentAssetIds.reduce((sum, id) => sum + (totals.accounts[id] || 0), 0);
@@ -110,6 +118,7 @@ export function useFinancialInsights(
 
   return {
     totals,
+    previousTotals,
     insights,
     assetChartData,
     incomeExpenseData,
@@ -117,6 +126,8 @@ export function useFinancialInsights(
     assets,
     liabilities,
     equities,
+    incomes,
+    expenses,
     activeAccounts,
   };
 }

@@ -28,7 +28,7 @@ export function useChat(
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [localApiKey, setLocalApiKey] = useState(() => {
-    return import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.REACT_APP_GEMINI_API_KEY || localStorage.getItem(API_KEY_STORAGE_KEY) || '';
+    return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -183,72 +183,22 @@ export function useChat(
         contents.push({ role: 'user', parts: [{ text: newText }] });
       }
 
-      let response;
-      if (apiKey) {
-        const clientModels = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-3.5-flash'];
-        let success = false;
-        for (const model of clientModels) {
-          try {
-            response = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  system_instruction: {
-                    parts: [{ text: systemPrompt }]
-                  },
-                  contents: contents,
-                  generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 1000,
-                  }
-                }),
-                signal: AbortSignal.timeout(5000)
-              }
-            );
-            if (response.ok) {
-              success = true;
-              break;
-            }
-          } catch (e) {
-            console.error(`Client-side model ${model} fetch failed:`, e);
-          }
-        }
+      const isGitHubPages = window.location.hostname.includes('github.io');
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiEndpoint = (isGitHubPages || isLocalhost)
+        ? 'https://motazin.vercel.app/api/chat'
+        : '/api/chat';
 
-        if (!success) {
-          response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                system_instruction: {
-                  parts: [{ text: systemPrompt }]
-                },
-                contents: contents
-              })
-            }
-          );
-        }
-      } else {
-        const isGitHubPages = window.location.hostname.includes('github.io');
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const apiEndpoint = (isGitHubPages || isLocalhost)
-          ? 'https://motazin.vercel.app/api/chat'
-          : '/api/chat';
-
-        response = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            system_instruction: {
-              parts: [{ text: systemPrompt }]
-            },
-            contents: contents
-          })
-        });
-      }
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          contents: contents
+        })
+      });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));

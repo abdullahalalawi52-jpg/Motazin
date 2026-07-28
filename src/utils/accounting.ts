@@ -17,7 +17,9 @@ export function calculateTotals(
   activeAccountIds: string[] | Set<string>,
   assets: Account[],
   liabilities: Account[],
-  equities: Account[]
+  equities: Account[],
+  incomes: Account[] = [],
+  expenses: Account[] = []
 ) {
   const accTotals: Record<string, number> = {};
   activeAccountIds.forEach(id => {
@@ -28,10 +30,10 @@ export function calculateTotals(
     t.impacts.forEach(i => {
       if (accTotals[i.accountId] !== undefined) {
         if (i.type) {
-          const isAsset = assets.some(a => a.id === i.accountId);
+          const isDebitAccount = assets.some(a => a.id === i.accountId) || expenses.some(a => a.id === i.accountId);
           const isCredit = i.type === 'credit';
           let finalAmount = i.amount;
-          if (isAsset) {
+          if (isDebitAccount) {
             finalAmount = isCredit ? -i.amount : i.amount;
           } else {
             finalAmount = isCredit ? i.amount : -i.amount;
@@ -48,6 +50,9 @@ export function calculateTotals(
   let totalLiabilities = 0;
   let totalEquity = 0;
 
+  let totalIncome = 0;
+  let totalExpense = 0;
+
   assets.forEach(a => {
     totalAssets += accTotals[a.id] || 0;
   });
@@ -57,6 +62,16 @@ export function calculateTotals(
   equities.forEach(a => {
     totalEquity += accTotals[a.id] || 0;
   });
+  incomes.forEach(a => {
+    totalIncome += accTotals[a.id] || 0;
+  });
+  expenses.forEach(a => {
+    totalExpense += accTotals[a.id] || 0;
+  });
+
+  // Retained earnings calculation (Net Income = Total Income - Total Expense)
+  // Equity = Initial Equity + Net Income
+  totalEquity += (totalIncome - totalExpense);
 
   // Solve JS float precision issues (e.g. 0.1 + 0.2 = 0.30000000000000004)
   const round = (num: number) => Math.round(num * 100) / 100;

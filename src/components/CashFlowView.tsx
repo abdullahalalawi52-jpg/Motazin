@@ -4,6 +4,9 @@ import { useLanguage } from '../i18n';
 import { toast } from 'sonner';
 import { Transaction } from '../types/accounting';
 import { cn } from '../utils/cn';
+import { motion } from 'framer-motion';
+import { formatDate } from '../utils/date';
+import { EmptyState } from './EmptyState';
 
 interface CashFlowViewProps {
   transactions: Transaction[];
@@ -28,32 +31,41 @@ export const CashFlowView: React.FC<CashFlowViewProps> = ({ transactions, format
       .filter(i => cashAccountIds.includes(i.accountId))
       .reduce((sum, i) => sum + i.amount, 0);
 
-    if (cashImpact === 0) return;
+    if (cashImpact !== 0) {
+      const nonCashImpacts = tx.impacts.filter(i => !cashAccountIds.includes(i.accountId));
+      
+      const isInvesting = nonCashImpacts.some(i => investingAccounts.includes(i.accountId));
+      const isFinancing = nonCashImpacts.some(i => financingAccounts.includes(i.accountId));
 
-    const otherImpacts = tx.impacts.filter(i => !cashAccountIds.includes(i.accountId));
-
-    let category: 'operating' | 'investing' | 'financing' = 'operating';
-
-    if (otherImpacts.some(i => investingAccounts.includes(i.accountId))) {
-      category = 'investing';
-    } else if (otherImpacts.some(i => financingAccounts.includes(i.accountId))) {
-      category = 'financing';
+      if (isInvesting) {
+        investingTotal += cashImpact;
+      } else if (isFinancing) {
+        financingTotal += cashImpact;
+      } else {
+        operatingTotal += cashImpact;
+      }
     }
-
-    if (category === 'operating') operatingTotal += cashImpact;
-    else if (category === 'investing') investingTotal += cashImpact;
-    else if (category === 'financing') financingTotal += cashImpact;
   });
 
   const netCashFlow = operatingTotal + investingTotal + financingTotal;
 
   return (
-    <div id="cash-flow-report" className="glass-card responsive-p animate-fade-in space-y-6 sm:space-y-8 dark:bg-slate-900/40 bg-white/40 border dark:border-white/10 border-slate-200" dir={dir}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      id="cash-flow-report" 
+      className="glass-card responsive-p space-y-6 sm:space-y-8 dark:bg-slate-900/40 bg-white/40 border dark:border-white/10 border-slate-200" 
+      dir={dir}
+    >
       <div className="text-center space-y-2 border-b dark:border-white/10 border-slate-200 pb-6">
         <h2 className="text-2xl sm:text-3xl font-bold dark:text-white text-slate-900">{t('cashFlowStatement')}</h2>
-        <p className="text-sm dark:text-slate-400 text-slate-600">{t('periodEnding')}: {new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
+        <p className="text-sm dark:text-slate-400 text-slate-600">{t('periodEnding')}: {formatDate(new Date(), language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
       </div>
 
+      {transactions.length === 0 ? (
+        <EmptyState titleKey="noTransactions" subtitleKey="addTransactionPrompt" />
+      ) : (
       <div className="space-y-6">
         {/* Operating Activities */}
         <div className="space-y-4">
@@ -111,6 +123,7 @@ export const CashFlowView: React.FC<CashFlowViewProps> = ({ transactions, format
           </div>
         </div>
       </div>
+      )}
 
       <div className="flex justify-end gap-4 pt-4">
         <button
@@ -149,6 +162,6 @@ export const CashFlowView: React.FC<CashFlowViewProps> = ({ transactions, format
           {t('exportPDF')}
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };

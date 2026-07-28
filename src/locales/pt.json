@@ -246,5 +246,10 @@
   "botWelcomeMessage": "Olá! Sou o Assistente Inteligente da calculadora de balanço patrimonial. Como posso ajudar você?\n(Nota: Estou conectado aos seus dados reais e posso analisá-los em tempo real!)",
   "botPlaceholder": "Digite sua pergunta aqui...",
   "accountExists": "Esta conta já existe!",
-  "accountAdded": "Nova conta adicionada com sucesso!"
+  "accountAdded": "Nova conta adicionada com sucesso!",
+  "proAccount": "CONTA PRO",
+  "offlineMode": "MODO OFFLINE",
+  "backupLoaded": "Backup carregado com sucesso!",
+  "dataImported": "Dados importados com sucesso!",
+  "depreciationAdded": "Lançamento de depreciação adicionado com sucesso!"
 }

@@ -1,6 +1,6 @@
 const autocannon = require('autocannon');
 
-const url = 'http://localhost:3000';
+const url = 'http://localhost:3000/api/parse';
 
 console.log(`Starting load test against ${url}...`);
 console.log('Simulating 100 concurrent connections for 10 seconds.');
@@ -8,7 +8,13 @@ console.log('Simulating 100 concurrent connections for 10 seconds.');
 const instance = autocannon({
   url: url,
   connections: 100, 
-  duration: 10 
+  duration: 10,
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'origin': 'http://localhost'
+  },
+  body: JSON.stringify({ text: 'فاتورة 500 ريال كاش' })
 }, (err, result) => {
   if (err) {
     console.error('Error during load test:', err);

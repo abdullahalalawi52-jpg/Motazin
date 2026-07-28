@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { ChatWidget } from './Chat';
-import { LanguageProvider } from './i18n';
+import { LanguageProvider } from '../../i18n';
 
 // Mock scrollIntoView as it's not supported in jsdom
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -52,7 +52,7 @@ describe('ChatWidget Component Tests', () => {
     renderChat();
 
     // Find the floating button (uses aria-label="المستشار الذكي")
-    const toggleButton = screen.getByLabelText('المستشار الذكي');
+    const toggleButton = await screen.findByLabelText('المستشار الذكي');
     expect(toggleButton).toBeInTheDocument();
 
     // Click to open
@@ -72,7 +72,8 @@ describe('ChatWidget Component Tests', () => {
     renderChat();
 
     // Open chat
-    fireEvent.click(screen.getByLabelText('المستشار الذكي'));
+    const toggleButton = await screen.findByLabelText('المستشار الذكي');
+    fireEvent.click(toggleButton);
 
     // Check welcome message includes mention of financial data being available
     expect(screen.getByText(/لديّ/i)).toBeInTheDocument();
@@ -83,7 +84,8 @@ describe('ChatWidget Component Tests', () => {
     renderChat(mockFinancialContext, '');
 
     // Open chat
-    fireEvent.click(screen.getByLabelText('المستشار الذكي'));
+    const toggleButton = await screen.findByLabelText('المستشار الذكي');
+    fireEvent.click(toggleButton);
 
     const input = screen.getByPlaceholderText(/اكتب رسالتك هنا/i);
     const sendButton = screen.getByRole('button', { name: /إرسال|send/i });
@@ -103,7 +105,8 @@ describe('ChatWidget Component Tests', () => {
     renderChat(mockFinancialContext, '');
 
     // Open chat
-    fireEvent.click(screen.getByLabelText('المستشار الذكي'));
+    const toggleButton = await screen.findByLabelText('المستشار الذكي');
+    fireEvent.click(toggleButton);
 
     const input = screen.getByPlaceholderText(/اكتب رسالتك هنا/i);
     const sendButton = screen.getByRole('button', { name: /إرسال|send/i });
@@ -138,7 +141,8 @@ describe('ChatWidget Component Tests', () => {
     renderChat(mockFinancialContext, 'dummy-api-key');
 
     // Open chat
-    fireEvent.click(screen.getByLabelText('المستشار الذكي'));
+    const toggleButton = await screen.findByLabelText('المستشار الذكي');
+    fireEvent.click(toggleButton);
 
     const input = screen.getByPlaceholderText(/اكتب رسالتك هنا/i);
     const sendButton = screen.getByRole('button', { name: /إرسال|send/i });
@@ -171,7 +175,8 @@ describe('ChatWidget Component Tests', () => {
     renderChat(mockFinancialContext, 'dummy-api-key');
 
     // Open chat
-    fireEvent.click(screen.getByLabelText('المستشار الذكي'));
+    const toggleButton = await screen.findByLabelText('المستشار الذكي');
+    fireEvent.click(toggleButton);
 
     const input = screen.getByPlaceholderText(/اكتب رسالتك هنا/i);
     const sendButton = screen.getByRole('button', { name: /إرسال|send/i });

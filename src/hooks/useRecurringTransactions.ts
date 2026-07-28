@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { User } from 'firebase/auth';
 import { Transaction } from '../types/accounting';
 import { generateId } from '../utils/uuid';
+import { toIsoDateString } from '../utils/date';
 
 export function useRecurringTransactions(
   user: User | null,
@@ -24,12 +25,12 @@ export function useRecurringTransactions(
           return tx;
         }
 
-        let currentDate = new Date(tx.nextRecurrenceDate);
+        const currentDate = new Date(tx.nextRecurrenceDate);
         const now = new Date();
 
         if (currentDate <= now) {
           processedRecurrencesRef.current[tx.id] = tx.nextRecurrenceDate;
-          let currentTx = { ...tx };
+          const currentTx = { ...tx };
           let safetyLimit = 0;
 
           while (currentDate <= now && safetyLimit < 100) {
@@ -38,7 +39,7 @@ export function useRecurringTransactions(
 
             const newTx: Transaction = {
               id: generateId(),
-              date: currentDate.toLocaleDateString('ar-SA'),
+              date: toIsoDateString(currentDate),
               description: currentTx.description,
               impacts: currentTx.impacts.map(i => ({ ...i, id: generateId() })),
               createdAt: new Date().toISOString()

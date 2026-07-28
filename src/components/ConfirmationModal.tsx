@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -23,11 +24,20 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(({
   cancelText,
   dir = 'rtl'
 }) => {
+  const modalRef = useFocusTrap(isOpen);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-300 animate-in fade-in" dir={dir}>
+    <div 
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-300 animate-in fade-in" 
+      dir={dir}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirmation-modal-title"
+    >
       <div 
+        ref={modalRef}
         className={cn(
           "w-full max-w-md bg-[#0f172a] border border-white/10 rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 duration-200"
         )}
@@ -37,7 +47,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(({
             <AlertTriangle className="w-6 h-6" />
           </div>
           <div className="text-left rtl:text-right">
-            <h3 className="text-xl font-black text-white">{title}</h3>
+            <h3 id="confirmation-modal-title" className="text-xl font-black text-white">{title}</h3>
           </div>
         </div>
         

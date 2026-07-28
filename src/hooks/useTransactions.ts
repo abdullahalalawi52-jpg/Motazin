@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { collection, doc, setDoc, writeBatch } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { User } from 'firebase/auth';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { Transaction, Account, Category } from '../types/accounting';
 import { ACCOUNTS } from '../constants/accounting';
 import { generateId } from '../utils/uuid';
@@ -25,7 +25,9 @@ export function useTransactions(user: User | null, t: (key: string) => string) {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) {
+        console.error('Error parsing local custom accounts', e);
+      }
     }
     return [];
   });
@@ -45,6 +47,7 @@ export function useTransactions(user: User | null, t: (key: string) => string) {
 
     if (!user) return;
 
+    let toastId: string | number | undefined = undefined;
     try {
       const txRef = collection(db, 'users', user.uid, 'transactions');
       const oldMap = new Map(transactions.map(tx => [tx.id, tx]));
@@ -96,6 +99,8 @@ export function useTransactions(user: User | null, t: (key: string) => string) {
       const allOps = [...deletes, ...sets];
       if (allOps.length === 0) return;
 
+      toastId = toast.loading(t('syncingTransactions') || 'Syncing...');
+
       const CHUNK_SIZE = 500;
       for (let i = 0; i < allOps.length; i += CHUNK_SIZE) {
         const currentBatch = writeBatch(db);
@@ -109,9 +114,11 @@ export function useTransactions(user: User | null, t: (key: string) => string) {
         });
         await currentBatch.commit();
       }
+      
+      toast.success(t('syncComplete') || 'Synced successfully', { id: toastId });
     } catch (error) {
       console.error('Error updating transactions:', error);
-      toast.error(t('errorSavingTransactions'));
+      toast.error(t('errorSavingTransactions'), { id: toastId });
     }
   };
 

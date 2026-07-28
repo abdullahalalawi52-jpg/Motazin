@@ -49,25 +49,27 @@ service cloud.firestore {
     // ===============================================================
     
     function isValidUserPreferences(data) {
-      return hasOnlyAllowedFields(['budgets', 'currency', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['budgets', 'currency', 'createdAt', 'updatedAt', 'customAccounts']) &&
              hasRequiredFields(['currency', 'createdAt', 'updatedAt']) &&
              data.currency is string && data.currency.size() <= 3 &&
              (!('budgets' in data) || data.budgets is map) &&
              data.createdAt is string &&
-             data.updatedAt is string;
+             data.updatedAt is string &&
+             (!('customAccounts' in data) || data.customAccounts is list);
     }
     
     function isValidTransaction(data) {
-      return hasOnlyAllowedFields(['date', 'description', 'impacts', 'createdAt', 'updatedAt', 'isRecurring', 'recurrenceInterval', 'nextRecurrenceDate']) &&
+      return hasOnlyAllowedFields(['date', 'description', 'impacts', 'createdAt', 'updatedAt', 'isRecurring', 'recurrenceInterval', 'nextRecurrenceDate', 'attachmentUrl']) &&
              hasRequiredFields(['date', 'description', 'impacts', 'createdAt', 'updatedAt']) &&
              data.date is string && data.date.size() <= 50 &&
              data.description is string && data.description.size() <= 500 &&
-             data.impacts is list && data.impacts.size() <= 100 &&
+             data.impacts is list && data.impacts.size() >= 2 && data.impacts.size() <= 100 &&
              data.createdAt is string &&
              data.updatedAt is string &&
              (!('isRecurring' in data) || data.isRecurring is bool) &&
              (!('recurrenceInterval' in data) || data.recurrenceInterval == null || data.recurrenceInterval is string) &&
-             (!('nextRecurrenceDate' in data) || data.nextRecurrenceDate == null || data.nextRecurrenceDate is string);
+             (!('nextRecurrenceDate' in data) || data.nextRecurrenceDate == null || data.nextRecurrenceDate is string) &&
+             (!('attachmentUrl' in data) || data.attachmentUrl == null || data.attachmentUrl is string);
     }
 
     // ===============================================================
@@ -93,7 +95,17 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'message', 'createdAt']) &&
+      allow create: if isAuthenticated() &&
+                       messageId == request.auth.uid + "_" + request.resource.data.createdAt.split('T')[0] &&
+                       request.resource.data.keys().hasAll(['name', 'email', 'message', 'createdAt']) &&
+                       request.resource.data.keys().hasOnly(['name', 'email', 'message', 'createdAt']) &&
+                       request.resource.data.name is string && request.resource.data.name.size() <= 100 &&
+                       request.resource.data.email is string && request.resource.data.email.size() <= 100 &&
+                       request.resource.data.message is string && request.resource.data.message.size() <= 2000 &&
+                       request.resource.data.createdAt is string;
+      allow update: if isAuthenticated() &&
+                       messageId == request.auth.uid + "_" + request.resource.data.createdAt.split('T')[0] &&
+                       request.resource.data.keys().hasAll(['name', 'email', 'message', 'createdAt']) &&
                        request.resource.data.keys().hasOnly(['name', 'email', 'message', 'createdAt']) &&
                        request.resource.data.name is string && request.resource.data.name.size() <= 100 &&
                        request.resource.data.email is string && request.resource.data.email.size() <= 100 &&

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Tajawal:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Inter:wght@400;500;700;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --font-sans: 'Inter', 'Tajawal', system-ui, sans-serif;
+    --font-sans: 'Inter', 'Almarai', system-ui, sans-serif;
     --bg-gradient: radial-gradient(at 0% 0%, hsla(225, 60%, 94%, 1) 0, transparent 50%), 
                    radial-gradient(at 50% 0%, hsla(210, 60%, 90%, 1) 0, transparent 50%), 
                    radial-gradient(at 100% 0%, hsla(250, 60%, 92%, 1) 0, transparent 50%);
@@ -137,14 +137,17 @@
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent; 
+  @apply bg-transparent; 
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-400/30 dark:bg-slate-600/50 rounded-full hover:bg-slate-400/50 dark:hover:bg-slate-500/80;
+  @apply bg-slate-400/40 dark:bg-slate-500/40 hover:bg-indigo-500/60 dark:hover:bg-indigo-500/60 transition-colors;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9999px;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -346,4 +349,14 @@
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
+/* Hide HTML5 Number Input Spinners to save space */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

@@ -246,5 +246,10 @@
   "botWelcomeMessage": "Bonjour! Je suis l'Assistant Intelligent du Calculateur de Bilan. Comment puis-je vous aider ?\n(Note: Je suis connecté à vos données en direct!)",
   "botPlaceholder": "Tapez votre question ici...",
   "accountExists": "Ce compte existe déjà!",
-  "accountAdded": "Nouveau compte ajouté avec succès!"
+  "accountAdded": "Nouveau compte ajouté avec succès!",
+  "proAccount": "COMPTE PRO",
+  "offlineMode": "MODE HORS LIGNE",
+  "backupLoaded": "Sauvegarde chargée avec succès!",
+  "dataImported": "Données importées avec succès!",
+  "depreciationAdded": "Écriture d'amortissement ajoutée avec succès!"
 }

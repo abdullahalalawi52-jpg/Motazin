@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Save, Clock, Trash2, Download } from 'lucide-react';
-import { useLanguage } from './i18n';
-import { useTheme } from './ThemeContext';
-import { cn } from './utils/cn';
-import { ConfirmationModal } from './components/ConfirmationModal';
-import { Transaction } from './types/accounting';
-import { generateId } from './utils/uuid';
+import { useLanguage } from '../../i18n';
+import { cn } from '../../utils/cn';
+import { ConfirmationModal } from '../ConfirmationModal';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { Transaction } from '../../types/accounting';
+import { generateId } from '../../utils/uuid';
 
 interface Snapshot {
   id: string;
@@ -24,10 +24,18 @@ interface SnapshotsModalProps {
 }
 
 export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBudgets, onLoadSnapshot }: SnapshotsModalProps) {
-  const { t, dir, language } = useLanguage();
-  const { theme } = useTheme();
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const { dir, language } = useLanguage();
+  const [snapshots, setSnapshots] = useState<Snapshot[]>(() => {
+    try {
+      const saved = localStorage.getItem('motazin_snapshots');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [newSnapshotName, setNewSnapshotName] = useState('');
+  
+  const modalRef = useFocusTrap(isOpen);
 
   // Confirmation Modal States
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -49,19 +57,6 @@ export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBu
     setConfirmConfig(config);
     setConfirmOpen(true);
   };
-
-  useEffect(() => {
-    if (isOpen) {
-      const saved = localStorage.getItem('motazin_snapshots');
-      if (saved) {
-        try {
-          setSnapshots(JSON.parse(saved));
-        } catch (e) {
-          console.error("Error parsing snapshots", e);
-        }
-      }
-    }
-  }, [isOpen]);
 
   const saveSnapshots = (newSnapshots: Snapshot[]) => {
     setSnapshots(newSnapshots);
@@ -114,8 +109,15 @@ export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBu
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-500 animate-in fade-in" dir={dir}>
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-500 animate-in fade-in" 
+      dir={dir}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="snapshots-modal-title"
+    >
       <div 
+        ref={modalRef}
         className={cn(
           "w-full max-w-2xl bg-[#0f172a] border-t sm:border border-white/10 rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
         )}
@@ -133,7 +135,7 @@ export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBu
               <Clock className="w-5 h-5 sm:w-7 sm:h-7 text-indigo-400" />
             </div>
             <div className="text-left rtl:text-right">
-              <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+              <h2 id="snapshots-modal-title" className="text-xl sm:text-2xl font-black text-white leading-tight">
                 {language === 'ar' ? 'سجل النسخ الاحتياطية' : 'Backups History'}
               </h2>
               <p className="hidden sm:block text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Manage and restore your data</p>

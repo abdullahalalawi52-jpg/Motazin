@@ -6,7 +6,9 @@ describe('calculateTotals', () => {
   const assets: Account[] = [{ id: 'bank', name: 'Bank', category: 'asset' }];
   const liabilities: Account[] = [{ id: 'loan', name: 'Loan', category: 'liability' }];
   const equities: Account[] = [{ id: 'capital', name: 'Capital', category: 'equity' }];
-  const activeAccountIds = ['bank', 'loan', 'capital'];
+  const incomes: Account[] = [{ id: 'revenue', name: 'Revenue', category: 'income' }];
+  const expenses: Account[] = [{ id: 'expenses', name: 'Expenses', category: 'expense' }];
+  const activeAccountIds = ['bank', 'loan', 'capital', 'revenue', 'expenses'];
 
   it('should return zeros when there are no transactions', () => {
     const result = calculateTotals([], activeAccountIds, assets, liabilities, equities);
@@ -120,5 +122,40 @@ describe('calculateTotals', () => {
     expect(result.isBalanced).toBe(true);
     expect(result.accounts['bank']).toBe(300);
     expect(result.accounts['loan']).toBe(300);
+  });
+
+  it('should correctly calculate net profit from incomes and expenses and add to equity', () => {
+    const transactions: Transaction[] = [
+      {
+        id: 'tx1',
+        date: '2026-06-10',
+        description: 'Earn revenue',
+        impacts: [
+          { accountId: 'bank', amount: 1000, type: 'debit' },
+          { accountId: 'revenue', amount: 1000, type: 'credit' }
+        ]
+      },
+      {
+        id: 'tx2',
+        date: '2026-06-11',
+        description: 'Pay expenses',
+        impacts: [
+          { accountId: 'expenses', amount: 400, type: 'debit' },
+          { accountId: 'bank', amount: 400, type: 'credit' }
+        ]
+      }
+    ];
+
+    const result = calculateTotals(transactions, activeAccountIds, assets, liabilities, equities, incomes, expenses);
+    
+    // Revenue = 1000, Expenses = 400 => Net Income = 600
+    // Total Equity should be 600
+    // Bank = 1000 - 400 = 600
+    expect(result.totalAssets).toBe(600);
+    expect(result.totalLiabilities).toBe(0);
+    expect(result.totalEquity).toBe(600); // 0 + (1000 - 400)
+    expect(result.isBalanced).toBe(true);
+    expect(result.accounts['revenue']).toBe(1000);
+    expect(result.accounts['expenses']).toBe(400);
   });
 });

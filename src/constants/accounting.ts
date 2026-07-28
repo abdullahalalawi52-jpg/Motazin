@@ -19,6 +19,7 @@ export const ACCOUNTS: Account[] = [
   { id: 'prepaid_expenses', name: 'prepaid_expenses', category: 'asset' },
   { id: 'intangible_assets', name: 'intangible_assets', category: 'asset' },
   { id: 'investments', name: 'investments', category: 'asset' },
+  { id: 'vat_receivable', name: 'vat_receivable', category: 'asset' },
   // Liabilities
   { id: 'ap', name: 'ap', category: 'liability' },
   { id: 'short_term_loans', name: 'short_term_loans', category: 'liability' },
@@ -27,19 +28,25 @@ export const ACCOUNTS: Account[] = [
   { id: 'accrued_expenses', name: 'accrued_expenses', category: 'liability' },
   { id: 'unearned_revenues', name: 'unearned_revenues', category: 'liability' },
   { id: 'mortgages_payable', name: 'mortgages_payable', category: 'liability' },
+  { id: 'vat_payable', name: 'vat_payable', category: 'liability' },
   // Equity
   { id: 'capital', name: 'capital', category: 'equity' },
   { id: 'share_capital', name: 'share_capital', category: 'equity' },
-  { id: 'revenue', name: 'revenue', category: 'equity' },
-  { id: 'expenses', name: 'expenses', category: 'equity' },
   { id: 'drawings', name: 'drawings', category: 'equity' },
-  { id: 'retained_earnings', name: 'retained_earnings', category: 'equity' },
+
+  // Income
+  { id: 'revenue', name: 'revenue', category: 'income' },
+  // Expenses
+  { id: 'expenses', name: 'expenses', category: 'expense' },
+
 ];
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   asset: 'asset',
   liability: 'liability',
   equity: 'equity',
+  income: 'income',
+  expense: 'expense',
 };
 
 export const CURRENCIES = [
@@ -56,7 +63,7 @@ export const CURRENCIES = [
 export const INITIAL_TRANSACTIONS: Transaction[] = [
   {
     id: 't1',
-    date: '1/2',
+    date: '2024-02-01',
     description: 'بدأ محمد عمله برأس مال 100,000 ريال أودعها في البنك',
     impacts: [
       { id: 'i1_1', accountId: 'bank', amount: 100000 },
@@ -65,7 +72,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
   },
   {
     id: 't2',
-    date: '2/2',
+    date: '2024-02-02',
     description: 'اشترى سيارة بمبلغ 15,000 من محلات الأمل على الحساب',
     impacts: [
       { id: 'i2_1', accountId: 'cars', amount: 15000 },
@@ -74,7 +81,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
   },
   {
     id: 't3',
-    date: '3/2',
+    date: '2024-02-03',
     description: 'اشترى أثاث بمبلغ 10,000 ريال من محلات المطلق بشيك',
     impacts: [
       { id: 'i3_1', accountId: 'furniture', amount: 10000 },
@@ -83,7 +90,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
   },
   {
     id: 't4',
-    date: '4/2',
+    date: '2024-02-04',
     description: 'سدد المستحق لمحلات الأمل بشيك',
     impacts: [
       { id: 'i4_1', accountId: 'ap', amount: -15000 },
@@ -92,7 +99,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
   },
   {
     id: 't5',
-    date: '5/2',
+    date: '2024-02-05',
     description: 'باع أثاث بمبلغ 1000 ريال لمحلات السعادة على الحساب',
     impacts: [
       { id: 'i5_1', accountId: 'ar', amount: 1000 },
@@ -101,7 +108,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
   },
   {
     id: 't6',
-    date: '6/2',
+    date: '2024-02-06',
     description: 'حصل من محلات السعادة المبلغ المستحق عليهم نقداً',
     impacts: [
       { id: 'i6_1', accountId: 'cash', amount: 1000 },

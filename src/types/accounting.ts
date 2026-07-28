@@ -1,4 +1,4 @@
-export type Category = 'asset' | 'liability' | 'equity';
+export type Category = 'asset' | 'liability' | 'equity' | 'income' | 'expense';
 
 export interface Account {
   id: string;

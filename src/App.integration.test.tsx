@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-vi.mock('./PdfScanner', () => ({
+vi.mock('./components/modals/PdfScanner', () => ({
   FileScanner: () => <div>Mocked PdfScanner</div>,
 }));
 
@@ -11,11 +11,12 @@ import { LanguageProvider } from './i18n';
 import { ThemeProvider } from './ThemeContext';
 
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any;
+window.ResizeObserver = global.ResizeObserver;
 
 // Mock scrollIntoView for jsdom
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -52,8 +53,8 @@ vi.mock('firebase/firestore', () => ({
       const savedTx = localStorage.getItem('motazin_transactions');
       const txs = savedTx ? JSON.parse(savedTx) : [];
       cb({
-        forEach: (eachCb: any) => {
-          txs.forEach((tx: any) => {
+        forEach: (eachCb: (doc: { id: string; data: () => unknown }) => void) => {
+          txs.forEach((tx: { id: string; [key: string]: unknown }) => {
             eachCb({
               id: tx.id,
               data: () => {
@@ -70,11 +71,15 @@ vi.mock('firebase/firestore', () => ({
   setDoc: vi.fn().mockResolvedValue({}),
   query: vi.fn((col) => col),
   orderBy: vi.fn(),
-  writeBatch: vi.fn(() => ({
-    delete: vi.fn(),
-    set: vi.fn(),
-    commit: vi.fn().mockResolvedValue({})
-  })),
+  writeBatch: vi.fn(() => {
+    const batch = {
+      set: vi.fn(),
+      commit: vi.fn().mockResolvedValue(true),
+      update: vi.fn(),
+      delete: vi.fn()
+    };
+    return batch;
+  }),
   addDoc: vi.fn().mockResolvedValue({}),
   getFirestore: vi.fn(),
 }));
@@ -101,18 +106,18 @@ vi.mock('firebase/storage', () => ({
 
 // Mock Recharts to prevent canvas/layout errors
 vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
-  PieChart: ({ children }: any) => <div>{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PieChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Pie: () => null,
   Cell: () => null,
-  BarChart: ({ children }: any) => <div>{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Bar: () => null,
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
   Tooltip: () => null,
   Legend: () => null,
-  LineChart: ({ children }: any) => <div>{children}</div>,
+  LineChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Line: () => null,
 }));
 
@@ -342,8 +347,9 @@ describe('App Integration Tests', () => {
 
     // Find the export CSV button by role/name or text
     // The translation key is exportCSV
-    const exportBtn = screen.getByRole('button', { name: /CSV|تصدير/i });
-    expect(exportBtn).toBeInTheDocument();
+    const exportBtns = screen.getAllByRole('button', { name: /CSV|تصدير/i });
+    expect(exportBtns.length).toBeGreaterThan(0);
+    const exportBtn = exportBtns[0];
 
     fireEvent.click(exportBtn);
 

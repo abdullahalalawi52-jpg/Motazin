@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calculator, PlusCircle, AlertCircle } from 'lucide-react';
-import { useLanguage } from './i18n';
+import { useLanguage } from '../../i18n';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface DepreciationModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const DepreciationModal: React.FC<DepreciationModalProps> = ({ isOpen, on
   const [cost, setCost] = useState<number>(0);
   const [salvage, setSalvage] = useState<number>(0);
   const [life, setLife] = useState<number>(1);
+  const modalRef = useFocusTrap(isOpen);
 
   if (!isOpen) return null;
 
@@ -31,13 +33,13 @@ export const DepreciationModal: React.FC<DepreciationModalProps> = ({ isOpen, on
   };
 
   return (
-    <div data-testid="depreciation-modal" className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md transition-all duration-500 animate-in fade-in" dir={dir}>
-      <div className="bg-white dark:bg-[#0f172a] border-t sm:border border-slate-200 dark:border-white/10 p-5 sm:p-6 rounded-t-[2rem] sm:rounded-[2rem] w-full max-w-md h-fit max-h-[95vh] overflow-y-auto shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95 sm:slide-in-from-bottom-4 transition-all duration-300">
+    <div data-testid="depreciation-modal" className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md transition-all duration-500 animate-in fade-in" dir={dir} role="dialog" aria-modal="true" aria-labelledby="depreciation-modal-title">
+      <div ref={modalRef} className="bg-white dark:bg-[#0f172a] border-t sm:border border-slate-200 dark:border-white/10 p-5 sm:p-6 rounded-t-[2rem] sm:rounded-[2rem] w-full max-w-md h-fit max-h-[95vh] overflow-y-auto shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95 sm:slide-in-from-bottom-4 transition-all duration-300">
         {/* Handle for mobile bottom sheet */}
         <div className="sm:hidden w-12 h-1.5 bg-slate-300 dark:bg-white/20 rounded-full mx-auto mt-[-5px] mb-3 flex-none" />
 
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg sm:text-xl font-black flex items-center gap-3 text-slate-900 dark:text-white">
+          <h2 id="depreciation-modal-title" className="text-lg sm:text-xl font-black flex items-center gap-3 text-slate-900 dark:text-white">
             <div className="p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
               <Calculator className="text-indigo-600 dark:text-indigo-400 w-5 h-5" />
             </div>

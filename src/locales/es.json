@@ -246,5 +246,10 @@
   "botWelcomeMessage": "¡Hola! Soy el Asistente Inteligente de la Calculadora de Balance. ¿En qué puedo ayudarte?\n(Nota: ¡Estoy conectado a tus datos en vivo!)",
   "botPlaceholder": "Escribe tu pregunta aquí...",
   "accountExists": "¡Este cuenta ya existe!",
-  "accountAdded": "¡Novo cuenta agregado con éxito!"
+  "accountAdded": "¡Novo cuenta agregado con éxito!",
+  "proAccount": "CUENTA PRO",
+  "offlineMode": "MODO SIN CONEXIÓN",
+  "backupLoaded": "¡Copia de seguridad cargada con éxito!",
+  "dataImported": "¡Datos importados con éxito!",
+  "depreciationAdded": "¡Entrada de depreciación añadida con éxito!"
 }

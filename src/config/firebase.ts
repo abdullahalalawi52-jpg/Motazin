@@ -1,18 +1,17 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getAnalytics } from 'firebase/analytics';
-
-// Firebase configuration from environment variables (supports VITE_ and REACT_APP_ prefixes)
+// Analytics is lazy-loaded
+// Firebase configuration from environment variables (supports VITE_ prefix)
 const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_FIREBASE_APP_ID || process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Validate that all required environment variables are set
@@ -27,9 +26,8 @@ const requiredEnvVars = [
 
 requiredEnvVars.forEach((name) => {
   const viteName = `VITE_${name}`;
-  const reactName = `REACT_APP_${name}`;
-  if (!process.env[viteName] && !process.env[reactName]) {
-    console.warn(`Missing environment variable: ${viteName} or ${reactName}`);
+  if (!import.meta.env[viteName]) {
+    console.warn(`Missing environment variable: ${viteName}`);
   }
 });
 
@@ -40,6 +38,18 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const analytics = getAnalytics(app);
+export let analytics: any = null;
+
+if (typeof window !== 'undefined' && import.meta.env.MODE === 'production') {
+  import('firebase/analytics').then(({ getAnalytics, isSupported }) => {
+    isSupported().then((supported) => {
+      if (supported) {
+        analytics = getAnalytics(app);
+      }
+    });
+  }).catch((err) => console.warn('Failed to load Firebase Analytics', err));
+}
+
+export const googleProvider = new GoogleAuthProvider();
 
 export default app;

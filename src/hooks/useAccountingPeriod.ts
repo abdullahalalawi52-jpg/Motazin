@@ -45,9 +45,66 @@ export function useAccountingPeriod(transactions: Transaction[]) {
     });
   }, [transactions, accountingPeriod]);
 
+  const previousFilteredTransactions = useMemo(() => {
+    if (accountingPeriod === 'all') return [];
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    let targetMonth = currentMonth;
+    let targetYear = currentYear;
+
+    if (accountingPeriod === 'current_month') {
+      if (currentMonth === 0) {
+        targetMonth = 11;
+        targetYear = currentYear - 1;
+      } else {
+        targetMonth = currentMonth - 1;
+      }
+    } else if (accountingPeriod === 'current_year') {
+      targetYear = currentYear - 1;
+    }
+
+    const parseDateHelper = (d: string) => {
+      if (!d) return new Date();
+      const parts = d.split(/[/\-.]/);
+      if (parts.length < 2) return new Date();
+
+      let day = 1;
+      let month = 0;
+      let year = new Date().getFullYear();
+
+      if (parts[0].length === 4) {
+        year = parseInt(parts[0]);
+        month = parseInt(parts[1]) - 1;
+        day = parts[2] ? parseInt(parts[2]) : 1;
+      } else {
+        day = parseInt(parts[0]) || 1;
+        month = (parseInt(parts[1]) || 1) - 1;
+        year = parts[2] ? (parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2])) : new Date().getFullYear();
+      }
+
+      const parsedDate = new Date(year, month, day);
+      return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+    };
+
+    return transactions.filter(tx => {
+      const txDate = parseDateHelper(tx.date);
+      if (accountingPeriod === 'current_month') {
+        return txDate.getMonth() === targetMonth && txDate.getFullYear() === targetYear;
+      }
+      if (accountingPeriod === 'current_year') {
+        return txDate.getFullYear() === targetYear;
+      }
+      return false;
+    });
+  }, [transactions, accountingPeriod]);
+
   return {
     accountingPeriod,
     setAccountingPeriod,
     filteredTransactions,
+    previousFilteredTransactions,
   };
 }
