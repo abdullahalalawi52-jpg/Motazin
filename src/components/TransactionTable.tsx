@@ -128,14 +128,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
   return (
     <div className="xl:col-span-7">
       <div className="glass-card overflow-hidden flex flex-col h-full" style={{ borderRadius: '1.5rem' }}>
-        <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-100/90 flex flex-col items-stretch gap-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-1 dark:bg-white/5 bg-slate-100 p-1 rounded-xl border dark:border-white/10 border-slate-200">
+        <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-100/90">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full">
+            <div className="flex items-center gap-1 dark:bg-white/5 bg-slate-100 p-1 rounded-xl border dark:border-white/10 border-slate-200 h-[42px]">
               <button
                 onClick={handleUndo}
                 disabled={historyIndex <= 0}
-                className="group relative p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
+                className="group relative h-full px-2.5 flex items-center justify-center dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
               >
                 <Undo2 className="w-4 h-4" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
@@ -146,7 +145,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
               <button
                 onClick={handleRedo}
                 disabled={historyIndex >= historyLength - 1}
-                className="group relative p-2 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
+                className="group relative h-full px-2.5 flex items-center justify-center dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
               >
                 <Redo2 className="w-4 h-4" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
@@ -158,7 +157,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
 
             <button
               onClick={() => setIsPdfScannerOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 text-[10px] sm:text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
+              className="flex items-center gap-2 h-[42px] px-3.5 text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
               title={t('importFiles')}
             >
               <FileSearch className="w-4 h-4" />
@@ -167,7 +166,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
 
             <button
               onClick={() => setIsDepreciationModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 text-[10px] sm:text-xs font-black dark:bg-amber-500 bg-amber-500 text-white hover:bg-amber-400 rounded-xl transition-all shadow-lg shadow-amber-500/20 uppercase tracking-widest"
+              className="flex items-center gap-2 h-[42px] px-3.5 text-xs font-black dark:bg-amber-500 bg-amber-500 text-white hover:bg-amber-400 rounded-xl transition-all shadow-lg shadow-amber-500/20 uppercase tracking-widest"
               title={t('depreciationCalc')}
             >
               <Calculator className="w-4 h-4" />
@@ -176,20 +175,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
 
             <button
               onClick={() => setIsVatModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 text-[10px] sm:text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
+              className="flex items-center gap-2 h-[42px] px-3.5 text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
               title={language === 'ar' ? 'حاسبة الضريبة' : 'VAT Calculator'}
             >
               <Percent className="w-4 h-4" />
               <span className="hidden sm:inline">{language === 'ar' ? 'الضريبة' : 'VAT'}</span>
             </button>
 
-          </div>
-          {processedTransactions.length > 0 && (
-            <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 w-full sm:w-auto">
+            {processedTransactions.length > 0 && (
+              <>
               {selectedTransactions.size > 0 && (
                 <button
                   onClick={handleBulkDelete}
-                  className="group relative flex items-center gap-1.5 px-3 py-1.5 text-[15px] font-medium text-white bg-rose-600 border border-rose-600 rounded-lg hover:bg-rose-700 transition-colors shadow-sm"
+                  className="group relative flex items-center gap-1.5 h-[42px] px-3.5 text-[13px] font-bold text-white bg-rose-600 border border-rose-600 rounded-xl hover:bg-rose-700 transition-colors shadow-sm"
                 >
                   <Trash2 className="w-4 h-4" />
                   {t('deleteSelected')} ({selectedTransactions.size})
@@ -201,9 +199,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
               )}
               <button
                 onClick={handleExportCSV}
-                className="relative flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-indigo-600/50 hover:bg-indigo-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
+                className="relative flex items-center gap-2 h-[42px] px-3.5 dark:bg-slate-800/40 bg-white dark:hover:bg-indigo-600/50 hover:bg-indigo-50 dark:text-white text-slate-900 font-bold text-xs rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
               >
-                <FileSpreadsheet className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-indigo-600" />
+                <FileSpreadsheet className="w-4 h-4 dark:text-white text-slate-900 group-hover:text-indigo-600" />
                 <span className="sr-only sm:not-sr-only">{t('exportCSV')}</span>
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
                   {t('exportCSV')}
@@ -212,19 +210,17 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
               </button>
               <button
                 onClick={handleExportPDF}
-                className="relative flex items-center gap-2 px-4 py-2.5 dark:bg-slate-800/40 bg-white dark:hover:bg-rose-600/50 hover:bg-rose-50 dark:text-white text-slate-900 font-bold rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
+                className="relative flex items-center gap-2 h-[42px] px-3.5 dark:bg-slate-800/40 bg-white dark:hover:bg-rose-600/50 hover:bg-rose-50 dark:text-white text-slate-900 font-bold text-xs rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
               >
-                <FileText className="w-5 h-5 dark:text-white text-slate-900 group-hover:text-rose-600" />
+                <FileText className="w-4 h-4 dark:text-white text-slate-900 group-hover:text-rose-600" />
                 <span className="sr-only sm:not-sr-only">PDF</span>
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
                   {t('exportPDF')}
                   <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700"></div>
-                </div>
-              </button>
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
         <div id="transactions-table" ref={parentRef} className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-white">
           <table className="w-full text-[15px] text-right border-collapse">
