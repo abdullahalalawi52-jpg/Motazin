@@ -369,6 +369,8 @@ export default function App() {
                         assets={assets}
                         liabilities={liabilities}
                         equities={equities}
+                        incomes={incomes}
+                        expenses={expenses}
                         totals={totals}
                         formatCurrency={formatCurrency}
                         allAccounts={allAccounts}

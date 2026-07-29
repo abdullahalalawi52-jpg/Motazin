@@ -24,6 +24,8 @@ interface TransactionTableProps {
   assets: Account[];
   liabilities: Account[];
   equities: Account[];
+  incomes?: Account[];
+  expenses?: Account[];
   totals: {
     isBalanced: boolean;
     totalAssets: number;
@@ -58,6 +60,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
   assets,
   liabilities,
   equities,
+  incomes = [],
+  expenses = [],
   totals,
   formatCurrency,
   allAccounts,
@@ -71,7 +75,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
 }) => {
   const { t, language } = useLanguage();
   const { isUploading } = useAppStore();
-  const hasAccounts = assets.length > 0 || liabilities.length > 0 || equities.length > 0;
+  const hasAccounts = assets.length > 0 || liabilities.length > 0 || equities.length > 0 || incomes.length > 0 || expenses.length > 0;
 
   const parentRef = useRef<HTMLDivElement>(null);
   const { globalSearchTerm, setGlobalSearchTerm } = useAppStore();
@@ -114,7 +118,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
       const account = allAccounts.find(a => a.id === accountId);
       const isCredit = impact.type === 'credit';
       if (account) {
-        if (account.category === 'asset') {
+        if (account.category === 'asset' || account.category === 'expense') {
           return isCredit ? -impact.amount : impact.amount;
         } else {
           return isCredit ? impact.amount : -impact.amount;
@@ -261,6 +265,18 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
                     {t('equity')}
                   </th>
                 )}
+
+                {incomes.length > 0 && (
+                  <th colSpan={incomes.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-sky-500/10 dark:text-sky-300 text-sky-950">
+                    {t('revenue')}
+                  </th>
+                )}
+
+                {expenses.length > 0 && (
+                  <th colSpan={expenses.length} className="p-2 border-l dark:border-white/5 border-slate-200/50 font-black text-[10px] uppercase tracking-tighter text-center bg-rose-500/10 dark:text-rose-300 text-rose-950">
+                    {t('expenses')}
+                  </th>
+                )}
                 <th rowSpan={hasAccounts ? 2 : 1} className="p-3 w-10"></th>
               </tr>
               {/* Account Headers */}
@@ -276,6 +292,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
 
                 {equities.map(a => (
                   <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-emerald-400 text-emerald-900 bg-emerald-500/5">{t(a.name)}</th>
+                ))}
+                
+                {incomes.map(a => (
+                  <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-sky-400 text-sky-900 bg-sky-500/5">{t(a.name)}</th>
+                ))}
+
+                {expenses.map(a => (
+                  <th key={a.id} className="p-2 border-l dark:border-white/5 border-slate-200/30 font-black text-[10px] uppercase text-center dark:text-rose-400 text-rose-900 bg-rose-500/5">{t(a.name)}</th>
                 ))}
               </tr>
               )}
@@ -335,6 +359,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
                         assets={assets}
                         liabilities={liabilities}
                         equities={equities}
+                        incomes={incomes}
+                        expenses={expenses}
                         getImpactAmount={getImpactAmount}
                         formatCurrency={formatCurrency}
                         handleEditTransaction={handleEditTransaction}
@@ -370,7 +396,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
 
                     {equities.map(a => (
                       <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-emerald-400 text-white font-mono bg-emerald-500/5" dir="ltr">
-                        {formatCurrency(totals.accounts[a.id])}
+                        {formatCurrency(totals.accounts[a.id] || 0)}
+                      </td>
+                    ))}
+
+                    {incomes.map(a => (
+                      <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-sky-400 text-white font-mono bg-sky-500/5" dir="ltr">
+                        {formatCurrency(totals.accounts[a.id] || 0)}
+                      </td>
+                    ))}
+
+                    {expenses.map(a => (
+                      <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-rose-400 text-white font-mono bg-rose-500/5" dir="ltr">
+                        {formatCurrency(totals.accounts[a.id] || 0)}
                       </td>
                     ))}
                     <td className="bg-slate-900/60"></td>

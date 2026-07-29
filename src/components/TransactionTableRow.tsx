@@ -15,6 +15,8 @@ interface TransactionTableRowProps {
   assets: Account[];
   liabilities: Account[];
   equities: Account[];
+  incomes?: Account[];
+  expenses?: Account[];
   getImpactAmount: (tx: Transaction, accountId: string) => number;
   formatCurrency: (val: number) => string;
   handleEditTransaction: (tx: Transaction) => void;
@@ -31,6 +33,8 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
   assets,
   liabilities,
   equities,
+  incomes = [],
+  expenses = [],
   getImpactAmount,
   formatCurrency,
   handleEditTransaction,
@@ -120,6 +124,42 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
               <span className={cn(
                 "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
                 amt > 0 ? "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
+              )}>
+                {formatCurrency(amt)}
+              </span>
+            ) : (
+              <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
+            )}
+          </td>
+        );
+      })}
+
+      {incomes.map(a => {
+        const amt = getImpactAmount(tx, a.id);
+        return (
+          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-sky-500/5 transition-colors" dir="ltr">
+            {amt !== 0 ? (
+              <span className={cn(
+                "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                amt > 0 ? "bg-sky-500/10 dark:text-sky-400 text-sky-700 border border-sky-500/20" : "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20"
+              )}>
+                {formatCurrency(amt)}
+              </span>
+            ) : (
+              <span className="dark:text-white text-slate-300 dark:opacity-[0.05] opacity-20">-</span>
+            )}
+          </td>
+        );
+      })}
+
+      {expenses.map(a => {
+        const amt = getImpactAmount(tx, a.id);
+        return (
+          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-rose-500/5 transition-colors" dir="ltr">
+            {amt !== 0 ? (
+              <span className={cn(
+                "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
+                amt > 0 ? "bg-rose-500/10 dark:text-rose-400 text-rose-700 border border-rose-500/20" : "bg-emerald-500/10 dark:text-emerald-400 text-emerald-700 border border-emerald-500/20"
               )}>
                 {formatCurrency(amt)}
               </span>

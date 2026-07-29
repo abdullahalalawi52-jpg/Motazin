@@ -27,8 +27,8 @@ export const DepreciationModal: React.FC<DepreciationModalProps> = ({ isOpen, on
     if (cost <= 0 || life <= 0) return;
     const assetName = assets.find(a => a.id === selectedAsset)?.name || '';
     const description = `${t('depreciationFor')} ${t(assetName)}`;
-    // Depreciation is a reduction of the asset value, so it's negative.
-    onApply(selectedAsset, -annualDepreciation, description);
+    // Depreciation is a positive expense amount
+    onApply(selectedAsset, annualDepreciation, description);
     onClose();
   };
 
