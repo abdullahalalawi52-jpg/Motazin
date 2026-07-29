@@ -86,7 +86,7 @@ export const extractTransactions = async (
   const results: ParsedRow[] = [];
   
   // 1. Optimized Date Detection
-  const dateRegex = /\b(\d{1,4}[\/\-.]\d{1,2}[\/\-.](?:\d{2,4})?|\d{1,2}[\/\-.]\d{1,2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}(?:,)? \d{2,4})\b/i;
+  const dateRegex = /\b(\d{1,4}[-/.]\d{1,2}[-/.](?:\d{2,4})?|\d{1,2}[-/.]\d{1,2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}(?:,)? \d{2,4})\b/i;
   let globalDate = toIsoDateString(new Date());
   
   for (let i = 0; i < Math.min(lines.length, 15); i++) {
@@ -277,7 +277,7 @@ export const processPdf = async (file: File, ocrLanguage: string, geminiApiKey: 
             if (ctx) {
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
-                // @ts-ignore
+                // @ts-expect-error - missing types for page.render
                 await page.render({ canvasContext: ctx, viewport }).promise;
                 
                 if (!worker) {
@@ -298,7 +298,7 @@ export const processPdf = async (file: File, ocrLanguage: string, geminiApiKey: 
             continue;
         }
         
-        const linesMap = new Map<number, any[]>();
+        const linesMap = new Map<number, { str: string; transform: number[] }[]>();
         
         items.forEach((item) => {
           if (!item.str.trim() && item.str !== ' ') return;
@@ -405,10 +405,10 @@ export const processExcel = async (file: File, callbacks: ProcessCallbacks) => {
   const firstSheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheetName];
   
-  const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+  const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
   const results: ParsedRow[] = [];
   
-  const dateRegex = /(\d{1,4}[\/\-.]\d{1,2}[\/\-.](?:\d{2,4})?|\d{1,2}[\/\-.]\d{1,2})/;
+  const dateRegex = /(\d{1,4}[-/.]\d{1,2}[-/.](?:\d{2,4})?|\d{1,2}[-/.]\d{1,2})/;
   
   for (const row of rows) {
     if (!row || row.length < 2) continue;

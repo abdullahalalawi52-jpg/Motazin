@@ -10,12 +10,13 @@ import App from './App';
 import { LanguageProvider } from './i18n';
 import { ThemeProvider } from './ThemeContext';
 
+import '@testing-library/jest-dom';
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
-} as any;
+} as unknown as typeof ResizeObserver;
 window.ResizeObserver = global.ResizeObserver;
 
 // Mock scrollIntoView for jsdom
@@ -58,6 +59,7 @@ vi.mock('firebase/firestore', () => ({
             eachCb({
               id: tx.id,
               data: () => {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const { id, ...rest } = tx;
                 return rest;
               }

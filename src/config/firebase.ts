@@ -38,7 +38,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export let analytics: any = null;
+export let analytics: unknown = null;
 
 if (typeof window !== 'undefined' && import.meta.env.MODE === 'production') {
   import('firebase/analytics').then(({ getAnalytics, isSupported }) => {

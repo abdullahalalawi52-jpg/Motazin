@@ -18,7 +18,9 @@ export function useChat(
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
     return [];
   });
@@ -26,7 +28,7 @@ export function useChat(
   const [isTyping, setIsTyping] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [hasError, setHasError] = useState(false);
+  const [, setHasError] = useState(false);
   const [localApiKey, setLocalApiKey] = useState(() => {
     return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
   });
@@ -69,7 +71,7 @@ export function useChat(
       setMessages(newMessages);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newMessages));
     }
-  }, [isOpen, messages.length, financialContext, language, replies.welcome]);
+  }, [isOpen, messages.length, financialContext, language, replies.welcome, isAiAvailable]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -169,7 +171,6 @@ export function useChat(
 
   const callGeminiApi = async (newText: string, currentHistory: ChatMessage[]): Promise<string | null> => {
     try {
-      const apiKey = effectiveApiKey;
       const systemPrompt = buildSystemPrompt(financialContext, language);
 
       const contents = currentHistory.map(m => ({
