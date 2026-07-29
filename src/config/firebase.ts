@@ -5,13 +5,13 @@ import { getStorage } from 'firebase/storage';
 // Analytics is lazy-loaded
 // Firebase configuration from environment variables (supports VITE_ prefix)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "missing",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "missing",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "missing",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "missing",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "missing",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "missing",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "missing",
 };
 
 // Validate that all required environment variables are set
