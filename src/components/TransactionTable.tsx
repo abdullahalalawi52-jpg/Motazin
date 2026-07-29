@@ -184,9 +184,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
             </button>
 
           </div>
-        </div>
           {processedTransactions.length > 0 && (
-            <div className="flex flex-wrap justify-center items-center gap-2">
+            <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 w-full sm:w-auto">
               {selectedTransactions.size > 0 && (
                 <button
                   onClick={handleBulkDelete}
@@ -225,6 +224,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
             </div>
           )}
         </div>
+      </div>
 
         <div id="transactions-table" ref={parentRef} className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-white">
           <table className="w-full text-[15px] text-right border-collapse">
