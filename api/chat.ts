@@ -30,7 +30,9 @@ function isAllowedHostOrOrigin(value: string | null): boolean {
         return true;
       }
     }
-  } catch (_) {}
+  } catch {
+    // Ignore URL parsing errors
+  }
   return false;
 }
 
@@ -127,9 +129,8 @@ export default async function handler(req: Request) {
       'gemini-3.5-flash'
     ];
 
-    let lastError: any = null;
     let responseStatus = 500;
-    let responseData: any = null;
+    let responseData: Record<string, unknown> | null = null;
     let success = false;
 
     for (const model of modelsToTry) {
@@ -159,11 +160,9 @@ export default async function handler(req: Request) {
           break;
         } else {
           console.warn(`Model ${model} failed with status ${response.status}:`, responseData);
-          lastError = responseData;
         }
-      } catch (err: any) {
-        console.error(`Error with model ${model}:`, err.message);
-        lastError = { message: err.message };
+      } catch (err) {
+        console.error(`Error with model ${model}:`, err instanceof Error ? err.message : err);
       }
     }
 
@@ -183,7 +182,7 @@ export default async function handler(req: Request) {
       });
     }
 
-  } catch (error: any) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: jsonHeaders,
