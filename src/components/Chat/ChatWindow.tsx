@@ -19,7 +19,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onApiKeyChange,
 }) => {
   const { t, language } = useLanguage();
-  const chat = useChat(financialContext, geminiApiKey, onApiKeyChange, language, t);
+  const { isOpen, setIsOpen, messages, input, setInput, handleSend, showSettings, setShowSettings, handleClearChat, confirmOpen, setConfirmOpen, localApiKey, setLocalApiKey, isAiAvailable, messagesEndRef, inputRef, isTyping, saveApiKey } = useChat(financialContext, geminiApiKey, onApiKeyChange, language, t);
 
   const formatTime = (ts: number) => {
     return new Date(ts).toLocaleTimeString(language === 'ar' ? 'ar-SA' : 'en-US', {
@@ -30,7 +30,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      chat.handleSend();
+      handleSend();
     }
   };
 
@@ -38,11 +38,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     <>
       {/* Floating Chat Button */}
       <button
-        onClick={() => chat.setIsOpen(!chat.isOpen)}
+        onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 left-6 z-50 p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 group border border-indigo-500/30"
         aria-label="المستشار الذكي"
       >
-        {chat.isOpen ? (
+        {isOpen ? (
           <X className="w-6 h-6 rotate-90 transition-transform duration-300" />
         ) : (
           <div className="relative">
@@ -60,7 +60,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         aria-label={language === 'ar' ? 'الدردشة الآلية' : 'AI Chatbot'}
         className={cn(
           "fixed bottom-24 left-6 w-[95vw] sm:w-[420px] h-[650px] max-h-[75vh] glass dark:bg-slate-950/95 bg-white/95 border dark:border-white/10 border-slate-200 rounded-[2.5rem] shadow-2xl z-50 overflow-hidden flex flex-col transition-all duration-500 transform origin-bottom-left",
-          chat.isOpen ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-10 pointer-events-none"
+          isOpen ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-10 pointer-events-none"
         )}
       >
         {/* Header */}
@@ -75,7 +75,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 {language === 'ar' ? 'المساعد الافتراضي' : 'Virtual Assistant'}
               </h2>
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
-                {chat.isAiAvailable
+                {isAiAvailable
                   ? (language === 'ar' ? 'ذكي (AI)' : 'AI Powered')
                   : (language === 'ar' ? 'متصل' : 'Online')}
               </p>
@@ -83,10 +83,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => chat.setShowSettings(!chat.showSettings)}
+              onClick={() => setShowSettings(!showSettings)}
               className={cn(
                 "p-2 rounded-xl transition-all",
-                chat.showSettings
+                showSettings
                   ? "bg-indigo-500/20 text-indigo-500"
                   : "dark:text-slate-400 text-slate-500 hover:bg-indigo-500/20 hover:text-indigo-500"
               )}
@@ -95,7 +95,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <Settings className="w-4 h-4" />
             </button>
             <button
-              onClick={() => chat.setConfirmOpen(true)}
+              onClick={() => setConfirmOpen(true)}
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold dark:text-slate-300 text-slate-600 hover:bg-indigo-500/20 hover:text-indigo-500 rounded-xl transition-all"
               title={language === 'ar' ? 'محادثة جديدة' : 'New Chat'}
             >
@@ -106,7 +106,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
 
         {/* Settings Panel */}
-        {chat.showSettings && (
+        {showSettings && (
           <div className="p-4 border-b dark:border-white/10 border-slate-200 bg-indigo-500/5 flex-shrink-0 animate-fade-in">
             <div className="flex items-center gap-2 mb-3">
               <Key className="w-4 h-4 text-indigo-400" />
@@ -125,13 +125,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <div className="flex gap-2">
               <input
                 type="password"
-                value={chat.localApiKey}
-                onChange={(e) => chat.setLocalApiKey(e.target.value)}
+                value={localApiKey}
+                onChange={(e) => setLocalApiKey(e.target.value)}
                 placeholder={language === 'ar' ? 'أدخل المفتاح هنا...' : 'Enter your API key...'}
                 className="flex-1 px-3 py-2 rounded-xl border dark:border-white/10 border-slate-200 dark:bg-slate-800/50 bg-slate-100 dark:text-white text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
               />
               <button
-                onClick={chat.saveApiKey}
+                onClick={saveApiKey}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
               >
                 {language === 'ar' ? 'حفظ' : 'Save'}
@@ -147,19 +147,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
         {/* Messages List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-          {chat.messages.map((msg) => (
+          {messages.map((msg) => (
             <ChatMessage
               key={msg.id}
               msg={msg}
-              language={language}
+              
               formatTime={formatTime}
             />
           ))}
 
-          {chat.isTyping && (
+          {isTyping && (
             <div className="flex gap-2 animate-fade-in">
               <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-                {chat.isAiAvailable ? (
+                {isAiAvailable ? (
                   <Brain className="w-4 h-4 text-indigo-400 animate-pulse" />
                 ) : (
                   <Bot className="w-4 h-4 text-indigo-400" />
@@ -175,7 +175,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
           )}
 
-          <div ref={chat.messagesEndRef} />
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Status Bar */}
@@ -185,8 +185,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <BarChart3 className="w-3 h-3 text-indigo-400" />
               <span className="text-[9px] dark:text-slate-400 text-slate-500">
                 {language === 'ar'
-                  ? `${financialContext.transactionCount} معاملة | ${chat.isAiAvailable ? 'AI نشط 🧠' : 'الردود التلقائية'}`
-                  : `${financialContext.transactionCount} transactions | ${chat.isAiAvailable ? 'AI Active 🧠' : 'Auto-replies'}`}
+                  ? `${financialContext.transactionCount} معاملة | ${isAiAvailable ? 'AI نشط 🧠' : 'الردود التلقائية'}`
+                  : `${financialContext.transactionCount} transactions | ${isAiAvailable ? 'AI Active 🧠' : 'Auto-replies'}`}
               </span>
             </div>
           </div>
@@ -196,21 +196,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="p-4 border-t dark:border-white/10 border-slate-200 flex-shrink-0">
           <div className="flex gap-2">
             <input
-              ref={chat.inputRef}
+              ref={inputRef}
               type="text"
-              value={chat.input}
-              onChange={(e) => chat.setInput(e.target.value)}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={language === 'ar' ? 'اكتب رسالتك هنا...' : 'Type your message here...'}
               className="flex-1 px-4 py-3 rounded-2xl border dark:border-white/10 border-slate-200 dark:bg-slate-800/50 bg-slate-100 dark:text-white text-slate-900 dark:placeholder-slate-500 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
             />
             <button
-              onClick={chat.handleSend}
-              disabled={!chat.input.trim()}
+              onClick={handleSend}
+              disabled={!input.trim()}
               aria-label={language === 'ar' ? 'إرسال' : 'Send'}
               className="p-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl transition-all active:scale-95 relative"
             >
-              {chat.isAiAvailable ? (
+              {isAiAvailable ? (
                 <Sparkles className="w-5 h-5" />
               ) : (
                 <Send className="w-5 h-5" />
@@ -218,7 +218,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </button>
           </div>
           <p className="text-[10px] dark:text-slate-500 text-slate-400 mt-2 text-center">
-            {chat.isAiAvailable
+            {isAiAvailable
               ? (language === 'ar' ? '🧠 يستخدم الذكاء الاصطناعي للإجابة على أسئلتك' : '🧠 AI-powered responses to your questions')
               : (language === 'ar' ? 'المساعد يرد تلقائياً - فعّل AI للحصول على إجابات أكثر ذكاءً' : 'Auto-replies active - enable AI for smarter answers')}
           </p>
@@ -226,15 +226,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </aside>
 
       <ConfirmationModal
-        isOpen={chat.confirmOpen}
+        isOpen={confirmOpen}
         title={language === 'ar' ? 'مسح المحادثة' : 'Clear Chat'}
         message={language === 'ar' ? 'هل تريد مسح المحادثة وبدء محادثة جديدة؟' : 'Are you sure you want to start a new chat?'}
         confirmText={language === 'ar' ? 'مسح' : 'Clear'}
         cancelText={language === 'ar' ? 'إلغاء' : 'Cancel'}
-        onConfirm={chat.handleClearChat}
-        onCancel={() => chat.setConfirmOpen(false)}
+        onConfirm={handleClearChat}
+        onCancel={() => setConfirmOpen(false)}
         dir={language === 'ar' ? 'rtl' : 'ltr'}
       />
     </>
   );
 };
+
+
+

@@ -24,6 +24,7 @@ import { handleExportCSV, handleExportPDF } from './utils/export';
 import { useAuth } from './hooks/useAuth';
 import { useAppEffects } from './hooks/useAppEffects';
 import { useTransactionHandlers } from './hooks/useTransactionHandlers';
+import { authService } from './services/authService';
 
 // Component imports
 import { MainLayout } from './layouts/MainLayout';
@@ -156,26 +157,25 @@ export default function App() {
 
   // Setup Auth state listener within App (to sync with history properly)
   useEffect(() => {
-    import('./services/authService').then(({ authService }) => {
-      authService.onAuthStateChanged((currentUser) => {
-        setUser(currentUser);
-        setIsAuthReady(true);
-        setHistory([]);
-        setHistoryIndex(-1);
-        if (!currentUser) {
-          const saved = localStorage.getItem('motazin_transactions');
-          if (saved) {
-            try {
-              setTransactions(JSON.parse(saved));
-            } catch {
-              setTransactions([]);
-            }
-          } else {
+    const unsubscribe = authService.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
+      setHistory([]);
+      setHistoryIndex(-1);
+      if (!currentUser) {
+        const saved = localStorage.getItem('motazin_transactions');
+        if (saved) {
+          try {
+            setTransactions(JSON.parse(saved));
+          } catch {
             setTransactions([]);
           }
+        } else {
+          setTransactions([]);
         }
-      });
+      }
     });
+    return () => unsubscribe();
   }, [setHistory, setHistoryIndex, setTransactions, setUser, setIsAuthReady]);
 
   // --- Effects ---
@@ -356,10 +356,6 @@ export default function App() {
                       <TransactionTable
                         transactions={filteredTransactions}
                         selectedTransactions={selectedTransactions}
-                        historyIndex={historyIndex}
-                        historyLength={history.length}
-                        handleUndo={handleUndo}
-                        handleRedo={handleRedo}
                         setIsPdfScannerOpen={setIsPdfScannerOpen}
                         setIsDepreciationModalOpen={setIsDepreciationModalOpen}
                         setIsVatModalOpen={setIsVatModalOpen}
@@ -380,7 +376,6 @@ export default function App() {
                         handleSelectAll={handlers.handleSelectAll}
                         setPreviewUrl={setPreviewUrl}
                         setIsDocPreviewOpen={setIsDocPreviewOpen}
-                        handleBulkAttach={handlers.handleBulkAttach}
                       />
                     </div>
 

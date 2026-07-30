@@ -27,8 +27,12 @@ export function useAuth() {
 
   const handleInstallClick = () => {
     if (deferredPrompt) {
-      (deferredPrompt as any).prompt();
-      (deferredPrompt as any).userChoice.then((choiceResult: { outcome: string }) => {
+      const promptEvent = deferredPrompt as Event & {
+        prompt: () => void;
+        userChoice: Promise<{ outcome: string }>;
+      };
+      promptEvent.prompt();
+      promptEvent.userChoice.then((choiceResult) => {
         if (choiceResult.outcome === 'accepted') {
           console.log('User accepted the install prompt');
         }

@@ -1,8 +1,6 @@
-import { Transaction, Account, Impact } from '../types/accounting';
+import { Transaction } from '../types/accounting';
 import { transactionSchema } from '../utils/validation';
 import { toast } from 'sonner';
-import { toIsoDateString } from '../utils/date';
-import { generateId } from '../utils/uuid';
 import { transactionService } from '../services/transactionService';
 import { firestoreService } from '../services/firestoreService';
 import { User } from 'firebase/auth';
@@ -172,7 +170,7 @@ export function useTransactionHandlers({
     try {
       await firestoreService.saveBudgets(user.uid, budgets);
       toast.success(t('budgetSavedSuccess'));
-    } catch (error) {
+    } catch {
       toast.error(t('budgetSaveError'));
     }
   };
@@ -203,3 +201,4 @@ export function useTransactionHandlers({
     handleCurrencyChange
   };
 }
+

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
-import { CurrencyProvider, useCurrency, currencies } from './CurrencyContext';
+import { CurrencyProvider, useCurrency } from './CurrencyContext';
 
 // A helper component to test the context consumer
 const TestConsumer = () => {
@@ -98,3 +98,4 @@ describe('CurrencyContext', () => {
     console.error = consoleError;
   });
 });
+

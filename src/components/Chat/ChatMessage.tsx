@@ -5,11 +5,10 @@ import { cn } from '../../utils/cn';
 
 interface ChatMessageProps {
   msg: ChatMessageType;
-  language: string;
   formatTime: (ts: number) => string;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ msg, language, formatTime }) => {
+export const ChatMessage: React.FC<ChatMessageProps> = ({ msg, formatTime }) => {
   return (
     <div
       className={cn(
@@ -72,3 +71,4 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ msg, language, formatT
     </div>
   );
 };
+

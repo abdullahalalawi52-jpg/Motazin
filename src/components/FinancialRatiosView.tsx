@@ -6,6 +6,46 @@ import { Account } from '../types/accounting';
 import { handleExportFinancialReportPDF } from '../utils/export';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+interface RatioCardProps {
+  title: string;
+  formula: string;
+  value: string;
+  desc: string;
+  suffix?: string;
+  statusColor: string;
+  statusIcon: React.ElementType;
+  statusText: string;
+}
+
+const RatioCard: React.FC<RatioCardProps> = ({ 
+  title, formula, value, desc, suffix = '',
+  statusColor, statusIcon: StatusIcon, statusText
+}) => (
+  <div className="glass-card p-6 flex flex-col h-full hover:scale-[1.02] transition-transform duration-300">
+    <div className="flex justify-between items-start mb-4">
+      <div>
+        <h3 className="font-black text-slate-900 dark:text-white mb-1">{title}</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono inline-block mt-0.5" dir="ltr">
+          {formula}
+        </p>
+      </div>
+      <div className={cn("px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-black uppercase tracking-widest", statusColor)}>
+        <StatusIcon className="w-4 h-4" />
+        <span className="hidden sm:inline">{statusText}</span>
+      </div>
+    </div>
+    
+    <div className="mt-auto pt-4 border-t border-slate-200 dark:border-white/5">
+      <div className="text-3xl font-black bg-gradient-to-r from-indigo-700 to-purple-700 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent mb-2" dir="ltr">
+        {value}{suffix}
+      </div>
+      <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+        {desc}
+      </p>
+    </div>
+  </div>
+);
+
 interface FinancialRatiosViewProps {
   accounts: Record<string, number>;
   activeAccounts: Account[];
@@ -62,34 +102,7 @@ export const FinancialRatiosView: React.FC<FinancialRatiosViewProps> = ({
     return value >= minGood ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10' : 'text-rose-700 dark:text-rose-400 bg-rose-500/10';
   };
 
-  const RatioCard = ({ 
-    title, formula, value, desc, suffix = '',
-    statusColor, statusIcon: StatusIcon, statusText
-  }: any) => (
-    <div className="glass-card p-6 flex flex-col h-full hover:scale-[1.02] transition-transform duration-300">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="font-black text-slate-900 dark:text-white mb-1">{title}</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono inline-block mt-0.5" dir="ltr">
-            {formula}
-          </p>
-        </div>
-        <div className={cn("px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-black uppercase tracking-widest", statusColor)}>
-          <StatusIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">{statusText}</span>
-        </div>
-      </div>
-      
-      <div className="mt-auto pt-4 border-t border-slate-200 dark:border-white/5">
-        <div className="text-3xl font-black bg-gradient-to-r from-indigo-700 to-purple-700 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent mb-2" dir="ltr">
-          {value}{suffix}
-        </div>
-        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-          {desc}
-        </p>
-      </div>
-    </div>
-  );
+
 
   return (
     <div className="space-y-8 animate-fade-in max-w-7xl mx-auto px-4 py-8">

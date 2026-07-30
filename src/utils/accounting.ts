@@ -1,4 +1,4 @@
-import { Category, Account, Impact, Transaction } from '../types/accounting';
+import { Account, Transaction } from '../types/accounting';
 
 /**
  * Calculates the running financial totals and balances for assets, liabilities, and equity
@@ -84,3 +84,4 @@ export function calculateTotals(
     isBalanced: round(totalAssets) === round(totalLiabilities + totalEquity)
   };
 }
+

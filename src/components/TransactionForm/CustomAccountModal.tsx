@@ -14,7 +14,7 @@ interface CustomAccountModalProps {
   newCustomAccountCategory: Category;
   setNewCustomAccountCategory: (category: Category) => void;
   addCustomAccount: (name: string, category: Category) => Promise<Account | null>;
-  handleImpactChange: (index: number, field: string, value: any) => void;
+  handleImpactChange: (index: number, field: string, value: string | number) => void;
 }
 
 export const CustomAccountModal: React.FC<CustomAccountModalProps> = ({

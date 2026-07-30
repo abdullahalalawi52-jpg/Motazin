@@ -47,7 +47,7 @@ export const IncomeStatementView: React.FC<IncomeStatementViewProps> = ({ transa
     >
       <div className="text-center space-y-2 border-b dark:border-white/10 border-slate-200 pb-6">
         <h2 className="text-2xl sm:text-3xl font-bold dark:text-white text-slate-900">{t('incomeStatement')}</h2>
-        <p className="text-sm dark:text-slate-400 text-slate-600">{t('periodEnding' as any)}: {formatDate(new Date(), language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
+        <p className="text-sm dark:text-slate-400 text-slate-600">{t('periodEnding' as Parameters<typeof t>[0])}: {formatDate(new Date(), language === 'ar' ? 'ar-SA' : 'en-GB')}</p>
       </div>
 
       {transactions.length === 0 ? (

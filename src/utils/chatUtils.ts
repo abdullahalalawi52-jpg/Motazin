@@ -1,4 +1,4 @@
-import { ChatMessage, FinancialContext } from '../types/accounting';
+import { FinancialContext } from '../types/accounting';
 
 export const AUTO_REPLIES: Record<string, Record<string, string>> = {
   ar: {
@@ -583,3 +583,4 @@ Speak in a professional and friendly tone in English. Use rich Markdown formatti
 
   return basePrompt + contextPrompt;
 }
+

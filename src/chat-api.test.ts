@@ -19,7 +19,7 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مستشار مالي ومحاسب قانوني ذكي' }] }
+        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
       })
     });
 
@@ -38,7 +38,7 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مستشار مالي ومحاسب قانوني ذكي' }] }
+        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
       })
     });
 
@@ -55,7 +55,7 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مستشار مالي ومحاسب قانوني ذكي' }] }
+        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
       })
     });
 
@@ -78,7 +78,7 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مستشار مالي ومحاسب قانوني ذكي' }] }
+        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
       })
     });
 
@@ -102,7 +102,7 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مستشار مالي ومحاسب قانوني ذكي' }] }
+        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
       })
     });
 
@@ -125,7 +125,7 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مستشار مالي ومحاسب قانوني ذكي' }] }
+        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
       })
     });
 

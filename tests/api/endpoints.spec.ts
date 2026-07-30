@@ -69,7 +69,7 @@ describe('API Endpoints', () => {
 
     it('should process a valid request and return success (Happy Path)', async () => {
       // Mock fetch success
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({ candidates: [{ content: { parts: [{ text: 'response' }] } }] })
@@ -123,7 +123,7 @@ describe('API Endpoints', () => {
 
     it('should process a valid request and return parsed JSON (Happy Path)', async () => {
       // Mock fetch success
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ([{ date: '01/01/2026', description: 'Test', amount: 100 }])

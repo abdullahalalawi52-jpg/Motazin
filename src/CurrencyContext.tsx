@@ -56,16 +56,14 @@ const RATES_STORAGE_KEY = 'motazin_live_exchange_rates';
 const RATES_UPDATED_KEY = 'motazin_live_exchange_rates_updated';
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currency, setCurrencyState] = useState<Currency>('OMR');
-  const [exchangeRates, setExchangeRates] = useState<Record<Currency, number>>(fallbackExchangeRates);
-
-  // Load selected currency
-  useEffect(() => {
+  const [currency, setCurrencyState] = useState<Currency>(() => {
     const savedCurrency = localStorage.getItem('app_currency') as Currency;
     if (savedCurrency && currencies.some(c => c.code === savedCurrency)) {
-      setCurrencyState(savedCurrency);
+      return savedCurrency;
     }
-  }, []);
+    return 'OMR';
+  });
+  const [exchangeRates, setExchangeRates] = useState<Record<Currency, number>>(fallbackExchangeRates);
 
   // Fetch live exchange rates from OMR (cached for 24h)
   useEffect(() => {

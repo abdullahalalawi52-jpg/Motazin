@@ -1,15 +1,8 @@
-import * as pdfjsLib from 'pdfjs-dist';
-import * as XLSX from 'xlsx';
-import mammoth from 'mammoth';
-import JSZip from 'jszip';
 import type { Worker } from 'tesseract.js';
 import { ParsedRow } from '../types/accounting';
 import { generateId } from './uuid';
 import { toIsoDateString } from './date';
 import { BALANCE_TOLERANCE } from './constants';
-
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface ProcessCallbacks {
   setProgress: (progress: number) => void;
@@ -252,6 +245,10 @@ export const extractTransactions = async (
 export const processPdf = async (file: File, ocrLanguage: string, geminiApiKey: string | undefined, callbacks: ProcessCallbacks) => {
   const { setStatus, setProgress, setRawText } = callbacks;
   setStatus('Extracting PDF text...');
+  
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let fullText = '';
@@ -400,6 +397,9 @@ export const processImage = async (file: File, ocrLanguage: string, geminiApiKey
 export const processExcel = async (file: File, callbacks: ProcessCallbacks) => {
   const { setStatus, setParsedRows, setError } = callbacks;
   setStatus('Reading spreadsheet data...');
+  
+  const XLSX = await import('xlsx');
+  
   const data = await file.arrayBuffer();
   const workbook = XLSX.read(data);
   const firstSheetName = workbook.SheetNames[0];
@@ -460,6 +460,7 @@ export const processExcel = async (file: File, callbacks: ProcessCallbacks) => {
 
 export const processWord = async (file: File, geminiApiKey: string | undefined, callbacks: ProcessCallbacks) => {
   callbacks.setStatus('Reading Word document...');
+  const mammoth = (await import('mammoth')).default;
   const arrayBuffer = await file.arrayBuffer();
   const result = await mammoth.extractRawText({ arrayBuffer });
   callbacks.setRawText(result.value);
@@ -468,6 +469,7 @@ export const processWord = async (file: File, geminiApiKey: string | undefined, 
 
 export const processPowerPoint = async (file: File, geminiApiKey: string | undefined, callbacks: ProcessCallbacks) => {
   callbacks.setStatus('Parsing PowerPoint slides...');
+  const JSZip = (await import('jszip')).default;
   const zip = await JSZip.loadAsync(file);
   let fullText = '';
   

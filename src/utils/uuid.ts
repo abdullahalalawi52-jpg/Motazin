@@ -26,9 +26,10 @@ export function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     try {
       return crypto.randomUUID().replace(/-/g, '').substring(0, 9);
-    } catch (e) {
+    } catch {
       // Fallback if randomUUID fails
     }
   }
   return fallbackRandomId(9);
 }
+

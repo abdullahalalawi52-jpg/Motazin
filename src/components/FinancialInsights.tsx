@@ -27,11 +27,9 @@ interface FinancialInsightsProps {
 
 export const FinancialInsights: React.FC<FinancialInsightsProps> = ({
   transactions,
-  totals,
   insights,
   profitTrendData,
   theme,
-  currency,
   formatCurrency
 }) => {
   const { t } = useLanguage();
@@ -126,3 +124,4 @@ export const FinancialInsights: React.FC<FinancialInsightsProps> = ({
     </div>
   );
 };
+

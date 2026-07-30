@@ -7,7 +7,7 @@ interface ImpactRowProps {
   impact: Omit<Impact, 'id'>;
   idx: number;
   allAccounts: Account[];
-  handleImpactChange: (index: number, field: keyof Omit<Impact, 'id'>, value: any) => void;
+  handleImpactChange: (index: number, field: keyof Omit<Impact, 'id'>, value: string | number) => void;
   handleRemoveImpact: (index: number) => void;
   setCustomAccountModalIdx: (index: number) => void;
   t: (key: string) => string;
@@ -34,8 +34,10 @@ export const ImpactRow: React.FC<ImpactRowProps> = ({
   amountError
 }) => {
   const [localAmount, setLocalAmount] = React.useState(impact.amount ? impact.amount.toString() : '');
+  const [prevImpactAmount, setPrevImpactAmount] = React.useState(impact.amount);
 
-  React.useEffect(() => {
+  if (impact.amount !== prevImpactAmount) {
+    setPrevImpactAmount(impact.amount);
     if (impact.amount === 0) {
       if (localAmount !== '' && localAmount !== '0' && localAmount !== '0.' && localAmount !== '.') {
         setLocalAmount('');
@@ -45,7 +47,7 @@ export const ImpactRow: React.FC<ImpactRowProps> = ({
         setLocalAmount(impact.amount.toString());
       }
     }
-  }, [impact.amount]);
+  }
   return (
     <div className="relative group/impact">
       <div className="absolute inset-0 bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl -m-2 opacity-0 group-hover/impact:opacity-100 transition-opacity pointer-events-none" />
