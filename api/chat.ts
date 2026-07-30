@@ -102,11 +102,14 @@ export default async function handler(req: Request) {
     }
 
     // Validate system instruction to prevent general API key abuse
-    const systemPromptText = system_instruction?.parts?.[0]?.text || '';
-    const isArabicBase = systemPromptText.includes('أنت مساعد مالي ذكي ومحاسب محترف');
-    const isEnglishBase = systemPromptText.includes('You are a smart financial advisor');
+    const promptText = system_instruction?.parts?.[0]?.text || '';
+    const expectedBasePromptAr = `أنت مساعد مالي ذكي ومحاسب محترف في تطبيق "متزن". مهمتك هي مساعدة المستخدم في فهم معادلة الميزانية (الأصول = الخصوم + حقوق الملكية)، وإدارة حساباته، وتقديم نصائح مالية مبنية على البيانات.
+تحدث بلهجة مهنية وودية باللغة العربية. استخدم التنسيق الغني (Markdown) والنقاط لجعل الإجابات سهلة القراءة.`;
+    
+    const expectedBasePromptEn = `You are a smart financial advisor and professional accountant inside the "Motazin" app. Your task is to help the user understand the accounting equation (Assets = Liabilities + Equity), manage accounts, and provide data-driven financial advice.
+Speak in a professional and friendly tone in English. Use rich Markdown formatting and bullet points to make responses readable.`;
 
-    if (!isArabicBase && !isEnglishBase) {
+    if (!promptText || (!promptText.startsWith(expectedBasePromptAr) && !promptText.startsWith(expectedBasePromptEn))) {
       return new Response(JSON.stringify({ error: 'Invalid system instruction' }), {
         status: 400,
         headers: jsonHeaders,
