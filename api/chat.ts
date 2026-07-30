@@ -101,8 +101,8 @@ export default async function handler(req: Request) {
 
     // Validate system instruction to prevent general API key abuse
     const systemPromptText = system_instruction?.parts?.[0]?.text || '';
-    const isArabicBase = systemPromptText.includes('أنت مستشار مالي ومحاسب قانوني ذكي');
-    const isEnglishBase = systemPromptText.includes('You are an expert financial advisor');
+    const isArabicBase = systemPromptText.includes('أنت مساعد مالي ذكي ومحاسب محترف');
+    const isEnglishBase = systemPromptText.includes('You are a smart financial advisor');
 
     if (!isArabicBase && !isEnglishBase) {
       return new Response(JSON.stringify({ error: 'Invalid system instruction' }), {
