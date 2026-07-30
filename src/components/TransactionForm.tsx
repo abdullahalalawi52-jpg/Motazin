@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 import { VAT_RATE, BALANCE_TOLERANCE } from '../utils/constants';
 
 // Import subcomponents
-import { BalanceIndicator } from './TransactionForm/BalanceIndicator';
 import { ImpactRow } from './TransactionForm/ImpactRow';
 import { CustomAccountModal } from './TransactionForm/CustomAccountModal';
 
@@ -34,7 +33,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   onCancel,
   isUploading,
   allAccounts,
-  currency,
   addCustomAccount,
   isModal = false,
   onCloseModal,
@@ -51,7 +49,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     getFormData
   } = useTransactionForm(initialTransaction);
 
-  const { totalDebit, totalCredit, isBalanced, balanceDifference } = React.useMemo(() => {
+  const { isBalanced, balanceDifference } = React.useMemo(() => {
     let debit = 0;
     let credit = 0;
     impacts.forEach(impact => {
@@ -151,8 +149,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       const account = allAccounts.find(a => a.id === imp.accountId);
       const isNeg = (typeof imp.amount === 'number' ? imp.amount : 0) < 0 || Object.is(imp.amount, -0);
       let type: 'debit' | 'credit' = 'debit';
-      if ((imp as any).type) {
-        type = (imp as any).type;
+      if ('type' in imp && (imp as { type?: 'debit' | 'credit' }).type) {
+        type = (imp as { type?: 'debit' | 'credit' }).type!;
       } else if (account) {
         type = account.category === 'asset' ? (isNeg ? 'credit' : 'debit') : (isNeg ? 'debit' : 'credit');
       }
@@ -407,7 +405,7 @@ const SMART_SUGGESTIONS: Record<string, { debit: string, credit: string }> = {
       <CustomAccountModal
         customAccountModalIdx={customAccountModalIdx}
         setCustomAccountModalIdx={setCustomAccountModalIdx}
-        customAccountRef={customAccountRef as any}
+        customAccountRef={customAccountRef as React.RefObject<HTMLInputElement>}
         dir={dir}
         language={language}
         t={t}

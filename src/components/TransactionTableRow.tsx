@@ -44,8 +44,8 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
 }) => {
   const { language } = useLanguage();
   
-  const hasIncome = tx.entries.some(e => incomes.some(i => i.id === e.accountId));
-  const hasExpense = tx.entries.some(e => expenses.some(i => i.id === e.accountId));
+  const hasIncome = tx.impacts.some(e => incomes.some(i => i.id === e.accountId));
+  const hasExpense = tx.impacts.some(e => expenses.some(i => i.id === e.accountId));
   const hoverClass = hasIncome && !hasExpense 
     ? "hover:bg-emerald-500/10 dark:hover:bg-emerald-500/10" 
     : hasExpense && !hasIncome 
