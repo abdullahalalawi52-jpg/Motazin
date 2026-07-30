@@ -7,6 +7,7 @@ import { useLanguage } from '../i18n';
 
 interface TransactionTableRowProps {
   tx: Transaction;
+  index?: number;
   selectedTransactions: Set<string>;
   handleSelectTransaction: (id: string) => void;
   t: (key: string) => string;
@@ -25,6 +26,7 @@ interface TransactionTableRowProps {
 
 export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
   tx,
+  index = 0,
   selectedTransactions,
   handleSelectTransaction,
   t,
@@ -41,8 +43,20 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
   handleDeleteTransaction
 }) => {
   const { language } = useLanguage();
+  
+  const hasIncome = tx.entries.some(e => incomes.some(i => i.id === e.accountId));
+  const hasExpense = tx.entries.some(e => expenses.some(i => i.id === e.accountId));
+  const hoverClass = hasIncome && !hasExpense 
+    ? "hover:bg-emerald-500/10 dark:hover:bg-emerald-500/10" 
+    : hasExpense && !hasIncome 
+      ? "hover:bg-rose-500/10 dark:hover:bg-rose-500/10"
+      : "hover:bg-indigo-500/5 dark:hover:bg-indigo-500/10";
+
   return (
-    <tr className="dark:even:bg-white/5 even:bg-slate-100/20 dark:hover:bg-slate-700/50 hover:bg-slate-100/80 transition-colors group">
+    <tr 
+      className={cn("dark:even:bg-white/5 even:bg-slate-100/20 transition-colors group animate-slide-up-fade", hoverClass)}
+      style={{ animationDelay: `${(index % 20) * 40}ms` }}
+    >
       <td className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center">
         <input
           id={`select-tx-${tx.id}`}
@@ -83,7 +97,7 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
       {assets.map(a => {
         const amt = getImpactAmount(tx, a.id);
         return (
-          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-indigo-500/5 transition-colors" dir="ltr">
+          <td key={a.id} className={cn("p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono transition-colors", amt > 0 ? "bg-emerald-500/5 group-hover:bg-emerald-500/10" : amt < 0 ? "bg-rose-500/5 group-hover:bg-rose-500/10" : "group-hover:bg-slate-500/5")} dir="ltr">
             {amt !== 0 ? (
               <span className={cn(
                 "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
@@ -101,7 +115,7 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
       {liabilities.map(a => {
         const amt = getImpactAmount(tx, a.id);
         return (
-          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-amber-500/5 transition-colors" dir="ltr">
+          <td key={a.id} className={cn("p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono transition-colors", amt > 0 ? "bg-emerald-500/5 group-hover:bg-emerald-500/10" : amt < 0 ? "bg-rose-500/5 group-hover:bg-rose-500/10" : "group-hover:bg-slate-500/5")} dir="ltr">
             {amt !== 0 ? (
               <span className={cn(
                 "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
@@ -119,7 +133,7 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
       {equities.map(a => {
         const amt = getImpactAmount(tx, a.id);
         return (
-          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-emerald-500/5 transition-colors" dir="ltr">
+          <td key={a.id} className={cn("p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono transition-colors", amt > 0 ? "bg-emerald-500/5 group-hover:bg-emerald-500/10" : amt < 0 ? "bg-rose-500/5 group-hover:bg-rose-500/10" : "group-hover:bg-slate-500/5")} dir="ltr">
             {amt !== 0 ? (
               <span className={cn(
                 "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
@@ -137,7 +151,7 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
       {incomes.map(a => {
         const amt = getImpactAmount(tx, a.id);
         return (
-          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-sky-500/5 transition-colors" dir="ltr">
+          <td key={a.id} className={cn("p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono transition-colors", amt > 0 ? "bg-emerald-500/5 group-hover:bg-emerald-500/10" : amt < 0 ? "bg-rose-500/5 group-hover:bg-rose-500/10" : "group-hover:bg-slate-500/5")} dir="ltr">
             {amt !== 0 ? (
               <span className={cn(
                 "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
@@ -155,7 +169,7 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
       {expenses.map(a => {
         const amt = getImpactAmount(tx, a.id);
         return (
-          <td key={a.id} className="p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono group-hover:bg-rose-500/5 transition-colors" dir="ltr">
+          <td key={a.id} className={cn("p-3 border-l dark:border-white/5 border-slate-200/30 text-center font-mono transition-colors", amt > 0 ? "bg-emerald-500/5 group-hover:bg-emerald-500/10" : amt < 0 ? "bg-rose-500/5 group-hover:bg-rose-500/10" : "group-hover:bg-slate-500/5")} dir="ltr">
             {amt !== 0 ? (
               <span className={cn(
                 "px-2 py-0.5 rounded-full font-bold text-[12px] tracking-tighter whitespace-nowrap",
@@ -174,14 +188,14 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
         <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
           <button
             onClick={() => handleEditTransaction(tx)}
-            className="p-1.5 dark:text-white text-slate-600 hover:text-indigo-600 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
+            className="p-1.5 dark:text-white text-slate-600 hover:text-indigo-600 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-all active:scale-90"
             title={t('editTransaction')}
           >
             <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => handleDeleteTransaction(tx.id)}
-            className="p-1.5 dark:text-white text-slate-600 hover:text-rose-500 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-colors"
+            className="p-1.5 dark:text-white text-slate-600 hover:text-rose-500 dark:hover:bg-slate-800 hover:bg-slate-200/55 rounded transition-all active:scale-90"
             title={t('deleteTransaction')}
           >
             <Trash2 className="w-4 h-4" />

@@ -189,6 +189,51 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   };
 
+const SMART_SUGGESTIONS: Record<string, { debit: string, credit: string }> = {
+  'راتب': { debit: 'expenses', credit: 'bank' },
+  'رواتب': { debit: 'expenses', credit: 'bank' },
+  'سيار': { debit: 'cars', credit: 'bank' },
+  'اثاث': { debit: 'furniture', credit: 'bank' },
+  'أثاث': { debit: 'furniture', credit: 'bank' },
+  'اراض': { debit: 'land', credit: 'bank' },
+  'أراض': { debit: 'land', credit: 'bank' },
+  'مبنى': { debit: 'buildings', credit: 'bank' },
+  'مبان': { debit: 'buildings', credit: 'bank' },
+  'مبيع': { debit: 'bank', credit: 'revenue' },
+  'ايراد': { debit: 'bank', credit: 'revenue' },
+  'إيراد': { debit: 'bank', credit: 'revenue' },
+  'قرض': { debit: 'bank', credit: 'short_term_loans' },
+  'مسحوب': { debit: 'drawings', credit: 'bank' },
+  'راس': { debit: 'bank', credit: 'capital' },
+  'رأس': { debit: 'bank', credit: 'capital' },
+  'معدات': { debit: 'equipment', credit: 'bank' },
+};
+
+  const [suggestionApplied, setSuggestionApplied] = React.useState(false);
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setDescription(val);
+    
+    // Only auto-suggest if the user hasn't entered amounts yet
+    if (impacts.length >= 2 && impacts[0].amount === 0 && impacts[1].amount === 0 && !initialTransaction) {
+      const words = val.toLowerCase().split(' ');
+      for (const word of words) {
+        for (const [key, suggestion] of Object.entries(SMART_SUGGESTIONS)) {
+          if (word.includes(key)) {
+            const newImpacts = [...impacts];
+            newImpacts[0] = { ...newImpacts[0], accountId: suggestion.debit, type: 'debit' };
+            newImpacts[1] = { ...newImpacts[1], accountId: suggestion.credit, type: 'credit' };
+            setImpacts(newImpacts);
+            setSuggestionApplied(true);
+            setTimeout(() => setSuggestionApplied(false), 3000);
+            return;
+          }
+        }
+      }
+    }
+  };
+
   const innerFormContent = () => (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -212,7 +257,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
         </div>
         <div className="col-span-2">
-          <label htmlFor={isModal ? "mob-tx-description" : "dt-tx-desc"} className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted">{t('description')}</label>
+          <label htmlFor={isModal ? "mob-tx-description" : "dt-tx-desc"} className="block text-[11px] font-bold uppercase tracking-widest mb-2 ml-1 text-theme-muted flex items-center gap-2">
+            {t('description')}
+            {suggestionApplied && <span className="text-emerald-500 animate-pulse flex items-center gap-1">✨ {language === 'ar' ? 'تم اقتراح الحسابات!' : 'Auto-suggested!'}</span>}
+          </label>
           <div className="relative">
             <input
               id={isModal ? "mob-tx-description" : "dt-tx-desc"}
@@ -220,12 +268,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               type="text"
               required
               value={description}
-              onChange={e => setDescription(e.target.value)}
+              onChange={handleDescriptionChange}
               placeholder={t('exampleDesc')}
               className={cn(
                 "w-full glass-input px-4 py-3 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none",
                 isModal && "py-3.5 rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10",
-                errors['description'] && "border-rose-500 focus:border-rose-500"
+                errors['description'] && "border-rose-500 focus:border-rose-500",
+                suggestionApplied && "border-emerald-500/50 ring-2 ring-emerald-500/20"
               )}
             />
             {errors['description'] && <p className="text-rose-500 text-[10px] mt-1 ml-1 font-bold absolute">{t(errors['description'])}</p>}

@@ -1,6 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useVirtualizer, useWindowVirtualizer } from '@tanstack/react-virtual';
-import { Undo2, Redo2, FileSearch, Calculator, Trash2, FileSpreadsheet, FileText, Eye, Edit2, Paperclip, Loader2, Percent } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { FileSearch, Calculator, Trash2, FileSpreadsheet, FileText, Eye, Edit2, Percent } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { Account, Transaction } from '../types/accounting';
 import { cn } from '../utils/cn';
@@ -11,10 +12,6 @@ import { useAppStore } from '../store/useAppStore';
 interface TransactionTableProps {
   transactions: Transaction[];
   selectedTransactions: Set<string>;
-  historyIndex: number;
-  historyLength: number;
-  handleUndo: () => void;
-  handleRedo: () => void;
   setIsPdfScannerOpen: (open: boolean) => void;
   setIsDepreciationModalOpen: (open: boolean) => void;
   setIsVatModalOpen: (open: boolean) => void;
@@ -41,16 +38,11 @@ interface TransactionTableProps {
   handleSelectAll: () => void;
   setPreviewUrl: (url: string | null) => void;
   setIsDocPreviewOpen: (open: boolean) => void;
-  handleBulkAttach: (file: File) => Promise<void>;
 }
 
 export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
   transactions,
   selectedTransactions,
-  historyIndex,
-  historyLength,
-  handleUndo,
-  handleRedo,
   setIsPdfScannerOpen,
   setIsDepreciationModalOpen,
   setIsVatModalOpen,
@@ -70,11 +62,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
   handleSelectTransaction,
   handleSelectAll,
   setPreviewUrl,
-  setIsDocPreviewOpen,
-  handleBulkAttach
+  setIsDocPreviewOpen
 }) => {
   const { t, language } = useLanguage();
-  const { isUploading } = useAppStore();
   const hasAccounts = assets.length > 0 || liabilities.length > 0 || equities.length > 0 || incomes.length > 0 || expenses.length > 0;
 
   const parentRef = useRef<HTMLDivElement>(null);
@@ -134,34 +124,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
       <div className="glass-card overflow-hidden flex flex-col h-full" style={{ borderRadius: '1.5rem' }}>
         <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-100/90">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full">
-            <div className="flex items-center gap-1 dark:bg-white/5 bg-slate-100 p-1 rounded-xl border dark:border-white/10 border-slate-200 h-[42px]">
-              <button
-                onClick={handleUndo}
-                disabled={historyIndex <= 0}
-                className="group relative h-full px-2.5 flex items-center justify-center dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
-              >
-                <Undo2 className="w-4 h-4" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
-                  {language === 'ar' ? "تراجع" : "Undo"}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700"></div>
-                </div>
-              </button>
-              <button
-                onClick={handleRedo}
-                disabled={historyIndex >= historyLength - 1}
-                className="group relative h-full px-2.5 flex items-center justify-center dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 disabled:opacity-20 transition-all active:scale-90"
-              >
-                <Redo2 className="w-4 h-4" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-black text-white bg-slate-900 dark:bg-slate-700 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl pointer-events-none">
-                  {language === 'ar' ? "إعادة" : "Redo"}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700"></div>
-                </div>
-              </button>
-            </div>
+
 
             <button
               onClick={() => setIsPdfScannerOpen(true)}
-              className="flex items-center gap-2 h-[42px] px-3.5 text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
+              className="flex items-center gap-2 h-[42px] px-3.5 text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all active:scale-95 shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
               title={t('importFiles')}
             >
               <FileSearch className="w-4 h-4" />
@@ -170,8 +137,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
 
             <button
               onClick={() => setIsDepreciationModalOpen(true)}
-              className="flex items-center gap-2 h-[42px] px-3.5 text-xs font-black dark:bg-amber-500 bg-amber-500 text-white hover:bg-amber-400 rounded-xl transition-all shadow-lg shadow-amber-500/20 uppercase tracking-widest"
-              title={t('depreciationCalc')}
+              className="flex items-center gap-2 h-[42px] px-3.5 text-xs font-black dark:bg-amber-500 bg-amber-500 text-white hover:bg-amber-400 rounded-xl transition-all active:scale-95 shadow-lg shadow-amber-500/20 uppercase tracking-widest"
+              title={t('addDepreciation')}
             >
               <Calculator className="w-4 h-4" />
               <span className="hidden sm:inline">{t('depreciationCalc')}</span>
@@ -179,8 +146,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
 
             <button
               onClick={() => setIsVatModalOpen(true)}
-              className="flex items-center gap-2 h-[42px] px-3.5 text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
-              title={language === 'ar' ? 'حاسبة الضريبة' : 'VAT Calculator'}
+              className="flex items-center gap-2 h-[42px] px-3.5 text-xs font-black dark:bg-indigo-600 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl transition-all active:scale-95 shadow-lg shadow-indigo-600/20 uppercase tracking-widest"
+              title={language === 'ar' ? 'حساب ضريبة القيمة المضافة 15%' : 'Calculate 15% VAT'}
             >
               <Percent className="w-4 h-4" />
               <span className="hidden sm:inline">{language === 'ar' ? 'الضريبة' : 'VAT'}</span>
@@ -203,7 +170,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
               )}
               <button
                 onClick={handleExportCSV}
-                className="relative flex items-center gap-2 h-[42px] px-3.5 dark:bg-slate-800/40 bg-white dark:hover:bg-indigo-600/50 hover:bg-indigo-50 dark:text-white text-slate-900 font-bold text-xs rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
+                className="relative flex items-center gap-2 h-[42px] px-3.5 dark:bg-slate-800/40 bg-white dark:hover:bg-indigo-600/50 hover:bg-indigo-50 dark:text-white text-slate-900 font-bold text-xs rounded-xl border dark:border-white/10 border-slate-300 transition-all active:scale-95 shadow-sm group"
               >
                 <FileSpreadsheet className="w-4 h-4 dark:text-white text-slate-900 group-hover:text-indigo-600" />
                 <span className="sr-only sm:not-sr-only">{t('exportCSV')}</span>
@@ -214,7 +181,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
               </button>
               <button
                 onClick={handleExportPDF}
-                className="relative flex items-center gap-2 h-[42px] px-3.5 dark:bg-slate-800/40 bg-white dark:hover:bg-rose-600/50 hover:bg-rose-50 dark:text-white text-slate-900 font-bold text-xs rounded-xl border dark:border-white/10 border-slate-300 transition-all shadow-sm group"
+                className="relative flex items-center gap-2 h-[42px] px-3.5 dark:bg-slate-800/40 bg-white dark:hover:bg-rose-600/50 hover:bg-rose-50 dark:text-white text-slate-900 font-bold text-xs rounded-xl border dark:border-white/10 border-slate-300 transition-all active:scale-95 shadow-sm group"
               >
                 <FileText className="w-4 h-4 dark:text-white text-slate-900 group-hover:text-rose-600" />
                 <span className="sr-only sm:not-sr-only">PDF</span>
@@ -231,7 +198,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
         <div id="transactions-table" ref={parentRef} className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-white">
           <table className="w-full text-[15px] text-right border-collapse">
             {processedTransactions.length > 0 && (
-            <thead className="sticky top-20 md:top-28 z-20 dark:text-white text-slate-800 shadow-sm ring-1 dark:ring-white/10 ring-slate-200/50 backdrop-blur-md bg-white/90 dark:bg-slate-900/90">
+            <thead className="sticky top-0 z-20 dark:text-white text-slate-800 shadow-sm ring-1 dark:ring-white/10 ring-slate-200/50 bg-white dark:bg-slate-900">
               {/* Category Headers */}
               <tr className="border-b dark:border-white/10 border-slate-200 ring-1 dark:ring-white/5 ring-slate-100/50">
                 <th rowSpan={hasAccounts ? 2 : 1} className="p-4 border-l dark:border-white/5 border-slate-200/50 w-10 text-center">
@@ -351,6 +318,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
                       <TransactionTableRow
                         key={tx.id}
                         tx={tx}
+                        index={virtualRow.index}
                         selectedTransactions={selectedTransactions}
                         handleSelectTransaction={handleSelectTransaction}
                         t={t}
@@ -461,83 +429,102 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
                           width: '100%',
                           transform: `translateY(${virtualRow.start}px)`,
                         }}
-                        className="mobile-card !mb-0 group overflow-hidden border dark:border-white/10 border-slate-200 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/60 dark:shadow-none p-5 rounded-[2rem]"
+                        className="relative"
                       >
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-start gap-4">
-                            <div className="relative mt-1">
-                              <input
-                                id={`mob-select-tx-${tx.id}`}
-                                name={`mob-selectTx-${tx.id}`}
-                                type="checkbox"
-                                checked={selectedTransactions.has(tx.id)}
-                                onChange={() => handleSelectTransaction(tx.id)}
-                                className="rounded-lg border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-6 h-6 transition-all"
-                                aria-label={`${t('select')} ${tx.description}`}
-                              />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.15em] mb-1.5" dir="ltr">{formatDate(tx.date, language === 'ar' ? 'ar-SA' : 'en-GB')}</span>
-                              <p className="text-[16px] font-black dark:text-white text-slate-900 leading-snug">{tx.description}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleEditTransaction(tx)}
-                              className="p-3 dark:text-indigo-400 text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white rounded-2xl transition-all active:scale-90"
-                              title={t('editTransaction')}
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 py-4 border-t dark:border-white/10 border-slate-100">
-                          {tx.impacts.map((imp, i) => (
-                            <div key={i} className={cn(
-                              "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm",
-                              imp.amount > 0
-                                ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20"
-                                : "bg-rose-50 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20"
-                            )}>
-                              <span className={cn(
-                                "text-[11px] font-bold",
-                                imp.amount > 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
-                              )}>
-                                {t(allAccounts.find(a => a.id === imp.accountId)?.name || '')}
-                              </span>
-                              <div className={cn("w-1 h-1 rounded-full", imp.amount > 0 ? "bg-emerald-400" : "bg-rose-400")}></div>
-                              <span className={cn(
-                                "font-black font-mono text-[12px]",
-                                imp.amount > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
-                              )} dir="ltr">
-                                {formatCurrency(imp.amount)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="flex items-center gap-2 mt-1">
-                          {tx.attachmentUrl && (
-                            <button
-                              onClick={() => {
-                                setPreviewUrl(tx.attachmentUrl || null);
-                                setIsDocPreviewOpen(true);
-                              }}
-                              className="flex-1 py-3 flex items-center justify-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border dark:border-white/10 border-slate-200 text-[10px] font-black uppercase tracking-widest dark:text-indigo-400 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all active:scale-95 shadow-sm"
-                            >
-                              <Eye className="w-4 h-4" />
-                              {t('viewAttachment') || 'View Attachment'}
-                            </button>
-                          )}
+                        {/* Background Actions for Swipe */}
+                        <div className="absolute inset-y-0 right-0 flex items-center justify-end px-6 gap-3 bg-rose-50 dark:bg-slate-800 rounded-[2rem] w-full z-0 h-[calc(100%-1rem)]">
+                          <button
+                            onClick={() => handleEditTransaction(tx)}
+                            className="p-3 dark:text-indigo-400 text-indigo-600 bg-white dark:bg-slate-700 rounded-full transition-all active:scale-95 shadow-sm border border-slate-200 dark:border-white/10"
+                            title={t('editTransaction')}
+                          >
+                            <Edit2 className="w-5 h-5" />
+                          </button>
                           <button
                             onClick={() => handleDeleteTransaction(tx.id)}
-                            className="p-3 dark:text-rose-400 text-rose-600 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-2xl transition-all active:scale-90 border border-rose-500/20 shadow-sm"
+                            className="p-3 dark:text-rose-400 text-rose-600 bg-white dark:bg-slate-700 rounded-full transition-all active:scale-95 shadow-sm border border-slate-200 dark:border-white/10"
                             title={t('deleteTransaction')}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-5 h-5" />
                           </button>
                         </div>
+
+                        <motion.div
+                          drag="x"
+                          dragConstraints={{ left: -140, right: 0 }}
+                          dragElastic={0.1}
+                          whileTap={{ cursor: 'grabbing' }}
+                          className="mobile-card !mb-0 group overflow-hidden border dark:border-white/10 border-slate-200 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/60 dark:shadow-none p-5 rounded-[2rem] relative z-10 h-[calc(100%-1rem)]"
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-start gap-4">
+                              <div className="relative mt-1">
+                                <input
+                                  id={`mob-select-tx-${tx.id}`}
+                                  name={`mob-selectTx-${tx.id}`}
+                                  type="checkbox"
+                                  checked={selectedTransactions.has(tx.id)}
+                                  onChange={() => handleSelectTransaction(tx.id)}
+                                  className="rounded-lg border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-6 h-6 transition-all"
+                                  aria-label={`${t('select')} ${tx.description}`}
+                                />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.15em] mb-1.5" dir="ltr">{formatDate(tx.date, language === 'ar' ? 'ar-SA' : 'en-GB')}</span>
+                                <p className="text-[16px] font-black dark:text-white text-slate-900 leading-snug">{tx.description}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 hidden md:flex">
+                              <button
+                                onClick={() => handleEditTransaction(tx)}
+                                className="p-3 dark:text-indigo-400 text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white rounded-2xl transition-all active:scale-90"
+                                title={t('editTransaction')}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 py-4 border-t dark:border-white/10 border-slate-100">
+                            {tx.impacts.map((imp, i) => (
+                              <div key={i} className={cn(
+                                "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm",
+                                imp.amount > 0
+                                  ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20"
+                                  : "bg-rose-50 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20"
+                              )}>
+                                <span className={cn(
+                                  "text-[11px] font-bold",
+                                  imp.amount > 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
+                                )}>
+                                  {t(allAccounts.find(a => a.id === imp.accountId)?.name || '')}
+                                </span>
+                                <div className={cn("w-1 h-1 rounded-full", imp.amount > 0 ? "bg-emerald-400" : "bg-rose-400")}></div>
+                                <span className={cn(
+                                  "font-black font-mono text-[12px]",
+                                  imp.amount > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
+                                )} dir="ltr">
+                                  {formatCurrency(imp.amount)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-1">
+                            {tx.attachmentUrl && (
+                              <button
+                                onClick={() => {
+                                  setPreviewUrl(tx.attachmentUrl || null);
+                                  setIsDocPreviewOpen(true);
+                                }}
+                                className="flex-1 py-3 flex items-center justify-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border dark:border-white/10 border-slate-200 text-[10px] font-black uppercase tracking-widest dark:text-indigo-400 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all active:scale-95 shadow-sm"
+                              >
+                                <Eye className="w-4 h-4" />
+                                {t('viewAttachment') || 'View Attachment'}
+                              </button>
+                            )}
+                          </div>
+                        </motion.div>
                       </div>
                     );
                   })}
