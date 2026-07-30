@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface ConfirmModalConfig {
+export interface ConfirmModalConfig {
   title: string;
   message: string;
   confirmText: string;
