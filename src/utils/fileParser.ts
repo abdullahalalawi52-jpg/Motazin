@@ -376,7 +376,9 @@ export const processImage = async (file: File, ocrLanguage: string, geminiApiKey
       try {
         const errData = await response.json();
         if (errData.error) errorMsg = errData.error;
-      } catch (e) {}
+      } catch {
+        // Ignore json parse errors for error body
+      }
       throw new Error(errorMsg);
     }
 
