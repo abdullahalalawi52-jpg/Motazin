@@ -139,9 +139,8 @@ export const useAppStore = create<AppState>((set) => ({
     set({ budgets });
   },
 
-  geminiApiKey: localStorage.getItem('motazin_gemini_api_key') || '',
+  geminiApiKey: '',
   setGeminiApiKey: (key) => {
-    localStorage.setItem('motazin_gemini_api_key', key);
     set({ geminiApiKey: key });
   },
 

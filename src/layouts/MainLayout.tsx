@@ -310,8 +310,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
               <div className="h-8 w-px dark:bg-white/5 bg-slate-200 mx-1"></div>
 
               <div className="flex items-center gap-1 dark:bg-black/20 bg-slate-100 p-1 rounded-xl border dark:border-white/5 border-slate-200 text-black dark:text-white">
-                <button onClick={handleUndo} disabled={historyIndex < 0} className="p-2 disabled:opacity-20"><Undo2 className="w-3.5 h-3.5" /></button>
-                <button onClick={handleRedo} disabled={historyIndex === historyLength - 1} className="p-2 disabled:opacity-20"><Redo2 className="w-3.5 h-3.5" /></button>
+                <button onClick={handleUndo} title={t('undo')} aria-label={t('undo')} disabled={historyIndex < 0} className="p-2 disabled:opacity-20"><Undo2 className="w-3.5 h-3.5" /></button>
+                <button onClick={handleRedo} title={t('redo')} aria-label={t('redo')} disabled={historyIndex === historyLength - 1} className="p-2 disabled:opacity-20"><Redo2 className="w-3.5 h-3.5" /></button>
               </div>
               <button onClick={handleClearAll} className="p-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>

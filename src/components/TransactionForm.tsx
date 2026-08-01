@@ -13,6 +13,8 @@ import { VAT_RATE, BALANCE_TOLERANCE } from '../utils/constants';
 // Import subcomponents
 import { ImpactRow } from './TransactionForm/ImpactRow';
 import { CustomAccountModal } from './TransactionForm/CustomAccountModal';
+import { ReceiptScannerModal } from './modals/ReceiptScannerModal';
+import { Camera } from 'lucide-react';
 
 interface TransactionFormProps {
   initialTransaction?: Transaction | null;
@@ -48,6 +50,28 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     resetForm,
     getFormData
   } = useTransactionForm(initialTransaction);
+
+  const [isReceiptScannerOpen, setIsReceiptScannerOpen] = React.useState(false);
+
+  const handleScanComplete = (data: { amount: number | null, date: string | null, description: string | null, suggestedAccount: string | null }) => {
+    setIsReceiptScannerOpen(false);
+    if (data.date) setDate(data.date);
+    if (data.description) setDescription(data.description);
+    
+    // Set impacts based on amount and suggested account
+    if (data.amount && data.suggestedAccount) {
+      const newImpacts = [...impacts];
+      // Assume first impact is the suggested account (expense or asset)
+      const account = allAccounts.find(a => a.id === data.suggestedAccount) || allAccounts.find(a => a.category === data.suggestedAccount) || allAccounts.find(a => a.id === 'expenses') || allAccounts.find(a => a.id === 'purchases');
+      
+      const accountId = account ? account.id : 'expenses';
+      
+      newImpacts[0] = { accountId: accountId, amount: data.amount, type: 'debit' };
+      newImpacts[1] = { accountId: 'bank', amount: data.amount, type: 'credit' };
+      
+      setImpacts(newImpacts);
+    }
+  };
 
   const { isBalanced, balanceDifference } = React.useMemo(() => {
     let debit = 0;
@@ -348,6 +372,11 @@ const SMART_SUGGESTIONS: Record<string, { debit: string, credit: string }> = {
                   <div className="p-2 bg-indigo-500/20 rounded-xl"><Plus className="w-5 h-5 text-indigo-400" /></div>
                   {initialTransaction ? t('editTransaction') : t('addNewTransaction')}
                 </h3>
+                {!initialTransaction && (
+                  <button type="button" onClick={() => setIsReceiptScannerOpen(true)} className="p-2 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/30 rounded-xl transition-colors flex items-center gap-2" title="Scan Receipt">
+                    <Camera className="w-5 h-5" />
+                  </button>
+                )}
                 <button type="button" onClick={onCloseModal} className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all sm:hidden"><XCircle className="w-6 h-6" /></button>
               </div>
               <div className="w-full sm:w-auto flex items-center justify-start">
@@ -380,12 +409,20 @@ const SMART_SUGGESTIONS: Record<string, { debit: string, credit: string }> = {
     <div className="glass-card p-6 border-t-4 border-indigo-500 shadow-2xl">
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div className="flex flex-wrap items-center gap-6">
-          <h2 className="text-xl font-bold text-theme-primary flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/20 rounded-xl">
-              {initialTransaction ? <Edit2 className="w-5 h-5 text-indigo-400" /> : <Plus className="w-5 h-5 text-indigo-400" />}
-            </div>
-            {initialTransaction ? t('editTransaction') : t('addNewTransaction')}
-          </h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-bold text-theme-primary flex items-center gap-3">
+              <div className="p-2 bg-indigo-500/20 rounded-xl">
+                {initialTransaction ? <Edit2 className="w-5 h-5 text-indigo-400" /> : <Plus className="w-5 h-5 text-indigo-400" />}
+              </div>
+              {initialTransaction ? t('editTransaction') : t('addNewTransaction')}
+            </h2>
+            {!initialTransaction && (
+              <button type="button" onClick={() => setIsReceiptScannerOpen(true)} className="p-2 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/30 rounded-xl transition-colors flex items-center gap-2" title="Scan Receipt">
+                <Camera className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase hidden sm:inline">{language === 'ar' ? 'مسح فاتورة' : 'Scan Receipt'}</span>
+              </button>
+            )}
+          </div>
           <TransactionRecurrenceFields isRecurring={isRecurring} setIsRecurring={setIsRecurring} recurrenceInterval={recurrenceInterval} setRecurrenceInterval={setRecurrenceInterval} isModal={isModal} />
         </div>
       </div>
@@ -415,6 +452,11 @@ const SMART_SUGGESTIONS: Record<string, { debit: string, credit: string }> = {
         setNewCustomAccountCategory={setNewCustomAccountCategory}
         addCustomAccount={addCustomAccount}
         handleImpactChange={handleImpactChange}
+      />
+      <ReceiptScannerModal 
+        isOpen={isReceiptScannerOpen} 
+        onClose={() => setIsReceiptScannerOpen(false)} 
+        onScanComplete={handleScanComplete} 
       />
     </div>
   );

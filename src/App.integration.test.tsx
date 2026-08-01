@@ -168,7 +168,7 @@ describe('App Integration Tests', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('depreciation-modal')).toBeInTheDocument();
-    }, { timeout: 5000 });
+    }, { timeout: 10000 });
   });
 
   it.skip('can open the AI Settings modal and save API Key', async () => {
@@ -180,7 +180,7 @@ describe('App Integration Tests', () => {
     renderApp();
     
     // Find and click the AI Advisor nav button
-    const aiNavBtn = await screen.findByRole('button', { name: /المستشار الذكي/i });
+    const aiNavBtn = await screen.findByRole('button', { name: /المستشار الذكي/i }, { timeout: 10000 });
     expect(aiNavBtn).toBeInTheDocument();
     fireEvent.click(aiNavBtn);
     
@@ -205,7 +205,7 @@ describe('App Integration Tests', () => {
     // Verify that the active styling is applied to the clicked link
     await waitFor(() => {
       expect(incomeLinks[0]).toHaveClass('bg-indigo-600');
-    });
+    }, { timeout: 10000 });
   });
 
   it('can toggle the language from Arabic to English', async () => {

@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { useTheme } from './ThemeContext';
 import { useLanguage } from './i18n';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { cn } from './utils/cn';
@@ -46,6 +46,7 @@ import { Skeleton, SkeletonCard, SkeletonRow } from './components/SkeletonLoader
 import { AnimatePresence } from 'framer-motion';
 
 import { ModalsContainer } from './components/ModalsContainer';
+import { OfflineBadge } from './components/OfflineBadge';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -277,6 +278,19 @@ export default function App() {
     );
   }
 
+  const handleTransactionDrop = (transactionId: string, newAccountId: string) => {
+    const transaction = transactions.find(t => t.id === transactionId);
+    if (transaction) {
+      const newImpacts = [...transaction.impacts];
+      // Try to determine which impact to update (usually the first one, or the one that isn't 'bank'/'cash')
+      // For simplicity, we update the first impact unless it's 'bank', then we update the second.
+      const impactToUpdate = newImpacts.length > 1 && newImpacts[0].accountId === 'bank' ? 1 : 0;
+      newImpacts[impactToUpdate] = { ...newImpacts[impactToUpdate], accountId: newAccountId };
+      handlers.handleEditTransaction({ ...transaction, impacts: newImpacts });
+      toast.success(language === 'ar' ? 'تم نقل المعاملة بنجاح' : 'Transaction moved successfully');
+    }
+  };
+
   return (
     <>
     <MainLayout
@@ -349,6 +363,7 @@ export default function App() {
                           handleSaveBudgets={handlers.handleSaveBudgets}
                           activeAccounts={activeAccounts}
                           formatCurrency={formatCurrency}
+                          onTransactionDrop={handleTransactionDrop}
                         />
                       </div>
 
@@ -458,10 +473,11 @@ export default function App() {
               <Route path="*" element={<Navigate to="/equation" replace />} />
             </Routes>
           </AnimatePresence>
-        </React.Suspense>
+          </React.Suspense>
         </main>
       </div>
     </MainLayout>
+      <OfflineBadge />
       <ModalsContainer
         transactions={transactions}
         budgets={budgets}

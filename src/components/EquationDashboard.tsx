@@ -27,6 +27,7 @@ interface EquationDashboardProps {
   handleSaveBudgets: () => void;
   activeAccounts: Account[];
   formatCurrency: (val: number) => string;
+  onTransactionDrop?: (transactionId: string, accountId: string) => void;
 }
 
 export const EquationDashboard: React.FC<EquationDashboardProps> = ({
@@ -38,7 +39,8 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
   setIsEditingBudgets,
   handleSaveBudgets,
   activeAccounts,
-  formatCurrency
+  formatCurrency,
+  onTransactionDrop
 }) => {
   const { t } = useLanguage();
 
@@ -201,7 +203,29 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
                     const isApproachingBudget = allocated > 0 && percentage >= 85 && !isOverBudget;
 
                     return (
-                      <div key={account.id} className="space-y-1.5">
+                      <div 
+                        key={account.id} 
+                        className="space-y-1.5 transition-all p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+                        }}
+                        onDragLeave={(e) => {
+                          e.currentTarget.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+                          try {
+                            const data = JSON.parse(e.dataTransfer.getData('application/json'));
+                            if (data.type === 'transaction' && data.id && onTransactionDrop) {
+                              onTransactionDrop(data.id, account.id);
+                            }
+                          } catch (err) {
+                            console.error('Drop error:', err);
+                          }
+                        }}
+                      >
                         <div className="flex justify-between items-center text-[15px]">
                           <span className={cn(
                             "font-medium text-sm font-medium flex items-center gap-1",

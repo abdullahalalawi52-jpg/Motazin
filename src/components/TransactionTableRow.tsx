@@ -44,6 +44,11 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
 }) => {
   const { language } = useLanguage();
   
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>) => {
+    e.dataTransfer.setData('application/json', JSON.stringify({ type: 'transaction', id: tx.id }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   const hasIncome = tx.impacts.some(e => incomes.some(i => i.id === e.accountId));
   const hasExpense = tx.impacts.some(e => expenses.some(i => i.id === e.accountId));
   const hoverClass = hasIncome && !hasExpense 
@@ -54,6 +59,8 @@ export const TransactionTableRow: React.FC<TransactionTableRowProps> = ({
 
   return (
     <tr 
+      draggable
+      onDragStart={handleDragStart}
       className={cn("dark:even:bg-white/5 even:bg-slate-100/20 transition-colors group animate-slide-up-fade", hoverClass)}
       style={{ animationDelay: `${(index % 20) * 40}ms` }}
     >

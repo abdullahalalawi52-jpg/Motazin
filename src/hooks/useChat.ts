@@ -3,7 +3,7 @@ import { ChatMessage, FinancialContext } from '../types/accounting';
 import { normalizeText, KEYWORDS, AUTO_REPLIES, getFinancialAnalysis, buildSystemPrompt } from '../utils/chatUtils';
 
 const STORAGE_KEY = 'motazin_chat_messages';
-const API_KEY_STORAGE_KEY = 'motazin_gemini_chat_key';
+// API Key storage removed for security. Backend env variable is used instead.
 
 export function useChat(
   financialContext: FinancialContext | undefined,
@@ -29,9 +29,7 @@ export function useChat(
   const [showSettings, setShowSettings] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [, setHasError] = useState(false);
-  const [localApiKey, setLocalApiKey] = useState(() => {
-    return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
-  });
+  const [localApiKey, setLocalApiKey] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +84,8 @@ export function useChat(
   }, [isOpen]);
 
   const saveApiKey = () => {
-    localStorage.setItem(API_KEY_STORAGE_KEY, localApiKey);
+    if (!localApiKey.trim()) return;
+    
     if (onApiKeyChange) {
       onApiKeyChange(localApiKey);
     }

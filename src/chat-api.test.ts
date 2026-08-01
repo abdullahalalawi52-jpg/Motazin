@@ -19,7 +19,8 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
+        system_instruction: { parts: [{ text: `أنت مساعد مالي ذكي ومحاسب محترف في تطبيق "متزن". مهمتك هي مساعدة المستخدم في فهم معادلة الميزانية (الأصول = الخصوم + حقوق الملكية)، وإدارة حساباته، وتقديم نصائح مالية مبنية على البيانات.
+تحدث بلهجة مهنية وودية باللغة العربية. استخدم التنسيق الغني (Markdown) والنقاط لجعل الإجابات سهلة القراءة.` }] }
       })
     });
 
@@ -38,7 +39,8 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
+        system_instruction: { parts: [{ text: `أنت مساعد مالي ذكي ومحاسب محترف في تطبيق "متزن". مهمتك هي مساعدة المستخدم في فهم معادلة الميزانية (الأصول = الخصوم + حقوق الملكية)، وإدارة حساباته، وتقديم نصائح مالية مبنية على البيانات.
+تحدث بلهجة مهنية وودية باللغة العربية. استخدم التنسيق الغني (Markdown) والنقاط لجعل الإجابات سهلة القراءة.` }] }
       })
     });
 
@@ -55,7 +57,8 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
+        system_instruction: { parts: [{ text: `أنت مساعد مالي ذكي ومحاسب محترف في تطبيق "متزن". مهمتك هي مساعدة المستخدم في فهم معادلة الميزانية (الأصول = الخصوم + حقوق الملكية)، وإدارة حساباته، وتقديم نصائح مالية مبنية على البيانات.
+تحدث بلهجة مهنية وودية باللغة العربية. استخدم التنسيق الغني (Markdown) والنقاط لجعل الإجابات سهلة القراءة.` }] }
       })
     });
 
@@ -78,7 +81,8 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
+        system_instruction: { parts: [{ text: `أنت مساعد مالي ذكي ومحاسب محترف في تطبيق "متزن". مهمتك هي مساعدة المستخدم في فهم معادلة الميزانية (الأصول = الخصوم + حقوق الملكية)، وإدارة حساباته، وتقديم نصائح مالية مبنية على البيانات.
+تحدث بلهجة مهنية وودية باللغة العربية. استخدم التنسيق الغني (Markdown) والنقاط لجعل الإجابات سهلة القراءة.` }] }
       })
     });
 
@@ -102,7 +106,8 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
+        system_instruction: { parts: [{ text: `أنت مساعد مالي ذكي ومحاسب محترف في تطبيق "متزن". مهمتك هي مساعدة المستخدم في فهم معادلة الميزانية (الأصول = الخصوم + حقوق الملكية)، وإدارة حساباته، وتقديم نصائح مالية مبنية على البيانات.
+تحدث بلهجة مهنية وودية باللغة العربية. استخدم التنسيق الغني (Markdown) والنقاط لجعل الإجابات سهلة القراءة.` }] }
       })
     });
 
@@ -125,7 +130,8 @@ describe('api/chat Edge Function Handler Security Tests', () => {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        system_instruction: { parts: [{ text: 'أنت مساعد مالي ذكي ومحاسب محترف' }] }
+        system_instruction: { parts: [{ text: `أنت مساعد مالي ذكي ومحاسب محترف في تطبيق "متزن". مهمتك هي مساعدة المستخدم في فهم معادلة الميزانية (الأصول = الخصوم + حقوق الملكية)، وإدارة حساباته، وتقديم نصائح مالية مبنية على البيانات.
+تحدث بلهجة مهنية وودية باللغة العربية. استخدم التنسيق الغني (Markdown) والنقاط لجعل الإجابات سهلة القراءة.` }] }
       })
     });
 
