@@ -93,8 +93,8 @@ export default async function handler(req: Request) {
       });
     }
 
-    // Use local key if provided, else fallback to env
-    const apiKey = localApiKey || process.env.GEMINI_API_KEY;
+    // Strictly use server-side environment variables
+    const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
@@ -103,7 +103,7 @@ export default async function handler(req: Request) {
       });
     }
 
-    const parts: any[] = [];
+    const parts: { text?: string; inlineData?: { mimeType: string; data: string } }[] = [];
     if (imageBase64 && mimeType) {
       parts.push({
         inlineData: {
