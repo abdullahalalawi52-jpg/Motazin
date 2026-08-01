@@ -371,6 +371,15 @@ export const processImage = async (file: File, ocrLanguage: string, geminiApiKey
 
     setProgress(80);
 
+    if (!response.ok) {
+      let errorMsg = 'AI Vision extraction failed to return valid data.';
+      try {
+        const errData = await response.json();
+        if (errData.error) errorMsg = errData.error;
+      } catch (e) {}
+      throw new Error(errorMsg);
+    }
+
     if (response.ok) {
       const data = await response.json();
       const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -378,7 +387,7 @@ export const processImage = async (file: File, ocrLanguage: string, geminiApiKey
         try {
           const parsed = JSON.parse(aiText);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const results: ParsedRow[] = parsed.map((item: any) => ({
+            const results: ParsedRow[] = parsed.map((item: { date?: string; description?: string; amount?: string | number }) => ({
               id: generateId(),
               date: item.date || toIsoDateString(new Date()),
               description: item.description || 'AI Extracted Item',
@@ -399,7 +408,7 @@ export const processImage = async (file: File, ocrLanguage: string, geminiApiKey
         }
       }
     }
-    throw new Error('AI Vision extraction failed to return valid data.');
+    throw new Error('Could not parse AI response into valid transactions.');
   } catch (error) {
     console.error('Image processing error:', error);
     setError(error instanceof Error ? error.message : 'Failed to process image');
