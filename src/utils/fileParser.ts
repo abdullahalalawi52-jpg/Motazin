@@ -19,7 +19,7 @@ export const extractTransactions = async (
 ) => {
   const { setStatus, setParsedRows, setError } = callbacks;
   
-  if (geminiApiKey && text.trim().length > 10) {
+  if (text.trim().length > 10) {
     setStatus('Analyzing document using AI for precision...');
     try {
       const isGitHubPages = window.location.hostname.includes('github.io');
