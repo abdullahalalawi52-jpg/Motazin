@@ -84,7 +84,7 @@ export default async function handler(req: Request) {
 
   try {
     const body = await req.json();
-    const { text, imageBase64, mimeType, localApiKey } = body;
+    const { text, imageBase64, mimeType } = body;
 
     if (!text && !imageBase64) {
       return new Response(JSON.stringify({ error: 'Invalid or missing text/image' }), {
