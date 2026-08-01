@@ -1,3 +1,5 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 export const config = {
   runtime: 'edge', // Using Edge runtime for fast responses
 };
@@ -94,7 +96,7 @@ export default async function handler(req: Request) {
     }
 
     // Strictly use server-side environment variables
-    const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = (process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '').trim();
 
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
@@ -103,41 +105,55 @@ export default async function handler(req: Request) {
       });
     }
 
-    const parts: { text?: string; inlineData?: { mimeType: string; data: string } }[] = [];
+    const genAI = new GoogleGenerativeAI(apiKey);
+    // Use gemini-1.5-flash as it is known to be stable and work with the API key
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const parts: (string | { inlineData: { data: string, mimeType: string } })[] = [];
     if (imageBase64 && mimeType) {
       parts.push({
         inlineData: {
-          mimeType: mimeType,
-          data: imageBase64
+          data: imageBase64,
+          mimeType: mimeType
         }
       });
-      parts.push({ text: "Extract all financial transactions from this image." });
+      parts.push("Extract all financial transactions from this image.");
     }
     if (text) {
-      parts.push({ text: text });
+      parts.push(text);
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: parts }],
-        systemInstruction: {
-          parts: [{ text: "You are an expert financial data extractor. Extract all financial transactions from the provided document or image. Return ONLY a valid JSON array of objects. Each object must have these keys: 'date' (string, DD/MM/YYYY format), 'description' (string, item name or detail), 'amount' (number, positive float). If none found, return []." }]
-        },
-        generationConfig: { responseMimeType: "application/json" }
-      })
-    });
+    const prompt = `You are an expert financial data extractor. Extract all financial transactions from the provided document or image. Return ONLY a valid JSON array of objects. Each object must have these keys: 'date' (string, DD/MM/YYYY format), 'description' (string, item name or detail), 'amount' (number, positive float). If none found, return [].`;
 
-    const data = await response.json();
+    const result = await model.generateContent([prompt, ...parts]);
+    const responseText = result.response.text();
 
-    return new Response(JSON.stringify(data), {
-      status: response.status,
+    // Clean up potential markdown formatting like ```json ... ```
+    let cleanedText = responseText.trim();
+    if (cleanedText.startsWith('```json')) {
+      cleanedText = cleanedText.replace(/^```json/, '').replace(/```$/, '').trim();
+    } else if (cleanedText.startsWith('```')) {
+      cleanedText = cleanedText.replace(/^```/, '').replace(/```$/, '').trim();
+    }
+
+    let parsedData;
+    try {
+      parsedData = JSON.parse(cleanedText);
+    } catch {
+      // Fallback if parsing fails
+      parsedData = { text: cleanedText };
+    }
+
+    // Wrap in standard response format expected by client
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(parsedData) }] } }] }), {
+      status: 200,
       headers: jsonHeaders,
     });
 
-  } catch {
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+  } catch (error: unknown) {
+    console.error('Gemini API Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: jsonHeaders,
     });
