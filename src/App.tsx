@@ -39,8 +39,8 @@ const FinancialRatiosView = React.lazy(() => import('./components/FinancialRatio
 import { TransactionForm } from './components/TransactionForm';
 import { EquationDashboard } from './components/EquationDashboard';
 import { TransactionTable } from './components/TransactionTable';
-import { FinancialCharts } from './components/FinancialCharts';
-import { FinancialInsights } from './components/FinancialInsights';
+const FinancialCharts = React.lazy(() => import('./components/FinancialCharts').then(module => ({ default: module.FinancialCharts })));
+const FinancialInsights = React.lazy(() => import('./components/FinancialInsights').then(module => ({ default: module.FinancialInsights })));
 import { PageTransition } from './components/PageTransition';
 import { Skeleton, SkeletonCard, SkeletonRow } from './components/SkeletonLoader';
 import { AnimatePresence } from 'framer-motion';
@@ -380,25 +380,29 @@ export default function App() {
                     </div>
 
                     {/* Financial Charts */}
-                    <FinancialCharts
-                      transactions={transactions}
-                      assetChartData={assetChartData}
-                      incomeExpenseData={incomeExpenseData}
-                      theme={theme}
-                      currency={currency}
-                      colors={COLORS}
-                    />
+                    <React.Suspense fallback={<div className="h-96 flex items-center justify-center glass-card"><Skeleton className="w-full h-full rounded-2xl opacity-50" /></div>}>
+                      <FinancialCharts
+                        transactions={transactions}
+                        assetChartData={assetChartData}
+                        incomeExpenseData={incomeExpenseData}
+                        theme={theme}
+                        currency={currency}
+                        colors={COLORS}
+                      />
+                    </React.Suspense>
 
                     {/* Financial Insights */}
-                    <FinancialInsights
-                      transactions={transactions}
-                      totals={totals}
-                      insights={insights}
-                      profitTrendData={profitTrendData}
-                      theme={theme}
-                      currency={currency}
-                      formatCurrency={formatCurrency}
-                    />
+                    <React.Suspense fallback={<div className="h-64 flex items-center justify-center glass-card mt-6"><Skeleton className="w-full h-full rounded-2xl opacity-50" /></div>}>
+                      <FinancialInsights
+                        transactions={transactions}
+                        totals={totals}
+                        insights={insights}
+                        profitTrendData={profitTrendData}
+                        theme={theme}
+                        currency={currency}
+                        formatCurrency={formatCurrency}
+                      />
+                    </React.Suspense>
                   </div>
                 </PageTransition>
               } />
