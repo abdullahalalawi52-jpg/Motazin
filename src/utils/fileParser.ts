@@ -337,60 +337,72 @@ export const processPdf = async (file: File, ocrLanguage: string, geminiApiKey: 
 };
 
 export const processImage = async (file: File, ocrLanguage: string, geminiApiKey: string | undefined, callbacks: ProcessCallbacks) => {
-  const { setStatus, setProgress, setRawText } = callbacks;
-  setStatus('Preprocessing image for higher accuracy...');
+  const { setStatus, setProgress, setParsedRows, setError } = callbacks;
+  setStatus('Analyzing image directly with AI Vision...');
+  setProgress(20);
   
-  const img = new window.Image();
-  const objectUrl = URL.createObjectURL(file);
-  
-  await new Promise((resolve, reject) => {
-    img.onload = resolve;
-    img.onerror = reject;
-    img.src = objectUrl;
-  });
+  try {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1]);
+      };
+      reader.onerror = error => reject(error);
+    });
 
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Could not get canvas context');
+    setProgress(50);
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiEndpoint = (isGitHubPages || isLocalhost)
+      ? 'https://motazin.vercel.app/api/parse'
+      : '/api/parse';
 
-  canvas.width = img.width * 3;
-  canvas.height = img.height * 3;
-  
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-    const avg = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    const val = avg > 200 ? 255 : (avg < 150 ? 0 : avg);
-    
-    data[i] = val;
-    data[i + 1] = val;
-    data[i + 2] = val;
-  }
-  ctx.putImageData(imageData, 0, 0);
+    const response = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageBase64: base64,
+        mimeType: file.type,
+        localApiKey: geminiApiKey
+      })
+    });
 
-  setStatus('Initializing OCR engine...');
-  const tesseract = await import('tesseract.js');
-  const worker = await tesseract.createWorker(ocrLanguage, 1, {
-    logger: m => {
-      if (m.status === 'recognizing text') {
-        setProgress(Math.round(m.progress * 100));
-        setStatus(`Recognizing ${ocrLanguage.toUpperCase()} text...`);
+    setProgress(80);
+
+    if (response.ok) {
+      const data = await response.json();
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (aiText) {
+        try {
+          const parsed = JSON.parse(aiText);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const results: ParsedRow[] = parsed.map((item: any) => ({
+              id: generateId(),
+              date: item.date || toIsoDateString(new Date()),
+              description: item.description || 'AI Extracted Item',
+              amount: Math.abs(Number(item.amount) || 0),
+              accountId: 'cash',
+              selected: true
+            })).filter((item: ParsedRow) => item.amount > 0);
+            
+            if (results.length > 0) {
+              setParsedRows(results);
+              setStatus('Extraction successful!');
+              setProgress(100);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse Gemini JSON from image:', e);
+        }
       }
     }
-  });
-
-  try {
-    const { data: { text } } = await worker.recognize(canvas);
-    setRawText(text);
-    await extractTransactions(text, geminiApiKey, callbacks);
-    URL.revokeObjectURL(objectUrl);
-  } finally {
-    await worker.terminate();
+    throw new Error('AI Vision extraction failed to return valid data.');
+  } catch (error) {
+    console.error('Image processing error:', error);
+    setError(error instanceof Error ? error.message : 'Failed to process image');
   }
 };
 

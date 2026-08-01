@@ -84,10 +84,10 @@ export default async function handler(req: Request) {
 
   try {
     const body = await req.json();
-    const { text, localApiKey } = body;
+    const { text, imageBase64, mimeType, localApiKey } = body;
 
-    if (!text || typeof text !== 'string') {
-      return new Response(JSON.stringify({ error: 'Invalid or missing text' }), {
+    if (!text && !imageBase64) {
+      return new Response(JSON.stringify({ error: 'Invalid or missing text/image' }), {
         status: 400,
         headers: jsonHeaders,
       });
@@ -103,13 +103,27 @@ export default async function handler(req: Request) {
       });
     }
 
+    const parts: any[] = [];
+    if (imageBase64 && mimeType) {
+      parts.push({
+        inlineData: {
+          mimeType: mimeType,
+          data: imageBase64
+        }
+      });
+      parts.push({ text: "Extract all financial transactions from this image." });
+    }
+    if (text) {
+      parts.push({ text: text });
+    }
+
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: text }] }],
+        contents: [{ role: 'user', parts: parts }],
         systemInstruction: {
-          parts: [{ text: "You are an expert financial data extractor. Extract all financial transactions from the provided OCR text. Return ONLY a valid JSON array of objects. Each object must have these keys: 'date' (string, DD/MM/YYYY format), 'description' (string, item name or detail), 'amount' (number, positive float). If none found, return []." }]
+          parts: [{ text: "You are an expert financial data extractor. Extract all financial transactions from the provided document or image. Return ONLY a valid JSON array of objects. Each object must have these keys: 'date' (string, DD/MM/YYYY format), 'description' (string, item name or detail), 'amount' (number, positive float). If none found, return []." }]
         },
         generationConfig: { responseMimeType: "application/json" }
       })
