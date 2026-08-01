@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Menu, Sun, Moon, Globe, Coins, Undo2, Redo2, LogOut, Info, Mail, Calculator, FileText, ArrowRightLeft, User as UserIcon, XCircle, Download, Plus, Trash2, Search, X, Scale, PieChart, Activity } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import { useLanguage } from '../i18n';
@@ -505,12 +506,19 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                     to={item.id === 'equation' ? '/equation' : `/${item.id}`}
                     onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                     className={cn(
-                      "flex items-center px-4 py-4 rounded-[1.5rem] text-[14px] font-black uppercase tracking-wider transition-all duration-300 relative active:scale-95 whitespace-nowrap",
-                      isActive ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30" : "dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/5"
+                      "flex items-center px-4 py-4 rounded-[1.5rem] text-[14px] font-black uppercase tracking-wider transition-all duration-300 relative whitespace-nowrap z-10",
+                      isActive ? "text-white" : "dark:text-white/80 text-slate-700 hover:bg-slate-100 dark:hover:bg-white/5"
                     )}
                     title={item.label}
                   >
-                    <div className="shrink-0 flex items-center justify-center">
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeSidebarTab"
+                        className="absolute inset-0 bg-indigo-600 rounded-[1.5rem] shadow-lg shadow-indigo-600/30 -z-10"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                    <div className="shrink-0 flex items-center justify-center relative z-10">
                       <Icon className="w-[24px] h-[24px]" />
                     </div>
                     <span className="opacity-0 max-w-0 overflow-hidden transition-all duration-500 group-hover:opacity-100 group-hover:max-w-[200px] ms-0 group-hover:ms-4">
@@ -551,17 +559,19 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
           <div className="relative -top-8 animate-float">
             <div className="absolute inset-0 bg-indigo-500 rounded-full blur-md opacity-40 animate-pulse-slow -z-10 scale-105" />
-            <button
+            <motion.button
               onClick={() => {
                 setEditingTransactionId(null);
                 handleCancelEdit();
                 setIsTransactionFormOpen(true);
               }}
-              className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-full shadow-[0_15px_30px_-5px_rgba(99,102,241,0.35)] flex items-center justify-center border-4 dark:border-slate-900 border-white active:scale-90 transition-all group relative z-10"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.9 }}
+              className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-full shadow-[0_15px_30px_-5px_rgba(99,102,241,0.35)] flex items-center justify-center border-4 dark:border-slate-900 border-white group relative z-10"
               aria-label={t('addTransaction')}
             >
               <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform" />
-            </button>
+            </motion.button>
           </div>
 
           {navItems.slice(2, 4).map((item) => {

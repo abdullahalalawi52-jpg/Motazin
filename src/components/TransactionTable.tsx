@@ -8,6 +8,7 @@ import { cn } from '../utils/cn';
 import { formatDate } from '../utils/date';
 import { TransactionTableRow } from './TransactionTableRow';
 import { useAppStore } from '../store/useAppStore';
+import { AnimatedNumber } from './AnimatedNumber';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -276,8 +277,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
               {processedTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={100} className="p-16 text-center bg-white/50 dark:bg-transparent">
-                    <div className="flex flex-col items-center justify-center animate-fade-in">
-                      <div className="relative mb-8 mt-4">
+                    <motion.div 
+                      className="flex flex-col items-center justify-center"
+                      initial="hidden"
+                      animate="visible"
+                      variants={{
+                        hidden: { opacity: 0 },
+                        visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
+                      }}
+                    >
+                      <motion.div variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className="relative mb-8 mt-4">
                         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 blur-3xl rounded-full animate-pulse-slow"></div>
                         <div className="relative z-10 w-32 h-32 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-full flex items-center justify-center shadow-2xl border border-white/80 dark:border-white/10">
                            <FileSpreadsheet className="w-14 h-14 text-indigo-500 dark:text-indigo-400 opacity-90" />
@@ -288,23 +297,23 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
                              <Percent className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                            </div>
                         </div>
-                      </div>
+                      </motion.div>
                       
                       {globalSearchTerm ? (
                         <>
-                          <h3 className="text-2xl font-black bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-3">{language === 'ar' ? "لم نجد أي نتائج للبحث" : "No results found"}</h3>
-                          <p className="text-base font-bold text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-6">{language === 'ar' ? "جرب البحث بكلمات أخرى أو قم بإلغاء البحث لرؤية جميع العمليات." : "Try different keywords or clear the search to see all transactions."}</p>
-                          <button onClick={() => setGlobalSearchTerm('')} className="px-6 py-2.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-white rounded-xl font-bold transition-all active:scale-95 shadow-sm">
+                          <motion.h3 variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className="text-2xl font-black bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-3">{language === 'ar' ? "لم نجد أي نتائج للبحث" : "No results found"}</motion.h3>
+                          <motion.p variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className="text-base font-bold text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-6">{language === 'ar' ? "جرب البحث بكلمات أخرى أو قم بإلغاء البحث لرؤية جميع العمليات." : "Try different keywords or clear the search to see all transactions."}</motion.p>
+                          <motion.button variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }} onClick={() => setGlobalSearchTerm('')} className="px-6 py-2.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-white rounded-xl font-bold transition-all active:scale-95 shadow-sm">
                             {language === 'ar' ? "إلغاء البحث" : "Clear Search"}
-                          </button>
+                          </motion.button>
                         </>
                       ) : (
                         <>
-                          <h3 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent mb-3">{t('noTransactions')}</h3>
-                          <p className="text-base font-bold text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-4">{t('addTransactionPrompt')}</p>
+                          <motion.h3 variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent mb-3">{t('noTransactions')}</motion.h3>
+                          <motion.p variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className="text-base font-bold text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-4">{t('addTransactionPrompt')}</motion.p>
                         </>
                       )}
-                    </div>
+                    </motion.div>
                   </td>
                 </tr>
               ) : (
@@ -352,31 +361,31 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
 
                     {assets.map(a => (
                       <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-indigo-400 text-white font-mono bg-indigo-500/5" dir="ltr">
-                        {formatCurrency(totals.accounts[a.id])}
+                        <AnimatedNumber value={totals.accounts[a.id]} formatCurrency={formatCurrency} />
                       </td>
                     ))}
 
                     {liabilities.map(a => (
                       <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-amber-400 text-white font-mono bg-amber-500/5" dir="ltr">
-                        {formatCurrency(totals.accounts[a.id])}
+                        <AnimatedNumber value={totals.accounts[a.id]} formatCurrency={formatCurrency} />
                       </td>
                     ))}
 
                     {equities.map(a => (
                       <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-emerald-400 text-white font-mono bg-emerald-500/5" dir="ltr">
-                        {formatCurrency(totals.accounts[a.id] || 0)}
+                        <AnimatedNumber value={totals.accounts[a.id] || 0} formatCurrency={formatCurrency} />
                       </td>
                     ))}
 
                     {incomes.map(a => (
                       <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-sky-400 text-white font-mono bg-sky-500/5" dir="ltr">
-                        {formatCurrency(totals.accounts[a.id] || 0)}
+                        <AnimatedNumber value={totals.accounts[a.id] || 0} formatCurrency={formatCurrency} />
                       </td>
                     ))}
 
                     {expenses.map(a => (
                       <td key={a.id} className="p-4 border-l dark:border-white/5 border-slate-800 text-center dark:text-rose-400 text-white font-mono bg-rose-500/5" dir="ltr">
-                        {formatCurrency(totals.accounts[a.id] || 0)}
+                        <AnimatedNumber value={totals.accounts[a.id] || 0} formatCurrency={formatCurrency} />
                       </td>
                     ))}
                     <td className="bg-slate-900/60"></td>
@@ -537,17 +546,17 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
           <div className="dark:bg-slate-900/60 bg-slate-50/90 backdrop-blur-md border-t dark:border-white/10 border-slate-200 dark:text-white text-slate-800 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 font-mono text-lg animate-fade-in">
             <div className="flex flex-col items-center">
               <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('assets')}</span>
-              <span className="dark:text-indigo-300 text-indigo-600 font-bold">{formatCurrency(totals.totalAssets)}</span>
+              <AnimatedNumber className="dark:text-indigo-300 text-indigo-600 font-bold" value={totals.totalAssets} formatCurrency={formatCurrency} />
             </div>
             <span className="dark:text-white text-slate-400">=</span>
             <div className="flex flex-col items-center">
               <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('liabilities')}</span>
-              <span className="dark:text-amber-300 text-amber-600 font-bold">{formatCurrency(totals.totalLiabilities)}</span>
+              <AnimatedNumber className="dark:text-amber-300 text-amber-600 font-bold" value={totals.totalLiabilities} formatCurrency={formatCurrency} />
             </div>
             <span className="dark:text-white text-slate-400">+</span>
             <div className="flex flex-col items-center">
               <span className="text-sm font-medium dark:text-white text-slate-600 font-sans mb-1">{t('equity')}</span>
-              <span className="dark:text-emerald-300 text-emerald-600 font-bold">{formatCurrency(totals.totalEquity)}</span>
+              <AnimatedNumber className="dark:text-emerald-300 text-emerald-600 font-bold" value={totals.totalEquity} formatCurrency={formatCurrency} />
             </div>
           </div>
         )}
