@@ -23,7 +23,7 @@ export default async function handler(req: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
 
     const prompt = `You are a financial AI assistant. I am providing an image of a receipt or invoice.
 Please extract the following information and return ONLY a valid JSON object without markdown blocks:
