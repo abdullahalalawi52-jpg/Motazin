@@ -284,7 +284,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 <button
                   onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
                   aria-label={t('currency') || 'Currency'}
-                  className="flex items-center gap-2 p-2.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors font-bold text-sm"
+                  className="flex items-center gap-2 p-2.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors font-bold text-sm text-slate-900 dark:text-white"
                 >
                   <Coins className="w-3.5 h-3.5 text-emerald-400" />
                   <span className="hidden lg:inline-block">{CURRENCIES.find(c => c.code === currency)?.symbol}</span>
