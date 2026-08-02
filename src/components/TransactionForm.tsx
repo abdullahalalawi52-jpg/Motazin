@@ -214,6 +214,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   };
 
 const SMART_SUGGESTIONS: Record<string, { debit: string, credit: string }> = {
+  // Arabic keywords
   'راتب': { debit: 'expenses', credit: 'bank' },
   'رواتب': { debit: 'expenses', credit: 'bank' },
   'سيار': { debit: 'cars', credit: 'bank' },
@@ -223,7 +224,7 @@ const SMART_SUGGESTIONS: Record<string, { debit: string, credit: string }> = {
   'أراض': { debit: 'land', credit: 'bank' },
   'مبنى': { debit: 'buildings', credit: 'bank' },
   'مبان': { debit: 'buildings', credit: 'bank' },
-  'مبيع': { debit: 'bank', credit: 'revenue' },
+  'مبيع': { debit: 'bank', credit: 'sales' },
   'ايراد': { debit: 'bank', credit: 'revenue' },
   'إيراد': { debit: 'bank', credit: 'revenue' },
   'قرض': { debit: 'bank', credit: 'short_term_loans' },
@@ -231,6 +232,22 @@ const SMART_SUGGESTIONS: Record<string, { debit: string, credit: string }> = {
   'راس': { debit: 'bank', credit: 'capital' },
   'رأس': { debit: 'bank', credit: 'capital' },
   'معدات': { debit: 'equipment', credit: 'bank' },
+  'مشتريات': { debit: 'purchases', credit: 'bank' },
+
+  // English keywords
+  'salary': { debit: 'expenses', credit: 'bank' },
+  'salaries': { debit: 'expenses', credit: 'bank' },
+  'car': { debit: 'cars', credit: 'bank' },
+  'furniture': { debit: 'furniture', credit: 'bank' },
+  'land': { debit: 'land', credit: 'bank' },
+  'building': { debit: 'buildings', credit: 'bank' },
+  'sales': { debit: 'bank', credit: 'sales' },
+  'revenue': { debit: 'bank', credit: 'revenue' },
+  'loan': { debit: 'bank', credit: 'short_term_loans' },
+  'drawings': { debit: 'drawings', credit: 'bank' },
+  'capital': { debit: 'bank', credit: 'capital' },
+  'equipment': { debit: 'equipment', credit: 'bank' },
+  'purchase': { debit: 'purchases', credit: 'bank' },
 };
 
   const [suggestionApplied, setSuggestionApplied] = React.useState(false);
