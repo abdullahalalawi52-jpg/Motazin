@@ -12,7 +12,7 @@ export const formatDate = (date: string | Date | undefined, locale: string = 'en
   // If Invalid Date, try to parse custom formats like DD/MM/YYYY
   if (isNaN(d.getTime()) && typeof date === 'string') {
     // Check for DD/MM/YYYY or DD-MM-YYYY or DD/MM/YY
-    const match = date.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    const match = date.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
     if (match) {
       const day = parseInt(match[1], 10);
       const month = parseInt(match[2], 10) - 1; // 0-indexed month
