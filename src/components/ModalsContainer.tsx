@@ -102,23 +102,23 @@ export const ModalsContainer = ({
                 let impacts = [];
                 if (r.creditAccountId) {
                   impacts = [
-                    { accountId: r.accountId || 'cash', amount: r.amount },
-                    { accountId: r.creditAccountId, amount: -r.amount }
+                    { accountId: r.accountId || 'cash', amount: r.amount, type: 'debit' as const },
+                    { accountId: r.creditAccountId, amount: r.amount, type: 'credit' as const }
                   ];
                 } else if (category === 'asset') {
                   impacts = [
-                    { accountId: accountId, amount: r.amount },
-                    { accountId: 'capital', amount: r.amount }
+                    { accountId: accountId, amount: r.amount, type: 'debit' as const },
+                    { accountId: 'capital', amount: r.amount, type: 'credit' as const }
                   ];
                 } else if (category === 'liability') {
                   impacts = [
-                    { accountId: accountId, amount: r.amount },
-                    { accountId: 'capital', amount: -r.amount }
+                    { accountId: accountId, amount: r.amount, type: 'debit' as const },
+                    { accountId: 'capital', amount: r.amount, type: 'credit' as const }
                   ];
                 } else {
                   impacts = [
-                    { accountId: accountId, amount: r.amount },
-                    { accountId: 'bank', amount: -r.amount }
+                    { accountId: accountId, amount: r.amount, type: 'debit' as const },
+                    { accountId: 'bank', amount: r.amount, type: 'credit' as const }
                   ];
                 }
 
