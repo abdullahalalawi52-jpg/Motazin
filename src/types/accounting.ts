@@ -32,6 +32,7 @@ export interface ParsedRow {
   description: string;
   amount: number;
   accountId: string;
+  creditAccountId?: string;
   selected: boolean;
 }
 

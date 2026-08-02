@@ -123,7 +123,7 @@ export default async function handler(req: Request) {
       parts.push(text);
     }
 
-    const prompt = `You are an expert financial data extractor. Extract all financial transactions from the provided document or image. Return ONLY a valid JSON array of objects. Each object must have these keys: 'date' (string, DD/MM/YYYY format), 'description' (string, item name or detail), 'amount' (number, positive float). If none found, return [].`;
+    const prompt = `You are an expert financial data extractor. Extract all financial transactions from the provided document or image. Return ONLY a valid JSON array of objects. Each object must have these keys: 'date' (string, DD/MM/YYYY format), 'description' (string, item name or detail), 'amount' (number, positive float), 'accountId' (string, guess the debit account ID from: 'cash', 'bank', 'fixed_assets', 'expenses', 'inventory', 'ar', 'ap', 'capital', 'sales', 'retained_earnings'), and 'creditAccountId' (string, guess the credit account ID from the same list). If none found, return [].`;
 
     const result = await model.generateContent([prompt, ...parts]);
     const responseText = result.response.text();

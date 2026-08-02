@@ -100,7 +100,12 @@ export const ModalsContainer = ({
                 const category = account?.category || 'asset';
 
                 let impacts = [];
-                if (category === 'asset') {
+                if (r.creditAccountId) {
+                  impacts = [
+                    { accountId: r.accountId || 'cash', amount: r.amount },
+                    { accountId: r.creditAccountId, amount: -r.amount }
+                  ];
+                } else if (category === 'asset') {
                   impacts = [
                     { accountId: accountId, amount: r.amount },
                     { accountId: 'capital', amount: r.amount }

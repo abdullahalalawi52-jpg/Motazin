@@ -44,12 +44,13 @@ export const extractTransactions = async (
           try {
             const parsed = JSON.parse(aiText);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              const results: ParsedRow[] = parsed.map((item: { date?: string; description?: string; amount?: string | number }) => ({
+              const results: ParsedRow[] = parsed.map((item: { date?: string; description?: string; amount?: string | number; accountId?: string; creditAccountId?: string }) => ({
                 id: generateId(),
                 date: item.date || toIsoDateString(new Date()),
                 description: item.description || 'AI Extracted Item',
                 amount: Math.abs(Number(item.amount) || 0),
-                accountId: 'cash',
+                accountId: item.accountId || 'cash',
+                creditAccountId: item.creditAccountId,
                 selected: true
               })).filter((item: ParsedRow) => item.amount > 0);
               
@@ -389,12 +390,13 @@ export const processImage = async (file: File, ocrLanguage: string, geminiApiKey
         try {
           const parsed = JSON.parse(aiText);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const results: ParsedRow[] = parsed.map((item: { date?: string; description?: string; amount?: string | number }) => ({
+            const results: ParsedRow[] = parsed.map((item: { date?: string; description?: string; amount?: string | number; accountId?: string; creditAccountId?: string }) => ({
               id: generateId(),
               date: item.date || toIsoDateString(new Date()),
               description: item.description || 'AI Extracted Item',
               amount: Math.abs(Number(item.amount) || 0),
-              accountId: 'cash',
+              accountId: item.accountId || 'cash',
+              creditAccountId: item.creditAccountId,
               selected: true
             })).filter((item: ParsedRow) => item.amount > 0);
             
