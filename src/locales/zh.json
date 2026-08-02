@@ -251,5 +251,7 @@
   "offlineMode": "离线模式",
   "backupLoaded": "备份加载成功！",
   "dataImported": "数据导入成功！",
-  "depreciationAdded": "折旧分录添加成功！"
+  "depreciationAdded": "折旧分录添加成功！",
+  "sales": "销售",
+  "purchases": "采购"
 }

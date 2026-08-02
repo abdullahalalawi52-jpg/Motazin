@@ -251,5 +251,7 @@
   "offlineMode": "MODO SIN CONEXIÓN",
   "backupLoaded": "¡Copia de seguridad cargada con éxito!",
   "dataImported": "¡Datos importados con éxito!",
-  "depreciationAdded": "¡Entrada de depreciación añadida con éxito!"
+  "depreciationAdded": "¡Entrada de depreciación añadida con éxito!",
+  "sales": "Ventas",
+  "purchases": "Compras"
 }

@@ -315,5 +315,7 @@
   "navigation": "التنقل",
   "loginRequired": "تسجيل الدخول مطلوب",
   "errorSendingMessage": "خطأ في إرسال الرسالة",
-  "sending": "جاري الإرسال..."
+  "sending": "جاري الإرسال...",
+  "sales": "مبيعات",
+  "purchases": "مشتريات"
 }

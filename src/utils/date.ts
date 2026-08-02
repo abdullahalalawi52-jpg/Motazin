@@ -9,10 +9,14 @@ export const formatDate = (date: string | Date | undefined, locale: string = 'en
   const d = new Date(date);
   if (isNaN(d.getTime())) return String(date);
   
+  const isArabic = locale.startsWith('ar');
+  
   return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
+    calendar: 'gregory',
+    numberingSystem: isArabic ? 'arab' : 'latn'
   }).format(d);
 };
 

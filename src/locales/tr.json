@@ -251,5 +251,7 @@
   "offlineMode": "ÇEVRİMDIŞI MOD",
   "backupLoaded": "Yedek başarıyla yüklendi!",
   "dataImported": "Veriler başarıyla içe aktarıldı!",
-  "depreciationAdded": "Amortisman kaydı başarıyla eklendi!"
+  "depreciationAdded": "Amortisman kaydı başarıyla eklendi!",
+  "sales": "Satışlar",
+  "purchases": "Alımlar"
 }

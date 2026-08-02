@@ -53,21 +53,23 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   const [isReceiptScannerOpen, setIsReceiptScannerOpen] = React.useState(false);
 
-  const handleScanComplete = (data: { amount: number | null, date: string | null, description: string | null, suggestedAccount: string | null }) => {
+  const handleScanComplete = (data: { amount: number | null, date: string | null, description: string | null, category?: string | null, paymentMethod?: string | null }) => {
     setIsReceiptScannerOpen(false);
     if (data.date) setDate(data.date);
     if (data.description) setDescription(data.description);
     
     // Set impacts based on amount and suggested account
-    if (data.amount && data.suggestedAccount) {
+    if (data.amount) {
       const newImpacts = [...impacts];
-      // Assume first impact is the suggested account (expense or asset)
-      const account = allAccounts.find(a => a.id === data.suggestedAccount) || allAccounts.find(a => a.category === data.suggestedAccount) || allAccounts.find(a => a.id === 'expenses') || allAccounts.find(a => a.id === 'purchases');
       
-      const accountId = account ? account.id : 'expenses';
-      
-      newImpacts[0] = { accountId: accountId, amount: data.amount, type: 'debit' };
-      newImpacts[1] = { accountId: 'bank', amount: data.amount, type: 'credit' };
+      const debitId = data.category || 'expenses';
+      const creditId = data.paymentMethod || 'cash';
+
+      const debitAcc = allAccounts.find(a => a.id === debitId) || allAccounts.find(a => a.category === debitId);
+      const creditAcc = allAccounts.find(a => a.id === creditId) || allAccounts.find(a => a.category === creditId);
+
+      newImpacts[0] = { accountId: debitAcc ? debitAcc.id : 'expenses', amount: data.amount, type: 'debit' };
+      newImpacts[1] = { accountId: creditAcc ? creditAcc.id : 'cash', amount: data.amount, type: 'credit' };
       
       setImpacts(newImpacts);
     }

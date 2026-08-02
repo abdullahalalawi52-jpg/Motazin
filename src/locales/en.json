@@ -315,5 +315,7 @@
   "navigation": "Navigation",
   "loginRequired": "Login Required",
   "errorSendingMessage": "Error sending message",
-  "sending": "Sending..."
+  "sending": "Sending...",
+  "sales": "Sales",
+  "purchases": "Purchases"
 }

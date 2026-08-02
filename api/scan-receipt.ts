@@ -31,7 +31,8 @@ Please extract the following information and return ONLY a valid JSON object wit
   "amount": number (the total amount to pay or received),
   "date": "YYYY-MM-DD" (the date of the transaction),
   "description": "string" (a short description of what was purchased or the vendor name),
-  "suggestedAccount": "string" (choose one of: 'cash', 'bank', 'inventory', 'supplies', 'accounts_payable', 'accounts_receivable', 'expense')
+  "category": "string" (choose the best matching expense or asset account ID for the debit side: 'expenses', 'inventory', 'supplies', 'equipment', 'furniture'),
+  "paymentMethod": "string" (choose the best matching payment method account ID for the credit side: 'cash', 'bank', 'ap', 'ar')
 }
 
 If any value is missing or you cannot read it, use null. For amounts, remove currency symbols and return a clean number.`;

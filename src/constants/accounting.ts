@@ -36,8 +36,10 @@ export const ACCOUNTS: Account[] = [
 
   // Income
   { id: 'revenue', name: 'revenue', category: 'income' },
+  { id: 'sales', name: 'sales', category: 'income' },
   // Expenses
   { id: 'expenses', name: 'expenses', category: 'expense' },
+  { id: 'purchases', name: 'purchases', category: 'expense' },
 
 ];
 

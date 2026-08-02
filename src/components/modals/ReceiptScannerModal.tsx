@@ -7,7 +7,8 @@ interface ReceiptData {
   amount: number | null;
   date: string | null;
   description: string | null;
-  suggestedAccount: string | null;
+  category?: string | null;
+  paymentMethod?: string | null;
 }
 
 interface ReceiptScannerModalProps {

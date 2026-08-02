@@ -251,5 +251,7 @@
   "offlineMode": "オフラインモード",
   "backupLoaded": "バックアップが正常に読み込まれました！",
   "dataImported": "データが正常にインポートされました！",
-  "depreciationAdded": "減価償却仕訳が正常に追加されました！"
+  "depreciationAdded": "減価償却仕訳が正常に追加されました！",
+  "sales": "売上",
+  "purchases": "仕入"
 }

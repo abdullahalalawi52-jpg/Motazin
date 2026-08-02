@@ -251,5 +251,7 @@
   "offlineMode": "MODE HORS LIGNE",
   "backupLoaded": "Sauvegarde chargée avec succès!",
   "dataImported": "Données importées avec succès!",
-  "depreciationAdded": "Écriture d'amortissement ajoutée avec succès!"
+  "depreciationAdded": "Écriture d'amortissement ajoutée avec succès!",
+  "sales": "Ventes",
+  "purchases": "Achats"
 }
