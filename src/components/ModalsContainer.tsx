@@ -93,7 +93,7 @@ export const ModalsContainer = ({
           <PdfScanner
             geminiApiKey={geminiApiKey}
             onClose={() => setIsPdfScannerOpen(false)}
-            onImport={(rows: Array<{ id?: string; date: string; description: string; amount: number; accountId?: string; }>) => {
+            onImport={(rows: Array<{ id?: string; date: string; description: string; amount: number; accountId?: string; creditAccountId?: string; }>) => {
               const newTransactions = rows.map(r => {
                 const accountId = r.accountId || 'bank';
                 const account = allAccounts.find((a: Account) => a.id === accountId);
