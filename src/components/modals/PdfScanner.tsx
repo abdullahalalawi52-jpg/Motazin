@@ -316,17 +316,10 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
                 </button>
                 
                 <div className="flex gap-2 sm:gap-4 p-1.5 sm:p-2 bg-slate-50 dark:bg-black/20 rounded-xl sm:rounded-[1.25rem] border border-slate-200 dark:border-white/5 justify-around">
-                   <div className="px-3 sm:px-4 py-1 sm:py-1.5 flex flex-col items-center">
-                      <span className="text-[10px] sm:text-[11px] uppercase font-black text-slate-500 mb-0.5">{t('assets')}</span>
-                      <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">
-                        {parsedRows.filter(r => r.selected && r.accountId !== 'ap' && r.accountId !== 'capital' && r.accountId !== 'retained_earnings').reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
-                      </span>
-                   </div>
-                   <div className="w-[1px] bg-slate-200 dark:bg-white/5 self-stretch"></div>
-                   <div className="px-3 sm:px-4 py-1 sm:py-1.5 flex flex-col items-center">
-                      <span className="text-[10px] sm:text-[11px] uppercase font-black text-slate-500 mb-0.5">{t('liabilities')}+E</span>
-                      <span className="text-xs sm:text-sm font-black text-rose-600 dark:text-rose-400">
-                        {parsedRows.filter(r => r.selected && (r.accountId === 'ap' || r.accountId === 'capital' || r.accountId === 'retained_earnings' || r.accountId === 'short_term_loans')).reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
+                   <div className="px-3 sm:px-4 py-1 sm:py-1.5 flex flex-col items-center w-full">
+                      <span className="text-[10px] sm:text-[11px] uppercase font-black text-slate-500 mb-0.5">{language === 'ar' ? 'إجمالي المبالغ المستخرجة' : 'Total Extracted Amount'}</span>
+                      <span className="text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400">
+                        {parsedRows.filter(r => r.selected).reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
                       </span>
                    </div>
                 </div>
