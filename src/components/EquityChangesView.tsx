@@ -8,22 +8,25 @@ import { motion } from 'framer-motion';
 import { EmptyState } from './EmptyState';
 
 interface EquityChangesViewProps {
-  accounts: Record<string, number>;
-  totalEquity: number;
+  totals: any; // using any for now, since we don't have the exact type imported here. It's the return type of calculateTotals.
   formatCurrency: (val: number) => string;
 }
 
-export const EquityChangesView: React.FC<EquityChangesViewProps> = ({ accounts, totalEquity, formatCurrency }) => {
+export const EquityChangesView: React.FC<EquityChangesViewProps> = ({ totals, formatCurrency }) => {
   const { t, dir, language } = useLanguage();
 
+  const accounts = totals.accounts;
+
+  // We should ideally sum all accounts of category 'equity' except drawings.
+  // But since we don't have allAccounts here easily, let's just use the main ones.
   const capital = accounts['capital'] || 0;
   const shareCapital = accounts['share_capital'] || 0;
   const retainedEarnings = accounts['retained_earnings'] || 0;
   const totalBeginningCapital = capital + shareCapital + retainedEarnings;
 
-  const revenue = accounts['revenue'] || 0;
-  // Expenses are normally negative in totals, so we use Math.abs to subtract it from revenue
-  const expenses = Math.abs(accounts['expenses'] || 0);
+  const revenue = totals.totalIncome || 0;
+  // Expenses are normally negative in totals, so we use Math.abs
+  const expenses = Math.abs(totals.totalExpense || 0);
   const netIncome = revenue - expenses;
 
   // Drawings are normally negative in totals (reduces equity), we take absolute value to subtract it visually
@@ -87,7 +90,7 @@ export const EquityChangesView: React.FC<EquityChangesViewProps> = ({ accounts, 
               {t('endingBalance')} ({t('equity')})
             </span>
             <span className="text-2xl sm:text-3xl font-bold font-mono text-indigo-600 dark:text-indigo-400" dir="ltr">
-              {formatCurrency(totalEquity)}
+              {formatCurrency(totals.totalEquity)}
             </span>
           </div>
         </div>

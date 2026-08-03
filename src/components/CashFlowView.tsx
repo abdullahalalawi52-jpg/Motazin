@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowRightLeft } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { toast } from 'sonner';
-import { Transaction } from '../types/accounting';
+import { Transaction, Account } from '../types/accounting';
 import { cn } from '../utils/cn';
 import { motion } from 'framer-motion';
 import { formatDate } from '../utils/date';
@@ -10,17 +10,20 @@ import { EmptyState } from './EmptyState';
 
 interface CashFlowViewProps {
   transactions: Transaction[];
+  allAccounts: Account[];
   formatCurrency: (val: number) => string;
 }
 
-export const CashFlowView: React.FC<CashFlowViewProps> = ({ transactions, formatCurrency }) => {
+export const CashFlowView: React.FC<CashFlowViewProps> = ({ transactions, allAccounts, formatCurrency }) => {
   const { t, dir, language } = useLanguage();
 
-  const cashAccountIds = ['cash', 'bank'];
+  const getAccountCategory = (accountId: string) => {
+    return allAccounts.find(a => a.id === accountId)?.category;
+  };
 
-  // Categorization lists
-  const investingAccounts = ['fixed_assets', 'land', 'buildings', 'equipment', 'cars', 'furniture', 'intangible_assets', 'investments'];
-  const financingAccounts = ['capital', 'drawings', 'short_term_loans', 'long_term_loans', 'mortgages_payable'];
+  const isCashAccount = (accountId: string) => {
+    return accountId === 'cash' || accountId === 'bank'; // Assuming these are the cash equivalents
+  };
 
   let operatingTotal = 0;
   let investingTotal = 0;
@@ -28,20 +31,40 @@ export const CashFlowView: React.FC<CashFlowViewProps> = ({ transactions, format
 
   transactions.forEach(tx => {
     const cashImpact = tx.impacts
-      .filter(i => cashAccountIds.includes(i.accountId))
+      .filter(i => isCashAccount(i.accountId))
       .reduce((sum, i) => sum + i.amount, 0);
 
     if (cashImpact !== 0) {
-      const nonCashImpacts = tx.impacts.filter(i => !cashAccountIds.includes(i.accountId));
+      const nonCashImpacts = tx.impacts.filter(i => !isCashAccount(i.accountId));
       
-      const isInvesting = nonCashImpacts.some(i => investingAccounts.includes(i.accountId));
-      const isFinancing = nonCashImpacts.some(i => financingAccounts.includes(i.accountId));
+      // Determine activity type based on the non-cash accounts involved
+      let isInvesting = false;
+      let isFinancing = false;
+
+      nonCashImpacts.forEach(impact => {
+        const category = getAccountCategory(impact.accountId);
+        
+        // Very simplified cash flow classification
+        // Non-current assets -> Investing
+        // For our simplified app, we might just assume any asset that isn't inventory/AR is investing.
+        // Actually, it's better to check ID or a more specific flag, but let's use the old hardcoded list as a fallback, 
+        // OR define investing as non-current assets.
+        const investingAccounts = ['fixed_assets', 'land', 'buildings', 'equipment', 'cars', 'furniture', 'intangible_assets', 'investments', 'ppe', 'goodwill'];
+        const financingAccounts = ['capital', 'drawings', 'short_term_loans', 'long_term_loans', 'mortgages_payable', 'borrowed_money', 'share_capital'];
+        
+        if (investingAccounts.includes(impact.accountId)) {
+          isInvesting = true;
+        } else if (financingAccounts.includes(impact.accountId) || category === 'equity') {
+          isFinancing = true;
+        }
+      });
 
       if (isInvesting) {
         investingTotal += cashImpact;
       } else if (isFinancing) {
         financingTotal += cashImpact;
       } else {
+        // Default to Operating (Revenue, Expenses, Current Assets/Liabilities like Inventory, AP, AR)
         operatingTotal += cashImpact;
       }
     }

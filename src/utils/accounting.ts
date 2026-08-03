@@ -81,6 +81,8 @@ export function calculateTotals(
     totalAssets: round(totalAssets),
     totalLiabilities: round(totalLiabilities),
     totalEquity: round(totalEquity),
+    totalIncome: round(totalIncome),
+    totalExpense: round(totalExpense),
     isBalanced: round(totalAssets) === round(totalLiabilities + totalEquity)
   };
 }

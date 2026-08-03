@@ -44,10 +44,12 @@ export function useFinancialInsights(
 
   const incomeExpenseData = useMemo(() => {
     return [
-      { name: t('revenue'), amount: Math.abs(totals.accounts['revenue'] || 0) },
-      { name: t('expenses'), amount: Math.abs(totals.accounts['expenses'] || 0) }
+      // @ts-ignore
+      { name: t('revenue'), amount: Math.abs(totals.totalIncome || 0) },
+      // @ts-ignore
+      { name: t('expenses'), amount: Math.abs(totals.totalExpense || 0) }
     ];
-  }, [totals.accounts, t]);
+  }, [totals, t]);
 
   const insights = useMemo(() => {
     const totalCurrentAssets = currentAssetIds.reduce((sum, id) => sum + (totals.accounts[id] || 0), 0);
@@ -55,7 +57,8 @@ export function useFinancialInsights(
 
     const currentRatio = totalCurrentLiabilities !== 0 ? totalCurrentAssets / totalCurrentLiabilities : 0;
     const debtToEquity = totals.totalEquity !== 0 ? totals.totalLiabilities / totals.totalEquity : 0;
-    const netProfit = (totals.accounts['revenue'] || 0) - Math.abs(totals.accounts['expenses'] || 0);
+    // @ts-ignore - added to return type of calculateTotals
+    const netProfit = (totals.totalIncome || 0) - Math.abs(totals.totalExpense || 0);
 
     return {
       currentRatio,

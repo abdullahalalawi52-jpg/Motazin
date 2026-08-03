@@ -429,16 +429,18 @@ export default function App() {
               <Route path="/income" element={
                 <PageTransition>
                   <IncomeStatementView
+                    transactions={filteredTransactions}
                     formatCurrency={formatCurrency}
-                    transactions={transactions}
+                    allAccounts={allAccounts}
                   />
                 </PageTransition>
               } />
-              <Route path="/cashflow" element={
+              <Route path="/cash-flow" element={
                 <PageTransition>
                   <CashFlowView
+                    transactions={filteredTransactions}
                     formatCurrency={formatCurrency}
-                    transactions={transactions}
+                    allAccounts={allAccounts}
                   />
                 </PageTransition>
               } />
@@ -455,8 +457,7 @@ export default function App() {
                 <PageTransition>
                   <EquityChangesView
                     formatCurrency={formatCurrency}
-                    accounts={totals.accounts}
-                    totalEquity={totals.totalEquity}
+                    totals={totals}
                   />
                 </PageTransition>
               } />
@@ -468,6 +469,7 @@ export default function App() {
                     totalAssets={totals.totalAssets}
                     totalLiabilities={totals.totalLiabilities}
                     totalEquity={totals.totalEquity}
+                    totalRevenue={totals.totalIncome || 0}
                     netIncome={insights.netProfit}
                     profitTrendData={profitTrendData}
                   />

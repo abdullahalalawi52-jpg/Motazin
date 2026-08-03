@@ -2,7 +2,7 @@ import React from 'react';
 import { FileText, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { toast } from 'sonner';
-import { Transaction } from '../types/accounting';
+import { Transaction, Account } from '../types/accounting';
 import { cn } from '../utils/cn';
 import { formatDate } from '../utils/date';
 import { useAppStore } from '../store/useAppStore';
@@ -11,27 +11,33 @@ import { EmptyState } from './EmptyState';
 
 interface IncomeStatementViewProps {
   transactions: Transaction[];
+  allAccounts: Account[];
   formatCurrency: (val: number) => string;
 }
 
-export const IncomeStatementView: React.FC<IncomeStatementViewProps> = ({ transactions, formatCurrency }) => {
+export const IncomeStatementView: React.FC<IncomeStatementViewProps> = ({ transactions, allAccounts, formatCurrency }) => {
   const { t, dir, language } = useLanguage();
+
+  const { budgets } = useAppStore();
+
+  const getAccountCategory = (accountId: string) => {
+    return allAccounts.find(a => a.id === accountId)?.category;
+  };
 
   const totalRevenue = transactions.reduce((sum, tx) => {
     return sum + tx.impacts
-      .filter(i => i.accountId === 'revenue')
+      .filter(i => getAccountCategory(i.accountId) === 'income')
       .reduce((s, i) => s + i.amount, 0);
   }, 0);
 
   const totalExpenses = transactions.reduce((sum, tx) => {
     return sum + tx.impacts
-      .filter(i => i.accountId === 'expenses')
+      .filter(i => getAccountCategory(i.accountId) === 'expense')
       .reduce((s, i) => s + Math.abs(i.amount), 0);
   }, 0);
 
   const netIncome = totalRevenue - totalExpenses;
 
-  const { budgets } = useAppStore();
   const expenseBudget = budgets.expenses || 0;
   const budgetExceeded = expenseBudget > 0 && totalExpenses > expenseBudget;
   const budgetPercentage = expenseBudget > 0 ? Math.min((totalExpenses / expenseBudget) * 100, 100) : 0;

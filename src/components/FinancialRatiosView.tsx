@@ -52,6 +52,7 @@ interface FinancialRatiosViewProps {
   totalAssets: number;
   totalLiabilities: number;
   totalEquity: number;
+  totalRevenue: number;
   netIncome: number;
   profitTrendData: { name: string; profit: number }[];
 }
@@ -62,6 +63,7 @@ export const FinancialRatiosView: React.FC<FinancialRatiosViewProps> = ({
   totalAssets,
   totalLiabilities,
   totalEquity,
+  totalRevenue,
   netIncome,
   profitTrendData
 }) => {
@@ -80,7 +82,7 @@ export const FinancialRatiosView: React.FC<FinancialRatiosViewProps> = ({
   const currentLiabilities = getBalance(['ap', 'short_term_loans', 'accrued_expenses', 'unearned_revenues']);
   
   // 2. Profitability calculations
-  const totalRevenue = getBalance(['revenue']);
+  // totalRevenue passed via props
 
   // Ratios
   const currentRatio = currentLiabilities > 0 ? currentAssets / currentLiabilities : 0;
