@@ -133,7 +133,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
               title={t('importFiles')}
             >
               <FileSearch className="w-4 h-4" />
-              <span>{t('scanPDF') || 'Scan PDF'}</span>
+              <span>{t('scanPDF') || 'Scan'}</span>
             </button>
 
             <button
