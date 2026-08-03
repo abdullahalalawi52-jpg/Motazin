@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, X, Settings, MessageSquarePlus, Key, Brain, Bot, Sparkles, Send, BarChart3 } from 'lucide-react';
+import { MessageCircle, X, Settings, MessageSquarePlus, Brain, Bot, Sparkles, Send, BarChart3 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { cn } from '../../utils/cn';
 import { useChat } from '../../hooks/useChat';
@@ -19,7 +19,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onApiKeyChange,
 }) => {
   const { t, language } = useLanguage();
-  const { isOpen, setIsOpen, messages, input, setInput, handleSend, showSettings, setShowSettings, handleClearChat, confirmOpen, setConfirmOpen, localApiKey, setLocalApiKey, isAiAvailable, messagesEndRef, inputRef, isTyping, saveApiKey } = useChat(financialContext, geminiApiKey, onApiKeyChange, language, t);
+  const { isOpen, setIsOpen, messages, input, setInput, handleSend, showSettings, setShowSettings, handleClearChat, confirmOpen, setConfirmOpen, isAiAvailable, messagesEndRef, inputRef, isTyping } = useChat(financialContext, geminiApiKey, onApiKeyChange, language, t);
 
   const formatTime = (ts: number) => {
     return new Date(ts).toLocaleTimeString(language === 'ar' ? 'ar-SA' : 'en-US', {
