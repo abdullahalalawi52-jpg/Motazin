@@ -1,7 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useVirtualizer, useWindowVirtualizer } from '@tanstack/react-virtual';
 import { motion } from 'framer-motion';
-import { FileSearch, Calculator, Trash2, FileSpreadsheet, FileText, Eye, Edit2, Percent } from 'lucide-react';
+import { FileSearch, Calculator, Trash2, FileSpreadsheet, FileText, Eye, Edit2, Percent, Maximize, Minimize } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { Account, Transaction } from '../types/accounting';
 import { cn } from '../utils/cn';
@@ -39,6 +39,8 @@ interface TransactionTableProps {
   handleSelectAll: () => void;
   setPreviewUrl: (url: string | null) => void;
   setIsDocPreviewOpen: (open: boolean) => void;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
@@ -63,7 +65,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
   handleSelectTransaction,
   handleSelectAll,
   setPreviewUrl,
-  setIsDocPreviewOpen
+  setIsDocPreviewOpen,
+  isSidebarCollapsed,
+  onToggleSidebar
 }) => {
   const { t, language } = useLanguage();
   const hasAccounts = assets.length > 0 || liabilities.length > 0 || equities.length > 0 || incomes.length > 0 || expenses.length > 0;
@@ -121,11 +125,20 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
   };
 
   return (
-    <div className="xl:col-span-7">
+    <div className={cn("transition-all duration-500 ease-in-out", isSidebarCollapsed ? "xl:col-span-12" : "xl:col-span-7")}>
       <div className="glass-card overflow-hidden flex flex-col h-full" style={{ borderRadius: '1.5rem' }}>
         <div className="p-4 border-b dark:border-white/10 border-slate-200 dark:bg-slate-800/20 bg-slate-100/90">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full">
 
+            {onToggleSidebar && (
+              <button
+                onClick={onToggleSidebar}
+                className="hidden xl:flex items-center justify-center h-[42px] w-[42px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/40 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-all shadow-sm"
+                title={isSidebarCollapsed ? "Restore Sidebar" : "Expand Table"}
+              >
+                {isSidebarCollapsed ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+              </button>
+            )}
 
             <button
               onClick={() => setIsPdfScannerOpen(true)}

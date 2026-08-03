@@ -181,6 +181,7 @@ export default function App() {
 
   // --- Effects ---
   const [hasInitialBalance, setHasInitialBalance] = useState(totals.isBalanced);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const isFormDirty = editingTransactionId !== null;
   useAppEffects(totals.isBalanced, hasInitialBalance, setHasInitialBalance, isFormDirty, budgets, totals.accounts, language);
 
@@ -341,8 +342,9 @@ export default function App() {
                   <div className="space-y-6 sm:space-y-8">
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-6">
                       {/* Desktop sidebar form */}
-                      <div className="hidden md:block xl:col-span-5 space-y-6 rtl:order-last ltr:order-first">
-                        <TransactionForm
+                      {!isSidebarCollapsed && (
+                        <div className="hidden md:block xl:col-span-5 space-y-6 rtl:order-last ltr:order-first animate-in fade-in zoom-in-95 duration-300">
+                          <TransactionForm
                           initialTransaction={transactions.find(t => t.id === editingTransactionId)}
                           onSubmit={handlers.handleAddTransaction}
                           onCancel={handlers.handleCancelEdit}
@@ -365,10 +367,13 @@ export default function App() {
                           formatCurrency={formatCurrency}
                           onTransactionDrop={handleTransactionDrop}
                         />
-                      </div>
+                        </div>
+                      )}
 
                       {/* Right Column: Transactions Table */}
                       <TransactionTable
+                        isSidebarCollapsed={isSidebarCollapsed}
+                        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                         transactions={filteredTransactions}
                         selectedTransactions={selectedTransactions}
                         setIsPdfScannerOpen={setIsPdfScannerOpen}
