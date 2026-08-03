@@ -39,7 +39,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* Floating Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 left-6 z-50 p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 group border border-indigo-500/30"
+        className="fixed bottom-28 md:bottom-6 left-6 z-[100] p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 group border border-indigo-500/30"
         aria-label="المستشار الذكي"
       >
         {isOpen ? (
@@ -59,7 +59,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       <aside
         aria-label={language === 'ar' ? 'الدردشة الآلية' : 'AI Chatbot'}
         className={cn(
-          "fixed bottom-24 left-6 w-[95vw] sm:w-[420px] h-[650px] max-h-[75vh] glass dark:bg-slate-950/95 bg-white/95 border dark:border-white/10 border-slate-200 rounded-[2.5rem] shadow-2xl z-50 overflow-hidden flex flex-col transition-all duration-500 transform origin-bottom-left",
+          "fixed bottom-[130px] md:bottom-24 left-6 w-[95vw] sm:w-[420px] h-[650px] max-h-[75vh] glass dark:bg-slate-950/95 bg-white/95 border dark:border-white/10 border-slate-200 rounded-[2.5rem] shadow-2xl z-[100] overflow-hidden flex flex-col transition-all duration-500 transform origin-bottom-left",
           isOpen ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-10 pointer-events-none"
         )}
       >
