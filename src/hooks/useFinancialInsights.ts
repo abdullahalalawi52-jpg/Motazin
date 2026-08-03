@@ -44,9 +44,9 @@ export function useFinancialInsights(
 
   const incomeExpenseData = useMemo(() => {
     return [
-      // @ts-ignore
+      // @ts-expect-error
       { name: t('revenue'), amount: Math.abs(totals.totalIncome || 0) },
-      // @ts-ignore
+      // @ts-expect-error
       { name: t('expenses'), amount: Math.abs(totals.totalExpense || 0) }
     ];
   }, [totals, t]);
@@ -57,7 +57,7 @@ export function useFinancialInsights(
 
     const currentRatio = totalCurrentLiabilities !== 0 ? totalCurrentAssets / totalCurrentLiabilities : 0;
     const debtToEquity = totals.totalEquity !== 0 ? totals.totalLiabilities / totals.totalEquity : 0;
-    // @ts-ignore - added to return type of calculateTotals
+    // @ts-expect-error - added to return type of calculateTotals
     const netProfit = (totals.totalIncome || 0) - Math.abs(totals.totalExpense || 0);
 
     return {

@@ -7,8 +7,10 @@ import { formatDate } from '../utils/date';
 import { motion } from 'framer-motion';
 import { EmptyState } from './EmptyState';
 
+import { calculateTotals } from '../utils/accounting';
+
 interface EquityChangesViewProps {
-  totals: any; // using any for now, since we don't have the exact type imported here. It's the return type of calculateTotals.
+  totals: ReturnType<typeof calculateTotals>;
   formatCurrency: (val: number) => string;
 }
 
