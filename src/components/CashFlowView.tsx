@@ -109,7 +109,7 @@ export const CashFlowView: React.FC<CashFlowViewProps> = ({ transactions, format
             )}>
               {t('netCashFlow')}
             </span>
-            <div className="text-right">
+            <div className="text-end">
               <div className={cn(
                 "text-3xl font-bold font-mono",
                 netCashFlow >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"

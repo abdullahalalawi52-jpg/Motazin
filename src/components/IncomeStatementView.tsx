@@ -110,7 +110,7 @@ export const IncomeStatementView: React.FC<IncomeStatementViewProps> = ({ transa
         {/* Net Income Section */}
         <div className="pt-6 border-t dark:border-white/20 border-slate-200">
           <div className={cn(
-            "p-5 sm:p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-right",
+            "p-5 sm:p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-start",
             netIncome >= 0 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-rose-500/10 border border-rose-500/20"
           )}>
             <span className={cn(

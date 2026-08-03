@@ -162,7 +162,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                         className="w-full h-10 glass-input rtl:pr-10 ltr:pl-10 rtl:pl-10 ltr:pr-10 py-2.5 text-sm text-slate-900 dark:text-white bg-slate-100/50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-2xl transition-all outline-none focus:border-indigo-500/50"
                         placeholder={language === 'ar' ? "ابحث..." : "Search..."}
                       />
-                      <button onClick={() => { setGlobalSearchTerm(''); setIsSearchExpanded(false); }} className="absolute inset-y-0 rtl:left-0 ltr:right-0 flex items-center rtl:pl-3 ltr:pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                      <button onClick={() => { setGlobalSearchTerm(''); setIsSearchExpanded(false); }} className="absolute inset-y-0 end-0 flex items-center pe-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -201,7 +201,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                         key={lang.id}
                         onClick={() => { setLanguage(lang.id as 'ar' | 'en' | 'fr' | 'es' | 'tr' | 'ur' | 'ja' | 'zh' | 'ru' | 'pt'); setIsLangOpen(false); }}
                         className={cn(
-                          "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-indigo-500/10",
+                          "w-full px-4 py-2.5 text-start text-[13px] font-black transition-colors hover:bg-indigo-500/10",
                           language === lang.id ? "text-indigo-500 bg-indigo-500/5" : "dark:text-white/80 text-slate-700"
                         )}
                       >
@@ -268,7 +268,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                         key={item.id}
                         onClick={() => { setAccountingPeriod(item.id as 'all' | 'current_month' | 'current_year'); setIsPeriodOpen(false); }}
                         className={cn(
-                          "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-indigo-500/10",
+                          "w-full px-4 py-2.5 text-start text-[13px] font-black transition-colors hover:bg-indigo-500/10",
                           accountingPeriod === item.id ? "text-indigo-600 dark:text-indigo-400 bg-indigo-500/5" : "dark:text-white/80 text-slate-700"
                         )}
                       >
@@ -296,7 +296,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                         key={c.code}
                         onClick={() => { handleCurrencyChange(c.code); setIsCurrencyOpen(false); }}
                         className={cn(
-                          "w-full px-4 py-2.5 text-right text-[13px] font-black transition-colors hover:bg-emerald-500/10",
+                          "w-full px-4 py-2.5 text-start text-[13px] font-black transition-colors hover:bg-emerald-500/10",
                           currency === c.code ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/5" : "dark:text-white/80 text-slate-700"
                         )}
                       >
@@ -342,7 +342,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                     className="w-full glass-input rtl:pr-10 ltr:pl-10 py-2 text-sm text-slate-900 dark:text-white bg-slate-100/50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl transition-all outline-none focus:border-indigo-500/50"
                     placeholder={language === 'ar' ? "ابحث في العمليات..." : "Search transactions..."}
                   />
-                  <button onClick={() => { setGlobalSearchTerm(''); setIsSearchExpanded(false); }} className="absolute inset-y-0 rtl:left-1 ltr:right-1 flex items-center rtl:pl-3 ltr:pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                  <button onClick={() => { setGlobalSearchTerm(''); setIsSearchExpanded(false); }} className="absolute inset-y-0 end-1 flex items-center pe-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>

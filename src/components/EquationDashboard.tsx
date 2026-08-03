@@ -72,7 +72,7 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
             {totals.isBalanced ? <CheckCircle2 className="w-12 h-12" /> : <AlertCircle className="w-12 h-12" />}
           </div>
 
-          <div className="flex-1 text-center md:text-left">
+          <div className="flex-1 text-center md:text-start">
             <h3 className={cn(
               "text-2xl font-bold mb-2 tracking-tight",
               totals.isBalanced ? "text-emerald-400" : "text-rose-400"
@@ -86,7 +86,7 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
                 <AnimatedNumber className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 block break-words" value={totals.totalAssets} formatCurrency={formatCurrency} />
                 
                 {previousTotals && (
-                  <div className="absolute top-4 right-4 flex items-center gap-1 rtl:left-4 rtl:right-auto text-xs font-bold">
+                  <div className="absolute top-4 end-4 flex items-center gap-1 text-xs font-bold">
                     {(() => {
                       const diff = totals.totalAssets - previousTotals.totalAssets;
                       const isZero = previousTotals.totalAssets === 0;
@@ -102,7 +102,7 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
                 <AnimatedNumber className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 block break-words" value={totals.totalLiabilities + totals.totalEquity} formatCurrency={formatCurrency} />
                 
                 {previousTotals && (
-                  <div className="absolute top-4 right-4 flex items-center gap-1 rtl:left-4 rtl:right-auto text-xs font-bold">
+                  <div className="absolute top-4 end-4 flex items-center gap-1 text-xs font-bold">
                     {(() => {
                       const currentLE = totals.totalLiabilities + totals.totalEquity;
                       const prevLE = previousTotals.totalLiabilities + previousTotals.totalEquity;
@@ -242,7 +242,7 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
                               type="number"
                               value={allocated || ''}
                               onChange={(e) => setBudgets({ ...budgets, [account.id]: parseFloat(e.target.value) || 0 })}
-                              className="w-24 px-2 py-1 border border-white/20 rounded text-left text-sm font-medium focus:ring-1 focus:ring-indigo-500 outline-none"
+                              className="w-24 px-2 py-1 border border-white/20 rounded text-start text-sm font-medium focus:ring-1 focus:ring-indigo-500 outline-none"
                               dir="ltr"
                               placeholder="0"
                               aria-label={`${t('budgetAlerts')} - ${t(account.name)}`}

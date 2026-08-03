@@ -46,12 +46,12 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(({
           <div className="p-3 bg-rose-500/10 rounded-2xl border border-rose-500/20 text-rose-400">
             <AlertTriangle className="w-6 h-6" />
           </div>
-          <div className="text-left rtl:text-right">
+          <div className="text-start">
             <h3 id="confirmation-modal-title" className="text-xl font-black text-white">{title}</h3>
           </div>
         </div>
         
-        <p className="text-slate-300 text-sm mb-6 leading-relaxed text-left rtl:text-right">{message}</p>
+        <p className="text-slate-300 text-sm mb-6 leading-relaxed text-start">{message}</p>
         
         <div className="flex gap-3 justify-end rtl:flex-row-reverse">
           <button

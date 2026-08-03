@@ -197,7 +197,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
         </div>
 
         <div id="transactions-table" ref={parentRef} className="hidden md:block overflow-auto flex-1 relative dark:bg-slate-800/40 bg-white">
-          <table className="w-full text-[15px] text-right border-collapse">
+          <table className="w-full text-[15px] text-start border-collapse">
             {processedTransactions.length > 0 && (
             <thead className="sticky top-0 z-20 dark:text-white text-slate-800 shadow-sm ring-1 dark:ring-white/10 ring-slate-200/50 bg-white dark:bg-slate-900">
               {/* Category Headers */}
@@ -355,7 +355,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = React.memo(({
             {processedTransactions.length > 0 && (
                 <tfoot className="sticky bottom-0 z-20 bg-slate-900 border-t-2 dark:border-white/10 border-slate-800 font-bold shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
                   <tr>
-                    <td colSpan={3} className="p-4 border-l dark:border-white/5 border-slate-800 text-left text-white/90 bg-slate-900/60 uppercase tracking-widest text-[11px]">
+                    <td colSpan={3} className="p-4 border-l dark:border-white/5 border-slate-800 text-start text-white/90 bg-slate-900/60 uppercase tracking-widest text-[11px]">
                       {t('grandTotal')}
                     </td>
 

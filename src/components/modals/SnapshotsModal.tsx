@@ -134,7 +134,7 @@ export function SnapshotsModal({ isOpen, onClose, currentTransactions, currentBu
             <div className="p-2 sm:p-3 bg-indigo-500/10 rounded-xl sm:rounded-2xl border border-indigo-500/20">
               <Clock className="w-5 h-5 sm:w-7 sm:h-7 text-indigo-400" />
             </div>
-            <div className="text-left rtl:text-right">
+            <div className="text-start">
               <h2 id="snapshots-modal-title" className="text-xl sm:text-2xl font-black text-white leading-tight">
                 {language === 'ar' ? 'سجل النسخ الاحتياطية' : 'Backups History'}
               </h2>

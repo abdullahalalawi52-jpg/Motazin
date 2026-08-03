@@ -82,7 +82,7 @@ export const EquityChangesView: React.FC<EquityChangesViewProps> = ({ accounts, 
 
         {/* Ending Capital */}
         <div className="pt-4 mt-4 border-t dark:border-white/20 border-slate-200">
-          <div className="p-5 sm:p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-right bg-indigo-500/10 border border-indigo-500/20">
+          <div className="p-5 sm:p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-start bg-indigo-500/10 border border-indigo-500/20">
             <span className="text-xl sm:text-2xl font-bold uppercase tracking-tighter text-indigo-600 dark:text-indigo-400">
               {t('endingBalance')} ({t('equity')})
             </span>

@@ -82,16 +82,16 @@ export const ImpactRow: React.FC<ImpactRowProps> = ({
                 + {language === 'ar' ? 'إضافة حساب جديد...' : 'Add New Account...'}
               </option>
             </select>
-            <div className="absolute top-1/2 -translate-y-1/2 left-3 rtl:right-3 rtl:left-auto pointer-events-none text-slate-400">
+            <div className="absolute top-1/2 -translate-y-1/2 start-3 pointer-events-none text-slate-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
             {error && (
-              <div className="absolute right-8 top-1/2 -translate-y-1/2 rtl:left-8 rtl:right-auto text-rose-500">
+              <div className="absolute end-8 top-1/2 -translate-y-1/2 text-rose-500">
                 <AlertCircle className="w-4 h-4" />
               </div>
             )}
           </div>
-          {error && <p className="text-rose-500 text-[10px] mt-1 text-right font-bold absolute -bottom-5 right-0">{t(error)}</p>}
+          {error && <p className="text-rose-500 text-[10px] mt-1 text-end font-bold absolute -bottom-5 end-0">{t(error)}</p>}
         </div>
 
         <div className="flex gap-2 sm:gap-3 w-full sm:w-auto items-end">
@@ -106,7 +106,7 @@ export const ImpactRow: React.FC<ImpactRowProps> = ({
                   const val = impact.amount || 0;
                   handleImpactChange(idx, 'amount', val - 1);
                 }}
-                className="absolute left-1 z-10 p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors rtl:right-1 rtl:left-auto"
+                className="absolute start-1 z-10 p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
                 aria-label="Decrease amount"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M20 12H4"></path></svg>
@@ -145,7 +145,7 @@ export const ImpactRow: React.FC<ImpactRowProps> = ({
                   const val = impact.amount || 0;
                   handleImpactChange(idx, 'amount', val + 1);
                 }}
-                className="absolute right-1 z-10 p-2 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors rtl:left-1 rtl:right-auto"
+                className="absolute end-1 z-10 p-2 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
                 aria-label="Increase amount"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
@@ -159,13 +159,13 @@ export const ImpactRow: React.FC<ImpactRowProps> = ({
                 return (
                   <div className={cn(
                     "absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full",
-                    language === 'ar' ? "left-8" : "right-8",
+                    "end-8",
                     isDebit ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
                   )} />
                 );
               })()}
             </div>
-            {amountError && <p className="text-rose-500 text-[10px] mt-1 text-right font-bold absolute -bottom-5 right-0">{t(amountError)}</p>}
+            {amountError && <p className="text-rose-500 text-[10px] mt-1 text-end font-bold absolute -bottom-5 end-0">{t(amountError)}</p>}
           </div>
 
           <button

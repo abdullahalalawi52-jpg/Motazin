@@ -189,7 +189,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
         {parsedRows.length > 0 && !isProcessing && (
           <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 sm:px-10 pb-4 sm:pb-10">
             <div className="flex-1 overflow-auto rounded-2xl sm:rounded-[2rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 mb-4 sm:mb-6 custom-scrollbar shadow-inner relative">
-              <table className="w-full text-left rtl:text-right text-sm">
+              <table className="w-full text-start text-sm">
                 <thead className="text-[10px] uppercase bg-white/90 dark:bg-slate-900/90 text-slate-500 sticky top-0 backdrop-blur-xl z-10 font-black tracking-[0.15em] border-b border-slate-200 dark:border-white/5">
                   <tr>
                     <th className="px-6 py-5">
@@ -206,7 +206,7 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
                     <th className="px-6 py-5">{t('date')}</th>
                     <th className="px-6 py-5">{t('description')}</th>
                     <th className="px-6 py-5">{t('account') || 'Account'}</th>
-                    <th className="px-6 py-5 text-right rtl:text-left">{t('amount')}</th>
+                    <th className="px-6 py-5 text-end">{t('amount')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -288,14 +288,14 @@ export const FileScanner: React.FC<FileScannerProps> = ({ geminiApiKey, onImport
                           </optgroup>
                         </select>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right rtl:text-left">
+                      <td className="px-6 py-4 whitespace-nowrap text-end">
                         <input 
                           id={`amount-row-${idx}`}
                           name={`amountRow-${idx}`}
                           type="number" 
                           value={row.amount || ''}
                           onChange={(e) => handleUpdateRow(row.id, 'amount', parseFloat(e.target.value) || 0)}
-                          className="bg-transparent border-none focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-2 py-1.5 w-32 text-right rtl:text-left text-indigo-600 dark:text-indigo-400 font-black text-base transition-all"
+                          className="bg-transparent border-none focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-2 py-1.5 w-32 text-end text-indigo-600 dark:text-indigo-400 font-black text-base transition-all"
                           aria-label={`Amount for row ${idx + 1}`}
                         />
                       </td>
