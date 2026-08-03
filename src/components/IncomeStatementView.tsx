@@ -144,7 +144,7 @@ export const IncomeStatementView: React.FC<IncomeStatementViewProps> = ({ transa
             try {
               toast.info(t('exportingPDF') || "Generating PDF...");
               const html2canvas = (await import('html2canvas')).default;
-              const jsPDF = (await import('jspdf')).default;
+              const { jsPDF } = await import('jspdf');
               const canvas = await html2canvas(element, {
                 scale: 3,
                 useCORS: true,

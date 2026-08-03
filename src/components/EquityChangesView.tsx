@@ -107,7 +107,7 @@ export const EquityChangesView: React.FC<EquityChangesViewProps> = ({ totals, fo
             try {
               toast.info(t('exportingPDF') || "Generating PDF...");
               const html2canvas = (await import('html2canvas')).default;
-              const jsPDF = (await import('jspdf')).default;
+              const { jsPDF } = await import('jspdf');
               const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
