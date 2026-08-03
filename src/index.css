@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Inter:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --font-sans: 'Inter', 'Almarai', system-ui, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', 'Almarai', system-ui, sans-serif;
     --bg-gradient: radial-gradient(at 0% 0%, hsla(225, 60%, 94%, 1) 0, transparent 50%), 
                    radial-gradient(at 50% 0%, hsla(210, 60%, 90%, 1) 0, transparent 50%), 
                    radial-gradient(at 100% 0%, hsla(250, 60%, 92%, 1) 0, transparent 50%);
