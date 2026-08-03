@@ -435,7 +435,7 @@ export default function App() {
                   />
                 </PageTransition>
               } />
-              <Route path="/cash-flow" element={
+              <Route path="/cashflow" element={
                 <PageTransition>
                   <CashFlowView
                     transactions={filteredTransactions}
