@@ -83,7 +83,7 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
               <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm min-w-0 relative">
                 <span className="text-[10px] sm:text-xs uppercase font-bold block mb-2 tracking-wider text-theme-muted leading-tight">{t('totalAssets')}</span>
-                <AnimatedNumber className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 truncate block" value={totals.totalAssets} formatCurrency={formatCurrency} />
+                <AnimatedNumber className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 block break-words" value={totals.totalAssets} formatCurrency={formatCurrency} />
                 
                 {previousTotals && (
                   <div className="absolute top-4 right-4 flex items-center gap-1 rtl:left-4 rtl:right-auto text-xs font-bold">
@@ -99,7 +99,7 @@ export const EquationDashboard: React.FC<EquationDashboardProps> = ({
               </div>
               <div className="dark:bg-slate-950/40 bg-white p-5 rounded-3xl border dark:border-white/5 border-slate-200 group hover:border-indigo-500/30 transition-all shadow-sm min-w-0 relative">
                 <span className="text-[10px] sm:text-xs uppercase font-bold block mb-2 tracking-wider text-theme-muted leading-tight" title={t('totalLiabilitiesEquity')}>{t('totalLiabilitiesEquity')}</span>
-                <AnimatedNumber className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 truncate block" value={totals.totalLiabilities + totals.totalEquity} formatCurrency={formatCurrency} />
+                <AnimatedNumber className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 block break-words" value={totals.totalLiabilities + totals.totalEquity} formatCurrency={formatCurrency} />
                 
                 {previousTotals && (
                   <div className="absolute top-4 right-4 flex items-center gap-1 rtl:left-4 rtl:right-auto text-xs font-bold">
