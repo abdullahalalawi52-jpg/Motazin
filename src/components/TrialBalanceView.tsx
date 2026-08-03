@@ -21,14 +21,14 @@ export const TrialBalanceView: React.FC<TrialBalanceViewProps> = ({ accounts, ac
   const trialBalanceData = activeAccounts.map(account => {
     const balance = accounts[account.id] || 0;
     
-    // Assets: Positive = Debit, Negative = Credit
-    // Liabilities/Equity: Positive = Credit, Negative = Debit
-    const isAsset = account.category === 'asset';
+    // Assets & Expenses: Positive = Debit, Negative = Credit
+    // Liabilities/Equity/Income: Positive = Credit, Negative = Debit
+    const isDebitAccount = account.category === 'asset' || account.category === 'expense';
     let debit = 0;
     let credit = 0;
 
     if (balance !== 0) {
-      if (isAsset) {
+      if (isDebitAccount) {
         if (balance > 0) debit = balance;
         else credit = Math.abs(balance);
       } else {
