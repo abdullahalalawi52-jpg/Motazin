@@ -67,7 +67,7 @@ export const ImpactRow: React.FC<ImpactRowProps> = ({
                 }
               }}
               className={cn(
-                "w-full px-4 py-3 border rounded-xl text-sm font-bold transition-all appearance-none outline-none focus:ring-2",
+                "w-full ps-4 pe-10 py-3 border rounded-xl text-sm font-bold transition-all appearance-none outline-none focus:ring-2",
                 "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm hover:border-slate-300 dark:hover:border-slate-600",
                 error
                   ? "border-rose-300 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-500/50 dark:focus:border-rose-500 dark:focus:ring-rose-900"
@@ -82,7 +82,7 @@ export const ImpactRow: React.FC<ImpactRowProps> = ({
                 + {language === 'ar' ? 'إضافة حساب جديد...' : 'Add New Account...'}
               </option>
             </select>
-            <div className="absolute top-1/2 -translate-y-1/2 start-3 pointer-events-none text-slate-400">
+            <div className="absolute top-1/2 -translate-y-1/2 end-3 pointer-events-none text-slate-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
             {error && (
