@@ -338,10 +338,12 @@ export const processPdf = async (file: File, ocrLanguage: string, geminiApiKey: 
 };
 
 export const processImage = async (file: File, ocrLanguage: string, geminiApiKey: string | undefined, callbacks: ProcessCallbacks) => {
-  const { setStatus, setProgress, setParsedRows, setError } = callbacks;
+  const { setStatus, setProgress, setParsedRows, setRawText, setError } = callbacks;
   setStatus('Analyzing image directly with AI Vision...');
   setProgress(20);
   
+  let aiSucceeded = false;
+
   try {
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -365,23 +367,12 @@ export const processImage = async (file: File, ocrLanguage: string, geminiApiKey
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         imageBase64: base64,
-        mimeType: file.type,
+        mimeType: file.type || 'image/jpeg',
         localApiKey: geminiApiKey
       })
     });
 
     setProgress(80);
-
-    if (!response.ok) {
-      let errorMsg = 'AI Vision extraction failed to return valid data.';
-      try {
-        const errData = await response.json();
-        if (errData.error) errorMsg = errData.error;
-      } catch {
-        // Ignore json parse errors for error body
-      }
-      throw new Error(errorMsg);
-    }
 
     if (response.ok) {
       const data = await response.json();
@@ -404,18 +395,55 @@ export const processImage = async (file: File, ocrLanguage: string, geminiApiKey
               setParsedRows(results);
               setStatus('Extraction successful!');
               setProgress(100);
+              aiSucceeded = true;
               return;
             }
           }
         } catch (e) {
-          console.error('Failed to parse Gemini JSON from image:', e);
+          console.warn('Failed to parse Gemini JSON from image, falling back to OCR:', e);
         }
       }
+    } else {
+      console.warn('AI Vision request did not return 200, falling back to OCR...');
     }
-    throw new Error('Could not parse AI response into valid transactions.');
   } catch (error) {
-    console.error('Image processing error:', error);
-    setError(error instanceof Error ? error.message : 'Failed to process image');
+    console.warn('AI Vision network/processing failed, falling back to OCR:', error);
+  }
+
+  // Graceful fallback: Run local OCR (Tesseract) on the image
+  if (!aiSucceeded) {
+    let worker: Worker | null = null;
+    try {
+      setStatus(`Running local OCR (${ocrLanguage.toUpperCase()}) fallback...`);
+      setProgress(40);
+
+      const tesseract = await import('tesseract.js');
+      worker = await tesseract.createWorker(ocrLanguage, 1, {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            setProgress(Math.round(40 + m.progress * 40));
+            setStatus(`OCR: Recognizing ${ocrLanguage.toUpperCase()} text (${Math.round(m.progress * 100)}%)...`);
+          }
+        }
+      });
+
+      const { data: { text: ocrText } } = await worker.recognize(file);
+      
+      if (ocrText && ocrText.trim().length > 0) {
+        setRawText(ocrText);
+        await extractTransactions(ocrText, geminiApiKey, callbacks);
+        setProgress(100);
+      } else {
+        throw new Error('Could not extract text from the image using OCR.');
+      }
+    } catch (ocrError) {
+      console.error('Image OCR fallback error:', ocrError);
+      setError(ocrError instanceof Error ? ocrError.message : 'Failed to process image');
+    } finally {
+      if (worker) {
+        await worker.terminate();
+      }
+    }
   }
 };
 

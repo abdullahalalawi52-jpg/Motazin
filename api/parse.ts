@@ -86,7 +86,7 @@ export default async function handler(req: Request) {
 
   try {
     const body = await req.json();
-    const { text, imageBase64, mimeType } = body;
+    const { text, imageBase64, mimeType, localApiKey } = body;
 
     if (!text && !imageBase64) {
       return new Response(JSON.stringify({ error: 'Invalid or missing text/image' }), {
@@ -95,11 +95,11 @@ export default async function handler(req: Request) {
       });
     }
 
-    // Strictly use server-side environment variables
-    const apiKey = (process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '').trim();
+    // Support server-side env key or client-provided localApiKey
+    const apiKey = (process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || localApiKey || '').trim();
 
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'Gemini API key is required. Please provide it in settings or configure GEMINI_API_KEY on the server.' }), {
         status: 500,
         headers: jsonHeaders,
       });
@@ -109,21 +109,37 @@ export default async function handler(req: Request) {
     // Use gemini-3.7-flash for higher precision extraction and speed
     const model = genAI.getGenerativeModel({ model: 'gemini-3.7-flash' });
 
+    const safeMimeType = (mimeType && mimeType.startsWith('image/')) ? mimeType : 'image/jpeg';
     const parts: (string | { inlineData: { data: string, mimeType: string } })[] = [];
-    if (imageBase64 && mimeType) {
+    if (imageBase64) {
       parts.push({
         inlineData: {
           data: imageBase64,
-          mimeType: mimeType
+          mimeType: safeMimeType
         }
       });
-      parts.push("Extract all financial transactions from this image.");
+      parts.push("Extract all financial transactions, ledger journal entries, or T-account debits and credits from this image.");
     }
     if (text) {
       parts.push(text);
     }
 
-    const prompt = `You are an expert financial data extractor. Extract all financial transactions from the provided document or image. Return ONLY a valid JSON array of objects. Each object must have these keys: 'date' (string, DD/MM/YYYY format), 'description' (string, item name or detail), 'amount' (number, positive float), 'accountId' (string, guess the debit account ID from: 'cash', 'bank', 'fixed_assets', 'expenses', 'inventory', 'ar', 'ap', 'capital', 'sales', 'retained_earnings'), and 'creditAccountId' (string, guess the credit account ID from the same list). If none found, return [].`;
+    const prompt = `You are an expert financial and accounting data extractor.
+Analyze the provided document or image, which may contain receipts, invoices, bank statements, ledger tables, or T-accounts (with debits, credits, and balances).
+Extract all individual financial transactions or ledger movements.
+
+Guidelines:
+1. If the image contains General Ledger / T-Accounts (e.g. Acct 101 Cash, Acct 110 Accounts Receivable, Acct 125 Supplies, Acct 139 Inventory, Acct 200 Accounts Payable, Acct 410 Sales, Acct 525 Cost of Goods Sold, Acct 610 Supplies Expense):
+   - For every active Debit or Credit movement with an amount > 0:
+     - 'amount': positive number (the transaction amount)
+     - 'date': normalized as 'YYYY-MM-DD' or standard date (e.g., '1-Sep-YY' -> '2026-09-01')
+     - 'description': clear descriptive name combining account title and action (e.g. 'Cash on Hand - Debit' or 'Product Sales Revenue - Credit')
+     - 'accountId': choose the best matching account ID from: ['cash', 'bank', 'fixed_assets', 'expenses', 'inventory', 'ar', 'ap', 'capital', 'sales', 'retained_earnings']
+     - 'creditAccountId': if an offsetting account is identifiable from the context, specify it; otherwise omit or leave null.
+2. If the document is an invoice, receipt, or bank statement:
+   - Extract each item or transaction with 'date', 'description', 'amount', 'accountId', 'creditAccountId'.
+
+Return ONLY a valid JSON array of objects. If nothing is found, return []. Do NOT include Markdown code blocks or explanation.`;
 
     const result = await model.generateContent([prompt, ...parts]);
     const responseText = result.response.text();
