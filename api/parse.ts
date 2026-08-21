@@ -106,8 +106,8 @@ export default async function handler(req: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-3.6-flash as 1.5 is deprecated
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
+    // Use gemini-3.7-flash for higher precision extraction and speed
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.7-flash' });
 
     const parts: (string | { inlineData: { data: string, mimeType: string } })[] = [];
     if (imageBase64 && mimeType) {

@@ -123,11 +123,21 @@ describe('API Endpoints', () => {
     });
 
     it('should process a valid request and return parsed JSON (Happy Path)', async () => {
-      // Mock fetch success
+      // Mock fetch success for GoogleGenerativeAI SDK
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ([{ date: '01/01/2026', description: 'Test', amount: 100 }])
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { text: JSON.stringify([{ date: '01/01/2026', description: 'Test', amount: 100 }]) }
+                ]
+              }
+            }
+          ]
+        })
       });
 
       const req = new Request('http://localhost/api/parse', {
@@ -139,8 +149,10 @@ describe('API Endpoints', () => {
       const res = await parseHandler(req);
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(Array.isArray(data)).toBe(true);
-      expect(data[0].amount).toBe(100);
+      expect(data.candidates).toBeDefined();
+      const parsedItems = JSON.parse(data.candidates[0].content.parts[0].text);
+      expect(Array.isArray(parsedItems)).toBe(true);
+      expect(parsedItems[0].amount).toBe(100);
     });
   });
 });

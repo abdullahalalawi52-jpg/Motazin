@@ -127,9 +127,10 @@ Speak in a professional and friendly tone in English. Use rich Markdown formatti
     }
 
     const modelsToTry = [
-      'gemini-3.1-flash-lite',
-      'gemini-2.5-flash',
-      'gemini-3.5-flash'
+      'gemini-3.7-flash',
+      'gemini-3.7-flash-thinking',
+      'gemini-3.5-flash',
+      'gemini-2.5-flash'
     ];
 
     let responseStatus = 500;
