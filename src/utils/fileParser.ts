@@ -193,9 +193,9 @@ export const extractTransactions = async (
         clean = clean.replace(/,/g, '');
       } else if (clean.includes('.')) {
         const parts = clean.split('.');
-        // Check if dot was used as thousands separator (e.g. 40.000 or 26.000 or 3.400 in OCR)
-        if (parts.length === 2 && parts[1].length === 3 && parts[1] === '000') {
-          clean = parts[0] + parts[1]; // 40000
+        // In financial OCR, a dot followed by 3 digits (e.g. 40.000, 26.000, 3.400, 1.100, 7.900) is always a thousands separator
+        if (parts.length === 2 && parts[1].length === 3) {
+          clean = parts[0] + parts[1]; // 3400, 1100, 40000, etc.
         }
       }
       
@@ -220,45 +220,58 @@ export const extractTransactions = async (
       : amountsFound;
 
     validAmounts.forEach((amt) => {
-      // Extract description from text surrounding the amount
-      let desc = trimmed.replace(amt.raw, '').replace(/[|\\/_#*~=+<>—–-]/g, ' ').replace(/\s+/g, ' ').trim();
+      // Remove ALL detected amounts from the description string so running balances don't pollute the text
+      let desc = trimmed;
+      amountsFound.forEach(a => {
+        desc = desc.replace(a.raw, ' ');
+      });
+      // Also strip any residual numbers or table delimiters
+      desc = desc.replace(/\b\d+(?:[.,]\d+)*\b/g, ' ');
+      desc = desc.replace(/[|\\/_#*~=+<>—–-]/g, ' ').replace(/\s+/g, ' ').trim();
       if (!desc || desc.length < 2) desc = `Transaction (${amt.raw})`;
 
       const d = desc.toLowerCase();
       
-      const keywords: Record<string, string[]> = {
-        cash: ['cash', 'نقد', 'صندوق', 'خزينة', 'petty', 'نقداً', 'كاش', 'سيولة'],
-        bank: ['bank', 'بنك', 'مصرف', 'تحويل', 'سداد', 'مدى', 'فيزا', 'ماستركارد', 'حوالة'],
-        ar: ['receivable', 'a/c r.a', 'a/r', 'acct 110', 'مدينون', 'عملاء', 'ذمم مدينة', 'customers', 'debtor'],
-        ap: ['payable', 'a/c p.a', 'a/p', 'acct 200', 'دائنون', 'موردون', 'ذمم دائنة', 'vendors', 'suppliers'],
-        inventory: ['inventory', 'مخزون', 'بضاعة', 'stock', 'supplies inventory', 'merchandise'],
-        fixed_assets: ['furniture', 'equipment', 'أثاث', 'معدات', 'آلات', 'سيارات', 'fixed', 'asset', 'ppe'],
-        revenue: ['revenue', 'sales', 'إيراد', 'مبيعات', 'خدمات', 'product sales'],
-        expenses: ['wages', 'salaries', 'rent', 'supplies', 'expense', 'مصروف', 'تكلفة', 'أجور', 'رواتب', 'إيجار', 'كهرباء', 'مياه', 'مهمات']
-      };
+      let debitAccountId = 'cash';
+      let creditAccountId: string | undefined = undefined;
 
-      let bestCategory = 'cash';
-      let maxScore = 0;
-
-      Object.entries(keywords).forEach(([id, terms]) => {
-        let score = 0;
-        terms.forEach(term => {
-          if (d.includes(term)) {
-            score += term.length; 
-          }
-        });
-        if (score > maxScore) {
-          maxScore = score;
-          bestCategory = id;
-        }
-      });
+      if (/\b(?:wages|salaries|supplies|expense|مصروف|أجور|رواتب|مهمات)\b/i.test(d)) {
+        debitAccountId = 'expenses';
+        creditAccountId = 'cash';
+      } else if (/\b(?:furniture|أثاث)\b/i.test(d)) {
+        debitAccountId = 'furniture';
+        creditAccountId = 'cash';
+      } else if (/\b(?:equipment|machinery|آلات|معدات)\b/i.test(d)) {
+        debitAccountId = 'equipment';
+        creditAccountId = 'cash';
+      } else if (/\b(?:a\/c\s*p\.a|payable|مورد|موردين|دائنون)\b/i.test(d)) {
+        debitAccountId = 'ap';
+        creditAccountId = 'cash';
+      } else if (/\b(?:a\/c\s*r\.a|receivable|عملاء|مدينون)\b/i.test(d)) {
+        debitAccountId = 'cash';
+        creditAccountId = 'ar';
+      } else if (/\b(?:sales|revenue|مبيعات|إيراد)\b/i.test(d)) {
+        debitAccountId = 'cash';
+        creditAccountId = 'sales';
+      } else if (/\b(?:rent)\b/i.test(d)) {
+        // Rent in Cash ledger Dr. is rental revenue, otherwise expense
+        debitAccountId = 'cash';
+        creditAccountId = 'revenue';
+      } else if (/\b(?:cash|نقد|صندوق)\b/i.test(d)) {
+        debitAccountId = 'cash';
+        creditAccountId = 'capital';
+      } else {
+        debitAccountId = 'cash';
+        creditAccountId = 'capital';
+      }
 
       results.push({
         id: generateId(),
         date: lineDate,
         description: desc,
         amount: Math.abs(amt.value),
-        accountId: bestCategory,
+        accountId: debitAccountId,
+        creditAccountId: creditAccountId,
         selected: true
       });
     });

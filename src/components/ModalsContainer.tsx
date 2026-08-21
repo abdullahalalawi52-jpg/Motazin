@@ -95,30 +95,50 @@ export const ModalsContainer = ({
             onClose={() => setIsPdfScannerOpen(false)}
             onImport={(rows: Array<{ id?: string; date: string; description: string; amount: number; accountId?: string; creditAccountId?: string; }>) => {
               const newTransactions = rows.map(r => {
-                const accountId = r.accountId || 'bank';
-                const account = allAccounts.find((a: Account) => a.id === accountId);
-                const category = account?.category || 'asset';
+                const debitAccountId = r.accountId || 'cash';
+                const debitAccount = allAccounts.find((a: Account) => a.id === debitAccountId);
+                const category = debitAccount?.category || 'asset';
 
                 let impacts = [];
                 if (r.creditAccountId) {
                   impacts = [
-                    { accountId: r.accountId || 'cash', amount: r.amount, type: 'debit' as const },
+                    { accountId: debitAccountId, amount: r.amount, type: 'debit' as const },
                     { accountId: r.creditAccountId, amount: r.amount, type: 'credit' as const }
                   ];
-                } else if (category === 'asset') {
+                } else if (category === 'expense') {
                   impacts = [
-                    { accountId: accountId, amount: r.amount, type: 'debit' as const },
-                    { accountId: 'capital', amount: r.amount, type: 'credit' as const }
+                    { accountId: debitAccountId, amount: r.amount, type: 'debit' as const },
+                    { accountId: 'cash', amount: r.amount, type: 'credit' as const }
                   ];
-                } else if (category === 'liability') {
+                } else if (category === 'income') {
                   impacts = [
-                    { accountId: accountId, amount: r.amount, type: 'debit' as const },
+                    { accountId: 'cash', amount: r.amount, type: 'debit' as const },
+                    { accountId: debitAccountId, amount: r.amount, type: 'credit' as const }
+                  ];
+                } else if (debitAccountId === 'furniture' || debitAccountId === 'fixed_assets' || debitAccountId === 'equipment' || debitAccountId === 'inventory') {
+                  impacts = [
+                    { accountId: debitAccountId, amount: r.amount, type: 'debit' as const },
+                    { accountId: 'cash', amount: r.amount, type: 'credit' as const }
+                  ];
+                } else if (debitAccountId === 'ap') {
+                  impacts = [
+                    { accountId: debitAccountId, amount: r.amount, type: 'debit' as const },
+                    { accountId: 'cash', amount: r.amount, type: 'credit' as const }
+                  ];
+                } else if (debitAccountId === 'ar') {
+                  impacts = [
+                    { accountId: 'cash', amount: r.amount, type: 'debit' as const },
+                    { accountId: 'ar', amount: r.amount, type: 'credit' as const }
+                  ];
+                } else if (debitAccountId === 'cash' || debitAccountId === 'bank') {
+                  impacts = [
+                    { accountId: debitAccountId, amount: r.amount, type: 'debit' as const },
                     { accountId: 'capital', amount: r.amount, type: 'credit' as const }
                   ];
                 } else {
                   impacts = [
-                    { accountId: accountId, amount: r.amount, type: 'debit' as const },
-                    { accountId: 'bank', amount: r.amount, type: 'credit' as const }
+                    { accountId: debitAccountId, amount: r.amount, type: 'debit' as const },
+                    { accountId: 'cash', amount: r.amount, type: 'credit' as const }
                   ];
                 }
 
