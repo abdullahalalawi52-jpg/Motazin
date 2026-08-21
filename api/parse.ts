@@ -124,22 +124,55 @@ export default async function handler(req: Request) {
       parts.push(text);
     }
 
-    const prompt = `You are an expert financial and accounting data extractor.
-Analyze the provided document or image, which may contain receipts, invoices, bank statements, ledger tables, or T-accounts (with debits, credits, and balances).
-Extract all individual financial transactions or ledger movements.
+    const prompt = `You are an expert accounting and financial data extraction assistant.
+Analyze the provided document or image, which may contain receipts, invoices, bank statements, ledger tables, or T-accounts.
+Extract all authentic financial transactions.
 
-Guidelines:
-1. If the image contains General Ledger / T-Accounts (e.g. Acct 101 Cash, Acct 110 Accounts Receivable, Acct 125 Supplies, Acct 139 Inventory, Acct 200 Accounts Payable, Acct 410 Sales, Acct 525 Cost of Goods Sold, Acct 610 Supplies Expense):
-   - For every active Debit or Credit movement with an amount > 0:
-     - 'amount': positive number (the transaction amount)
-     - 'date': normalized as 'YYYY-MM-DD' or standard date (e.g., '1-Sep-YY' -> '2026-09-01')
-     - 'description': clear descriptive name combining account title and action (e.g. 'Cash on Hand - Debit' or 'Product Sales Revenue - Credit')
-     - 'accountId': choose the best matching account ID from: ['cash', 'bank', 'fixed_assets', 'expenses', 'inventory', 'ar', 'ap', 'capital', 'sales', 'retained_earnings']
-     - 'creditAccountId': if an offsetting account is identifiable from the context, specify it; otherwise omit or leave null.
-2. If the document is an invoice, receipt, or bank statement:
-   - Extract each item or transaction with 'date', 'description', 'amount', 'accountId', 'creditAccountId'.
+CRITICAL ACCOUNTING RULES:
+1. RUNNING BALANCE COLUMN EXCLUSION:
+   - In General Ledger tables, Cash books, or T-accounts with columns like [Date, Description, Dr./Debit, Cr./Credit, Balance (Dr./Cr.)]:
+   - NEVER extract numbers from the "Balance" column! The Balance is just a running mathematical total.
+   - ONLY extract the actual transaction amount from the "Dr." (Debit) or "Cr." (Credit) columns.
+2. THOUSANDS & AMOUNTS:
+   - Return numbers in full numeric format without commas (e.g. "40,000" -> 40000, "26,000" -> 26000, "3,400" -> 3400, "600" -> 600, "100" -> 100).
+3. DATE NORMALIZATION:
+   - Convert dates like "Jan. 20", "Jan 21", "1-Sep-YY" into standard ISO format "YYYY-MM-DD" (e.g. "2026-01-20").
+4. ACCURATE ACCOUNT CLASSIFICATION:
+   - "Wages", "Salaries", "Supplies", "Rent", "Utility", "Maintenance" -> accountId: "expenses"
+   - "Furniture", "Equipment", "Vehicles", "Machinery" -> accountId: "fixed_assets"
+   - "A/C R.A", "Accounts Receivable", "Customers" -> accountId: "ar"
+   - "A/C P.A", "Accounts Payable", "Vendors", "Suppliers" -> accountId: "ap"
+   - "Product Sales", "Sales Revenue", "Services" -> accountId: "sales"
+   - "Cash on Hand", "Cash" -> accountId: "cash"
+   - If the main table is a CASH ledger:
+     - For Dr. (Cash received): debit is 'cash', creditAccountId is the offsetting account (e.g. 'ar' for A/C R.A, 'sales' for revenue).
+     - For Cr. (Cash paid): debit accountId is the expense/asset (e.g. 'expenses' for Wages/Salaries, 'fixed_assets' for Furniture, 'ap' for A/C P.A) and creditAccountId is 'cash'.
 
-Return ONLY a valid JSON array of objects. If nothing is found, return []. Do NOT include Markdown code blocks or explanation.`;
+Return ONLY a valid JSON array of objects. Example:
+[
+  {
+    "date": "2026-01-20",
+    "description": "Collection from A/C R.A",
+    "amount": 40000,
+    "accountId": "cash",
+    "creditAccountId": "ar"
+  },
+  {
+    "date": "2026-01-21",
+    "description": "Payment to A/C P.A",
+    "amount": 26000,
+    "accountId": "ap",
+    "creditAccountId": "cash"
+  },
+  {
+    "date": "2026-01-22",
+    "description": "Wages Expense",
+    "amount": 3000,
+    "accountId": "expenses",
+    "creditAccountId": "cash"
+  }
+]
+If nothing is found, return []. Do NOT include Markdown code fences or extra text.`;
 
     const result = await model.generateContent([prompt, ...parts]);
     const responseText = result.response.text();

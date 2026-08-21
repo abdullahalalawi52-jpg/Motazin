@@ -102,28 +102,76 @@ export const extractTransactions = async (
   const lines = normalizedText.split('\n');
   const results: ParsedRow[] = [];
   
-  // 1. Optimized Date Detection
-  const dateRegex = /\b(\d{1,4}[-/.]\d{1,2}[-/.](?:\d{2,4})?|\d{1,2}[-/.]\d{1,2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}(?:,)? \d{2,4})\b/i;
-  let globalDate = toIsoDateString(new Date());
+  // Date extraction regex matching standard, abbreviated, and Arabic dates
+  const lineDateRegex = /\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z.]*\s*\d{1,2}(?:(?:st|nd|rd|th)|,)?(?:\s*[-/,\s]\s*\d{2,4})?|\d{1,2}\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z.]*(?:\s*[-/,\s]\s*\d{2,4})?|\d{1,4}[-/.]\d{1,2}(?:[-/.]\d{2,4})?)\b/i;
   
-  for (let i = 0; i < Math.min(lines.length, 15); i++) {
-    const dm = lines[i].match(dateRegex);
-    if (dm) {
-      globalDate = dm[1];
-      break;
-    }
-  }
+  let currentContextDate = toIsoDateString(new Date());
 
-  // 2. Financial Number Regex: Handles negatives in brackets (1,200), decimals, and commas
+  // Function to normalize parsed date strings into YYYY-MM-DD
+  const formatDetectedDate = (rawDate: string): string => {
+    try {
+      const cleaned = rawDate.replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim();
+      const currentYear = new Date().getFullYear();
+      
+      // Match "Jan 20" or "Jan. 20"
+      const monthDayMatch = cleaned.match(/^([a-z]+)\s*(\d{1,2})$/i);
+      if (monthDayMatch) {
+        const monthNames: Record<string, string> = {
+          jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+          jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+        };
+        const mKey = monthDayMatch[1].toLowerCase().slice(0, 3);
+        const mNum = monthNames[mKey] || '01';
+        const dNum = monthDayMatch[2].padStart(2, '0');
+        return `${currentYear}-${mNum}-${dNum}`;
+      }
+
+      // Match "20-Jan" or "20 Jan"
+      const dayMonthMatch = cleaned.match(/^(\d{1,2})\s*[-/ ]\s*([a-z]+)$/i);
+      if (dayMonthMatch) {
+        const monthNames: Record<string, string> = {
+          jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+          jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+        };
+        const mKey = dayMonthMatch[2].toLowerCase().slice(0, 3);
+        const mNum = monthNames[mKey] || '01';
+        const dNum = dayMonthMatch[1].padStart(2, '0');
+        return `${currentYear}-${mNum}-${dNum}`;
+      }
+
+      const parsed = new Date(cleaned);
+      if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 2000) {
+        return toIsoDateString(parsed);
+      }
+    } catch {
+      // Ignore date formatting errors and fallback
+    }
+    return currentContextDate;
+  };
+
+  // Financial Number Regex
   const amountRegex = /((?:\()?\d+(?:[.,\s]\d{3})*(?:[.,]\d+)?(?:\))?)/g;
 
-  let pendingDescription = '';
-
   lines.forEach(line => {
-    const trimmed = line.trim();
+    let trimmed = line.trim();
     if (trimmed.length < 2) return;
 
-    // Extract all potential amounts
+    // Ignore table headers
+    if (/^(?:date|description|dr\.?|cr\.?|balance|التاريخ|البيان|مدين|دائن|الرصيد)/i.test(trimmed)) {
+      return;
+    }
+
+    // 1. Extract Date from line FIRST and remove it from line text so date digits are not parsed as amounts
+    let lineDate = currentContextDate;
+    const dateMatch = trimmed.match(lineDateRegex);
+    if (dateMatch) {
+      lineDate = formatDetectedDate(dateMatch[1]);
+      currentContextDate = lineDate;
+      // Strip date from line text
+      trimmed = trimmed.replace(dateMatch[0], ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    // 2. Extract all financial amounts in the remaining line text
     const amountsFound: { value: number; raw: string; index: number }[] = [];
     let match;
     amountRegex.lastIndex = 0;
@@ -136,86 +184,60 @@ export const extractTransactions = async (
         raw = raw.slice(1, -1);
       }
       
-      // --- AGGRESSIVE FINANCIAL NUMBER CLEANING ---
+      // Clean up number string
       let clean = raw.replace(/\s/g, '').replace(/o/gi, '0').replace(/[—–-]$/, '');
       
       if (clean.includes(',') && clean.includes('.')) {
         clean = clean.replace(/,/g, '');
       } else if (clean.includes(',')) {
-        const parts = clean.split(',');
-        if (parts[parts.length - 1].length === 3) {
-          clean = clean.replace(/,/g, ''); 
-        } else {
-          clean = clean.replace(/,/g, '.');
+        clean = clean.replace(/,/g, '');
+      } else if (clean.includes('.')) {
+        const parts = clean.split('.');
+        // Check if dot was used as thousands separator (e.g. 40.000 or 26.000 or 3.400 in OCR)
+        if (parts.length === 2 && parts[1].length === 3 && parts[1] === '000') {
+          clean = parts[0] + parts[1]; // 40000
         }
       }
       
       clean = clean.replace(/[.,]$/, '');
-      
       const val = parseFloat(clean);
       
       const looksLikeYear = /^\d{4}$/.test(clean) && val >= 2020 && val <= 2035;
-      const hasDecimal = clean.includes('.');
       
-      if (!isNaN(val) && (Math.abs(val) > BALANCE_TOLERANCE) && (!looksLikeYear || hasDecimal)) {
+      if (!isNaN(val) && Math.abs(val) > BALANCE_TOLERANCE && !looksLikeYear) {
         const finalVal = isNegative ? -Math.abs(val) : Math.abs(val);
         amountsFound.push({ value: finalVal, raw: match[1], index: match.index });
       }
     }
 
-    if (amountsFound.length === 0) {
-      if (trimmed.length < 60 && !trimmed.toLowerCase().includes('balance sheet') && !/page|صفحة/i.test(trimmed)) {
-        pendingDescription = trimmed;
-      }
-      return;
-    }
+    if (amountsFound.length === 0) return;
 
-    let lastEnd = 0;
-    amountsFound.forEach((amt, idx) => {
-      let rawDesc = trimmed.substring(lastEnd, amt.index).trim();
-      
-      if ((!rawDesc || rawDesc.length < 2) && pendingDescription && idx === 0) {
-         rawDesc = pendingDescription;
-         pendingDescription = '';
-      }
+    // 3. Handle Ledger / T-Account Running Balance filter:
+    // If a line has 2 or more numbers (e.g. [Transaction Amount, Running Balance]):
+    // The running balance is the last number and should NOT be extracted as a separate transaction.
+    const validAmounts = amountsFound.length >= 2 
+      ? amountsFound.slice(0, 1) // Take the first actual transaction amount
+      : amountsFound;
 
-      if ((!rawDesc || rawDesc.length < 2) && idx === amountsFound.length - 1) {
-         rawDesc = trimmed.substring(amt.index + amt.raw.length).trim();
-      }
-      
-      if ((!rawDesc || rawDesc.length < 2) && idx < amountsFound.length - 1) {
-         rawDesc = trimmed.substring(amt.index + amt.raw.length, amountsFound[idx+1].index).trim();
-      }
-
-      lastEnd = amt.index + amt.raw.length;
-
-      let desc = rawDesc.replace(/[٠١٢٣٤٥٦٧٨٩]/g, '').replace(/[|\\/_#*~=+<>—–-]/g, ' ').replace(/\s+/g, ' ').trim();
-      if (!desc || desc.length < 2) desc = `Detected Item (${amt.raw})`;
+    validAmounts.forEach((amt) => {
+      // Extract description from text surrounding the amount
+      let desc = trimmed.replace(amt.raw, '').replace(/[|\\/_#*~=+<>—–-]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (!desc || desc.length < 2) desc = `Transaction (${amt.raw})`;
 
       const d = desc.toLowerCase();
-      const isTotalLine = /\btotal\b|إجمالي|مجموع|صافي|net\b|liabilities.*equity|shareholders.*funds|total.*assets|total.*liabilities/i.test(d);
       
-      let guessedAccountId = 'bank';
-      
-      const keywords = {
-        cash: ['cash', 'نقد', 'صندوق', 'خزينة', 'petty', 'funds', 'نقداً', 'كاش', 'سيولة', 'مقبوضات'],
-        bank: ['bank', 'بنك', 'مصرف', 'stc', 'pay', 'rajhi', 'ahli', 'alinma', 'riyad', 'تحويل', 'سداد', 'مدى', 'فيزا', 'ماستركارد', 'إنماء', 'بلاد', 'فرنسي', 'حوالة', 'راجحي', 'أهلي'],
-        ar: ['receivable', 'مدينون', 'عملاء', 'ذمم مدينة', 'customers', 'debtor', 'ar', 'مطلوبات', 'على الحساب', 'مديوينة', 'حسابات العملاء'],
-        ap: ['payable', 'دائنون', 'موردون', 'ذمم دائنة', 'vendors', 'suppliers', 'ap', 'creditor', 'لصالح', 'مطالبة', 'التزامات تجارية', 'موردين', 'مستحقات'],
-        inventory: ['inventory', 'مخزون', 'بضاعة', 'stock', 'goods', 'مواد', 'قطع غيار', 'سعلة'],
-        fixed_assets: ['fixed', 'asset', 'ppe', 'property', 'plant', 'equipment', 'furniture', 'car', 'vehicle', 'land', 'building', 'أثاث', 'مكتب', 'عقارات', 'سيارات', 'معدات', 'آلات', 'تجهيزات', 'كمبيوتر', 'ممتلكات', 'رأسمالية'],
-        goodwill: ['goodwill', 'شهرة', 'محل'],
-        intangible: ['intangible', 'غير ملموسة', 'براءة', 'trademark', 'ملكية فكرية', 'حقوق'],
-        loan: ['loan', 'debt', 'borrow', 'financing', 'قرض', 'تمويل', 'تسهيلات', 'دين', 'مديونية', 'قروض'],
-        accrued: ['accrued', 'outstanding', 'payable', 'مستحق', 'مطالبة', 'مستحقات'],
-        prepaid: ['prepaid', 'advance', 'deposit', 'مقدم', 'تأمين', 'عربون', 'مدفوعات مقدماً'],
-        capital: ['capital', 'stockholder', 'shareholder', 'equity', 'share capital', 'رأس مال', 'مساهمة', 'حقوق الملكية', 'شركاء', 'حقوق مساهمين', 'استثمار'],
-        retained: ['retained', 'earning', 'surplus', 'retained earnings', 'أرباح', 'محتجزة', 'مبقاة', 'توزيعات', 'احتياطي'],
-        revenue: ['revenue', 'sales', 'service', 'income', 'إيراد', 'مبيعات', 'خدمات', 'بيع', 'أتعاب', 'دخل'],
-        expenses: ['expense', 'cost', 'مصروف', 'تكلفة', 'أجور', 'رواتب', 'فاتورة', 'إيجار', 'صيانة', 'كهرباء', 'مياه', 'اتصالات', 'بنزين', 'سفر', 'إعاشة']
+      const keywords: Record<string, string[]> = {
+        cash: ['cash', 'نقد', 'صندوق', 'خزينة', 'petty', 'نقداً', 'كاش', 'سيولة'],
+        bank: ['bank', 'بنك', 'مصرف', 'تحويل', 'سداد', 'مدى', 'فيزا', 'ماستركارد', 'حوالة'],
+        ar: ['receivable', 'a/c r.a', 'a/r', 'acct 110', 'مدينون', 'عملاء', 'ذمم مدينة', 'customers', 'debtor'],
+        ap: ['payable', 'a/c p.a', 'a/p', 'acct 200', 'دائنون', 'موردون', 'ذمم دائنة', 'vendors', 'suppliers'],
+        inventory: ['inventory', 'مخزون', 'بضاعة', 'stock', 'supplies inventory', 'merchandise'],
+        fixed_assets: ['furniture', 'equipment', 'أثاث', 'معدات', 'آلات', 'سيارات', 'fixed', 'asset', 'ppe'],
+        revenue: ['revenue', 'sales', 'إيراد', 'مبيعات', 'خدمات', 'product sales'],
+        expenses: ['wages', 'salaries', 'rent', 'supplies', 'expense', 'مصروف', 'تكلفة', 'أجور', 'رواتب', 'إيجار', 'كهرباء', 'مياه', 'مهمات']
       };
 
-      let bestCategory = 'bank';
+      let bestCategory = 'cash';
       let maxScore = 0;
 
       Object.entries(keywords).forEach(([id, terms]) => {
@@ -231,30 +253,14 @@ export const extractTransactions = async (
         }
       });
 
-      const categoryMap: Record<string, string> = {
-        ppe: 'ppe',
-        fixed_assets: 'fixed_assets',
-        goodwill: 'goodwill',
-        intangible: 'intangible_assets',
-        loan: 'borrowed_money',
-        accrued: 'accrued_expenses',
-        prepaid: 'prepaid_expenses',
-        retained: 'retained_earnings',
-        capital: 'share_capital'
-      };
-      
-      guessedAccountId = isTotalLine ? 'cash' : (categoryMap[bestCategory] || bestCategory);
-
-      if (!results.some(r => r.amount === Math.abs(amt.value) && r.description === desc)) {
-        results.push({
-          id: generateId(),
-          date: globalDate,
-          description: desc,
-          amount: Math.abs(amt.value),
-          accountId: guessedAccountId,
-          selected: !isTotalLine,
-        });
-      }
+      results.push({
+        id: generateId(),
+        date: lineDate,
+        description: desc,
+        amount: Math.abs(amt.value),
+        accountId: bestCategory,
+        selected: true
+      });
     });
   });
 
