@@ -11,15 +11,15 @@ export default async function handler(req: Request) {
 
   try {
     const body = await req.json();
-    const { imageBase64, mimeType } = body;
+    const { imageBase64, mimeType, localApiKey } = body;
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: 'Image data is required' }), { status: 400 });
     }
 
-    const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = (process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || localApiKey || '').trim();
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key is missing' }), { status: 500 });
+      return new Response(JSON.stringify({ error: 'Gemini API key is required. Please provide it in settings or configure GEMINI_API_KEY on the server.' }), { status: 500 });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);

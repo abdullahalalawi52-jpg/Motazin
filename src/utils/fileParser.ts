@@ -3,6 +3,7 @@ import { ParsedRow } from '../types/accounting';
 import { generateId } from './uuid';
 import { toIsoDateString } from './date';
 import { BALANCE_TOLERANCE } from './constants';
+import { preprocessImageForOcr } from './imagePreprocess';
 
 interface ProcessCallbacks {
   setProgress: (progress: number) => void;
@@ -71,11 +72,33 @@ export const extractTransactions = async (
     setStatus('AI extraction skipped/failed. Trying Regex fallback...');
   }
 
-  const convertArabicDigits = (str: string) => {
-    return str.replace(/[٠١٢٣٤٥٦٧٨٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+  // Enhanced multilingual text normalization (Arabic + Persian + Urdu + English)
+  const normalizeFinancialText = (str: string) => {
+    return str
+      // Eastern Arabic numerals
+      .replace(/[٠١٢٣٤٥٦٧٨٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+      // Persian / Urdu numerals
+      .replace(/[۰۱۲۳۴۵۶۷۸۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString())
+      // Remove Tatweel / Kashida
+      .replace(/\u0640/g, '')
+      // Replace Arabic comma with space
+      .replace(/،/g, ' ')
+      // Normalize Arabic month names for standard date matching
+      .replace(/يناير|كانون الثاني/g, '01')
+      .replace(/فبراير|شباط/g, '02')
+      .replace(/مارس|آذار/g, '03')
+      .replace(/أبريل|ابريل|نيسان/g, '04')
+      .replace(/مايو|أيار/g, '05')
+      .replace(/يونيو|حزيران/g, '06')
+      .replace(/يوليو|تموز/g, '07')
+      .replace(/أغسطس|اغسطس|آب/g, '08')
+      .replace(/سبتمبر|أيلول/g, '09')
+      .replace(/أكتوبر|اكتوبر|تشرين الأول/g, '10')
+      .replace(/نوفمبر|تشرين الثاني/g, '11')
+      .replace(/ديسمبر|كانون الأول/g, '12');
   };
 
-  const normalizedText = convertArabicDigits(text);
+  const normalizedText = normalizeFinancialText(text);
   const lines = normalizedText.split('\n');
   const results: ParsedRow[] = [];
   
@@ -410,31 +433,57 @@ export const processImage = async (file: File, ocrLanguage: string, geminiApiKey
     console.warn('AI Vision network/processing failed, falling back to OCR:', error);
   }
 
-  // Graceful fallback: Run local OCR (Tesseract) on the image
+  // Graceful fallback: Run local OCR (Tesseract) on the image with pre-processing
   if (!aiSucceeded) {
     let worker: Worker | null = null;
     try {
+      setStatus(`Pre-processing image and enhancing contrast for ${ocrLanguage.toUpperCase()} OCR...`);
+      setProgress(35);
+
+      // 1. Preprocess image on canvas (auto-scaling, grayscale, and adaptive contrast)
+      let processedCanvas: HTMLCanvasElement | null = null;
+      try {
+        processedCanvas = await preprocessImageForOcr(file, {
+          minWidth: 1800,
+          contrast: 1.3,
+          brightness: 5,
+          grayscale: true
+        });
+      } catch (prepErr) {
+        console.warn('Canvas pre-processing skipped, using original image:', prepErr);
+      }
+
       setStatus(`Running local OCR (${ocrLanguage.toUpperCase()}) fallback...`);
-      setProgress(40);
+      setProgress(50);
 
       const tesseract = await import('tesseract.js');
       worker = await tesseract.createWorker(ocrLanguage, 1, {
         logger: m => {
           if (m.status === 'recognizing text') {
-            setProgress(Math.round(40 + m.progress * 40));
+            setProgress(Math.round(50 + m.progress * 45));
             setStatus(`OCR: Recognizing ${ocrLanguage.toUpperCase()} text (${Math.round(m.progress * 100)}%)...`);
           }
         }
       });
 
-      const { data: { text: ocrText } } = await worker.recognize(file);
+      // Set optimized recognition parameters
+      try {
+        await worker.setParameters({
+          preserve_interword_spaces: '1'
+        });
+      } catch {
+        // Ignore parameter configuration errors if unsupported in version
+      }
+
+      const inputTarget = processedCanvas || file;
+      const { data: { text: ocrText } } = await worker.recognize(inputTarget);
       
       if (ocrText && ocrText.trim().length > 0) {
         setRawText(ocrText);
         await extractTransactions(ocrText, geminiApiKey, callbacks);
         setProgress(100);
       } else {
-        throw new Error('Could not extract text from the image using OCR.');
+        throw new Error('Could not extract legible text from the image.');
       }
     } catch (ocrError) {
       console.error('Image OCR fallback error:', ocrError);
